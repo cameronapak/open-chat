@@ -4,6 +4,8 @@ A truly open AI chatbot.
 
 Not locked down to any given LLM provider.
 
+Easily import into your existing apps.
+
 ## Features
 
 - **[TypeScript](https://www.typescriptlang.org/)** - For type safety and improved developer experience
@@ -16,6 +18,22 @@ Not locked down to any given LLM provider.
 - **[Node.js](https://nodejs.org/en)** - JavaScript runtime environment
 - **[Bun](https://bun.sh)** - JavaScript package Manager
 - **PWA** - Progressive Web App support
+
+## Roadmap 🗺️
+
+- [ ] Has default AI prompt that honors God and the Bible
+- [ ] Better Auth
+- [ ] Open Router support
+- MCP client support
+  - [ ] MCP Tools
+  - [ ] MCP Prompts
+  - [ ] MCP Resources
+- [ ] One-click MCP install
+- [ ] Add your own MCP server
+- [ ] MCP UI support
+- [ ] Local LLM support (via Transformers JS)
+- [ ] Personality Profile (tailor LLM to your preferences)
+- [ ] Web component chatbot export
 
 ## Getting Started
 
