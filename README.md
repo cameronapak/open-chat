@@ -1,15 +1,20 @@
 # Open Chat
 
+A truly open AI chatbot.
+
+Not locked down to any given LLM provider.
+
 ## Features
 
-- **TypeScript** - For type safety and improved developer experience
-- **TanStack Router** - File-based routing with full type safety
-- **Tailwind v4** - Utility-first CSS for rapid UI development
-- **shadcn/ui** - Reusable UI components
-- **ai-elements** - AI Chatbot elements
-- **Hono** - Lightweight, performant server framework
-- **Node.js** - Runtime environment
-- **Bun** - Package Manager
+- **[TypeScript](https://www.typescriptlang.org/)** - For type safety and improved developer experience
+- **[TanStack Router](https://tanstack.com/router/latest/docs/framework/react/overview)** - File-based routing with full type safety
+- **[Tailwind v4](https://tailwindcss.com/)** - Utility-first CSS for rapid UI development
+- **[shadcn/ui](https://ui.shadcn.com/)** - Reusable UI components
+- **[ai-sdk](https://ai-sdk.dev/)** - AI Toolkit for TypeScript
+- **[ai-elements](https://ai-sdk.dev/elements/overview)** - AI Chatbot elements
+- **[Hono](https://hono.dev)** - Lightweight, performant server framework
+- **[Node.js](https://nodejs.org/en)** - JavaScript runtime environment
+- **[Bun](https://bun.sh)** - JavaScript package Manager
 - **PWA** - Progressive Web App support
 
 ## Getting Started
@@ -49,4 +54,4 @@ open-chat/
 
 ## Sources
 
-This project was created with [Better-T-Stack](https://github.com/AmanVarshney01/create-better-t-stack), a modern TypeScript stack that combines React, TanStack Router, Hono, and more.
+This project was created with [Better-T-Stack](https://github.com/AmanVarshney01/create-better-t-stack).
