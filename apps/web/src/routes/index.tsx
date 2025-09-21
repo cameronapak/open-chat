@@ -44,6 +44,11 @@ import {
   ReasoningTrigger,
 } from '@/components/ai-elements/reasoning';
 import { Loader } from '@/components/ai-elements/loader';
+import { createOpenRouter } from '@openrouter/ai-sdk-provider';
+
+const openrouter = createOpenRouter({
+  apiKey: import.meta.env.OPEN_ROUTER_API_KEY!,
+});
 
 const models = [
   {
@@ -55,6 +60,8 @@ const models = [
     value: 'deepseek/deepseek-r1',
   },
 ];
+
+const openRouterModel = openrouter.chat('x-ai/grok-4-fast:free'); 
 
 const ChatBotDemo = () => {
   const [input, setInput] = useState('');
@@ -77,8 +84,8 @@ const ChatBotDemo = () => {
       },
       {
         body: {
-          model: model,
-          webSearch: webSearch,
+          model: openRouterModel,
+          // webSearch: webSearch,
         },
       },
     );
