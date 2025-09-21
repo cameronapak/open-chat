@@ -212,7 +212,7 @@ const ChatBotDemo = () => {
         files: message.files
       },
       {
-        // webSearch: webSearch,
+        webSearch: webSearch,
       },
     );
     setInput('');
