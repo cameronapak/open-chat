@@ -1,5 +1,6 @@
 import { RouterProvider, createRouter } from "@tanstack/react-router";
 import ReactDOM from "react-dom/client";
+import '@fontsource-variable/geist';
 import Loader from "./components/loader";
 import { routeTree } from "./routeTree.gen";
 
