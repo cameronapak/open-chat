@@ -1,0 +1,23 @@
+{
+  "name": "open-chat",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "check": "oxlint",
+    "dev": "bun run --filter '*' dev",
+    "build": "bun run --filter '*' build",
+    "check-types": "bun run --filter '*' check-types",
+    "dev:native": "bun run --filter native dev",
+    "dev:web": "bun run --filter web dev",
+    "dev:server": "bun run --filter server dev"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "oxlint": "^1.12.0"
+  },
+  "packageManager": "bun@1.2.21"
+}
