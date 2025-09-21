@@ -28,7 +28,7 @@ import {
   PromptInputTools,
 } from '@/components/ai-elements/prompt-input';
 import { Actions, Action } from '@/components/ai-elements/actions';
-import { Fragment, useState, useEffect, useMemo } from 'react';
+import { Fragment, useState, useEffect, useMemo, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Settings, ExternalLink } from 'lucide-react';
@@ -49,24 +49,30 @@ import {
 } from '@/components/ai-elements/reasoning';
 import { Loader } from '@/components/ai-elements/loader';
 
-const models = [
-  {
-    name: 'GPT 4o',
-    value: 'openai/gpt-4o',
-  },
-  {
-    name: 'Deepseek R1',
-    value: 'deepseek/deepseek-r1',
-  },
-];
+import { useOpenRouterModels, type OpenRouterModel } from '@/lib/openrouter.models';
+
+type ModelOption = { name: string; value: string };
 
 const ChatBotDemo = () => {
   const [input, setInput] = useState('');
   const [connected, setConnected] = useState<boolean>(false);
   const [isOpen, setIsOpen] = useState(false);
-  const [model, setModel] = useState<string>(models[0].value);
+  const [model, setModel] = useState<string>('openai/gpt-4o');
   const [webSearch, setWebSearch] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Keep a ref of the latest selected model so the transport can always read it
+  const modelRef = useRef<string>(model);
+  useEffect(() => {
+    modelRef.current = model;
+  }, [model]);
+
+  // Fetch available models via TanStack Query + localStorage TTL cache
+  const { data: modelList, isLoading: modelsLoading, isError: modelsError } = useOpenRouterModels();
+  const modelOptions = useMemo<ModelOption[]>(
+    () => (modelList ?? []).map((m: OpenRouterModel) => ({ name: m.name || m.id, value: m.id })),
+    [modelList],
+  );
 
   // On load, check server connection status
   useEffect(() => {
@@ -86,11 +92,16 @@ const ChatBotDemo = () => {
     checkStatus();
   }, []);
 
-  const transport = useMemo(() => new DefaultChatTransport({
-    api: `${import.meta.env.VITE_SERVER_URL}/api/chat`,
-    credentials: 'include',
-    body: () => ({ model }),
-  }), [model]);
+  // Create transport once; the body callback reads the latest model from the ref
+  const transport = useMemo(
+    () =>
+      new DefaultChatTransport({
+        api: `${import.meta.env.VITE_SERVER_URL}/api/chat`,
+        credentials: 'include',
+        body: () => ({ model: modelRef.current }),
+      }),
+    [],
+  );
 
   const { messages: rawMessages, sendMessage: rawSendMessage, status: rawStatus } = useChat({
     transport,
@@ -323,18 +334,19 @@ const ChatBotDemo = () => {
                 </PromptInputButton>
                 <PromptInputModelSelect
                   onValueChange={(value) => {
+                    console.log(value)
                     setModel(value);
                   }}
                   value={model}
-                  disabled={!connected}
+                  disabled={!connected || modelsLoading || modelsError}
                 >
                   <PromptInputModelSelectTrigger>
                     <PromptInputModelSelectValue />
                   </PromptInputModelSelectTrigger>
                   <PromptInputModelSelectContent>
-                    {models.map((model) => (
-                      <PromptInputModelSelectItem key={model.value} value={model.value}>
-                        {model.name}
+                    {modelOptions.map((m) => (
+                      <PromptInputModelSelectItem key={m.value} value={m.value}>
+                        {m.name}
                       </PromptInputModelSelectItem>
                     ))}
                   </PromptInputModelSelectContent>
@@ -348,7 +360,7 @@ const ChatBotDemo = () => {
                   <span className="sr-only">Settings</span>
                 </Button>
               </PromptInputTools>
-              <PromptInputSubmit disabled={(!input && !status) || !connected} status={status || undefined} />
+              <PromptInputSubmit disabled={(!input && !status) || !connected || !model} status={status || undefined} />
             </PromptInputToolbar>
           </PromptInput>
         </div>
