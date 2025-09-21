@@ -17,6 +17,7 @@
   },
   "dependencies": {},
   "devDependencies": {
+    "@types/react-syntax-highlighter": "^15.5.13",
     "oxlint": "^1.12.0"
   },
   "packageManager": "bun@1.2.21"
