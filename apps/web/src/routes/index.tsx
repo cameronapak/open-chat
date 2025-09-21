@@ -53,6 +53,8 @@ import { useOpenRouterModels, type OpenRouterModel } from '@/lib/openrouter.mode
 
 type ModelOption = { name: string; value: string };
 
+const MODEL_STORAGE_KEY = 'openchat:selectedModel';
+
 const ChatBotDemo = () => {
   const [input, setInput] = useState('');
   const [connected, setConnected] = useState<boolean>(false);
@@ -61,10 +63,33 @@ const ChatBotDemo = () => {
   const [webSearch, setWebSearch] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Load saved model choice on mount
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(MODEL_STORAGE_KEY);
+      if (stored) {
+        setModel(stored);
+      }
+    } catch {
+      // ignore storage errors
+    }
+  }, []);
+
   // Keep a ref of the latest selected model so the transport can always read it
   const modelRef = useRef<string>(model);
   useEffect(() => {
     modelRef.current = model;
+  }, [model]);
+
+  // Persist model choice whenever it changes
+  useEffect(() => {
+    try {
+      if (model) {
+        localStorage.setItem(MODEL_STORAGE_KEY, model);
+      }
+    } catch {
+      // ignore storage errors
+    }
   }, [model]);
 
   // Fetch available models via TanStack Query + localStorage TTL cache
@@ -73,6 +98,15 @@ const ChatBotDemo = () => {
     () => (modelList ?? []).map((m: OpenRouterModel) => ({ name: m.name || m.id, value: m.id })),
     [modelList],
   );
+
+  // If current model is not in the available list, fall back to a sensible default
+  useEffect(() => {
+    if (!modelOptions.length) return;
+    if (!modelOptions.some((o) => o.value === model)) {
+      const preferred = modelOptions.find((o) => o.value === 'openai/gpt-4o');
+      setModel(preferred?.value ?? modelOptions[0].value);
+    }
+  }, [modelOptions]);
 
   // On load, check server connection status
   useEffect(() => {
