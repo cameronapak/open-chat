@@ -2,7 +2,9 @@
 
 A truly open AI chatbot.
 
-Not locked down to any given LLM provider.
+Not locked down to any given LLM provider. 
+
+Sign into your OpenRouter account via Oauth, secured through encryption.
 
 Easily import into your existing apps.
 
@@ -25,7 +27,7 @@ For contributors: see [AGENTS.md](AGENTS.md)
 
 - [ ] Has default AI prompt that honors God and the Bible
 - [ ] Better Auth
-- [ ] Open Router support
+- [x] Open Router support
 - MCP client support
   - [ ] MCP Tools
   - [ ] MCP Prompts

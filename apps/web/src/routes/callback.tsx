@@ -28,35 +28,20 @@ const Callback = () => {
       return;
     }
 
-    const verifier = sessionStorage.getItem('openrouter-verifier');
-    if (!verifier) {
-      setError('Authorization session expired');
-      setStatus('error');
-      return;
-    }
-
-    const exchangeKey = async () => {
+    const exchangeOnServer = async () => {
       try {
-        const response = await fetch('https://openrouter.ai/api/v1/auth/keys', {
+        const response = await fetch(`${import.meta.env.VITE_SERVER_URL}/api/oauth/exchange`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            code,
-            code_verifier: verifier,
-            code_challenge_method: 'S256',
-          }),
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ code }),
         });
 
         if (!response.ok) {
-          const errData = await response.json().catch(() => ({}));
-          throw new Error(errData.message || 'Exchange failed');
+          const errData = await response.json().catch(() => ({} as any));
+          throw new Error(errData.error || 'Exchange failed');
         }
 
-        const { key } = await response.json();
-        localStorage.setItem('openrouter-api-key', key);
-        sessionStorage.removeItem('openrouter-verifier');
         setStatus('success');
       } catch (err: any) {
         setError(err.message || 'Failed to exchange code for key');
@@ -64,7 +49,7 @@ const Callback = () => {
       }
     };
 
-    exchangeKey();
+    exchangeOnServer();
   }, [location, navigate]);
 
   if (status === 'loading') {
@@ -76,7 +61,7 @@ const Callback = () => {
   }
 
   if (status === 'success') {
-    setTimeout(() => navigate({ to: '/' }), 1500);
+    setTimeout(() => navigate({ to: '/' }), 800);
     return (
       <div className="flex flex-col items-center justify-center min-h-screen text-center">
         <h1 className="text-2xl font-bold mb-4">Success!</h1>

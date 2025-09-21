@@ -6,17 +6,19 @@ import path from "node:path";
 import { defineConfig } from "vite";
 
 export default defineConfig({
-	plugins: [tailwindcss(), tanstackRouter({}), react(), VitePWA({
-      registerType: "autoUpdate",
-      manifest: {
-        name: "open-chat",
-        short_name: "open-chat",
-        description: "open-chat - PWA Application",
-        theme_color: "#0c0c0c",
-      },
-      pwaAssets: { disabled: false, config: true },
-      devOptions: { enabled: true },
-    })],
+	plugins: [tailwindcss(), tanstackRouter({}), react(), 
+    // VitePWA({
+    //   registerType: "autoUpdate",
+    //   manifest: {
+    //     name: "open-chat",
+    //     short_name: "open-chat",
+    //     description: "open-chat - PWA Application",
+    //     theme_color: "#0c0c0c",
+    //   },
+    //   pwaAssets: { disabled: false, config: true },
+    //   devOptions: { enabled: true },
+    // })
+  ],
 	resolve: {
 		alias: {
 			"@": path.resolve(__dirname, "./src"),

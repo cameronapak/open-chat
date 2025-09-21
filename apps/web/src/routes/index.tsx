@@ -33,6 +33,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Settings, ExternalLink } from 'lucide-react';
 import { useChat } from '@ai-sdk/react';
+import { DefaultChatTransport } from 'ai';
 import { Response } from '@/components/ai-elements/response';
 import { CopyIcon, GlobeIcon, RefreshCcwIcon } from 'lucide-react';
 import {
@@ -47,7 +48,6 @@ import {
   ReasoningTrigger,
 } from '@/components/ai-elements/reasoning';
 import { Loader } from '@/components/ai-elements/loader';
-import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 
 const models = [
   {
@@ -62,83 +62,86 @@ const models = [
 
 const ChatBotDemo = () => {
   const [input, setInput] = useState('');
-  const [apiKey, setApiKey] = useState<string | null>(null);
+  const [connected, setConnected] = useState<boolean>(false);
   const [isOpen, setIsOpen] = useState(false);
   const [model, setModel] = useState<string>(models[0].value);
   const [webSearch, setWebSearch] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // On load, check server connection status
   useEffect(() => {
-    const key = localStorage.getItem('openrouter-api-key');
-    if (key) {
-      setApiKey(key);
-    } else {
-      setIsOpen(true);
-    }
+    const checkStatus = async () => {
+      try {
+        const res = await fetch(`${import.meta.env.VITE_SERVER_URL}/api/oauth/status`, {
+          credentials: 'include',
+        });
+        const data = await res.json().catch(() => ({ connected: false }));
+        setConnected(Boolean(data.connected));
+        setIsOpen(!data.connected);
+      } catch {
+        setConnected(false);
+        setIsOpen(true);
+      }
+    };
+    checkStatus();
   }, []);
 
-  const provider = useMemo(() => {
-    if (!apiKey) return null;
-    return createOpenRouter({ apiKey });
-  }, [apiKey]);
+  const transport = useMemo(() => new DefaultChatTransport({
+    api: `${import.meta.env.VITE_SERVER_URL}/api/chat`,
+    credentials: 'include',
+    body: () => ({ model }),
+  }), [model]);
 
-  const openRouterModel = useMemo(() => {
-    if (!provider) return null;
-    return provider.chat('x-ai/grok-4-fast:free');
-  }, [provider]);
+  const { messages: rawMessages, sendMessage: rawSendMessage, status: rawStatus } = useChat({
+    transport,
+  });
 
-  const { messages: rawMessages, sendMessage: rawSendMessage, status: rawStatus } = useChat();
-
-  const messages = apiKey ? rawMessages : [];
+  const messages = rawMessages;
   const sendMessage = (message: any, options?: any) => {
-    if (!apiKey || !openRouterModel) {
-      console.error('API key not set');
+    if (!connected) {
+      console.error('Not connected');
       return;
     }
-    return rawSendMessage(message, {
-      ...options,
-      body: {
-        ...options?.body,
-        model: openRouterModel,
-      },
-    });
+    return rawSendMessage(message, options);
   };
-  const status = apiKey ? rawStatus : undefined;
+  const status = rawStatus;
 
-  // PKCE functions
-  const generateCodeVerifier = () => {
-    const array = new Uint8Array(32);
-    crypto.getRandomValues(array);
-    return btoa(String.fromCharCode(...array))
-      .replace(/\+/g, '-')
-      .replace(/\//g, '_')
-      .replace(/=/g, '');
-  };
-
-  const generateCodeChallenge = async (verifier: string) => {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(verifier);
-    const digest = await window.crypto.subtle.digest('SHA-256', data);
-    return btoa(String.fromCharCode(...new Uint8Array(digest)))
-      .replace(/\+/g, '-')
-      .replace(/\//g, '_')
-      .replace(/=/g, '');
-  };
-
+  // Connect using server-initiated PKCE start
   const handleConnect = async () => {
-    const verifier = generateCodeVerifier();
-    sessionStorage.setItem('openrouter-verifier', verifier);
-    const challenge = await generateCodeChallenge(verifier);
-    const callbackUrl = 'http://localhost:3001/callback';
-    const authUrl = `https://openrouter.ai/auth?callback_url=${encodeURIComponent(callbackUrl)}&code_challenge=${challenge}&code_challenge_method=S256`;
-    window.location.href = authUrl;
+    try {
+      setError(null);
+      const res = await fetch(`${import.meta.env.VITE_SERVER_URL}/api/oauth/start`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || 'Failed to start OAuth');
+      }
+      const { authUrl } = await res.json();
+      if (!authUrl) {
+        throw new Error('Missing authUrl');
+      }
+      window.location.href = authUrl;
+    } catch (e: any) {
+      setError(e.message || 'Failed to start OAuth');
+    }
   };
 
-  const handleDisconnect = () => {
-    localStorage.removeItem('openrouter-api-key');
-    setApiKey(null);
-    setError(null);
-    setIsOpen(false);
+  const handleDisconnect = async () => {
+    try {
+      await fetch(`${import.meta.env.VITE_SERVER_URL}/api/oauth/disconnect`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+      setConnected(false);
+      setError(null);
+      setIsOpen(true);
+    } catch {
+      // best-effort
+      setConnected(false);
+      setIsOpen(true);
+    }
   };
 
   const openSettings = () => setIsOpen(true);
@@ -151,7 +154,7 @@ const ChatBotDemo = () => {
       return;
     }
 
-    if (!apiKey || !openRouterModel) {
+    if (!connected) {
       return;
     }
 
@@ -161,18 +164,11 @@ const ChatBotDemo = () => {
         files: message.files
       },
       {
-        body: {
-          model: openRouterModel,
-          // webSearch: webSearch,
-        },
+        // webSearch: webSearch,
       },
     );
     setInput('');
   };
-
-  if (!apiKey && !isOpen) {
-    setIsOpen(true);
-  }
 
   return (
     <>
@@ -187,7 +183,7 @@ const ChatBotDemo = () => {
             </CardHeader>
             <CardContent className="py-4">
               {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
-              {apiKey ? (
+              {connected ? (
                 <p className="text-sm text-green-600">Connected to OpenRouter</p>
               ) : (
                 <Button onClick={handleConnect} className="w-full">
@@ -200,7 +196,7 @@ const ChatBotDemo = () => {
               <Button variant="outline" onClick={() => setIsOpen(false)}>
                 Close
               </Button>
-              {apiKey && (
+              {connected && (
                 <Button variant="destructive" onClick={handleDisconnect}>
                   Disconnect
                 </Button>
@@ -214,7 +210,7 @@ const ChatBotDemo = () => {
         <div className="flex flex-col h-full">
           <Conversation className="h-full">
             <ConversationContent>
-              {!apiKey && !isOpen && (
+              {!connected && !isOpen && (
                 <Message from="assistant">
                   <MessageContent>
                     <Response>Please connect your OpenRouter account using the settings to start chatting.</Response>
@@ -305,8 +301,8 @@ const ChatBotDemo = () => {
               <PromptInputTextarea
                 onChange={(e) => setInput(e.target.value)}
                 value={input}
-                placeholder={!apiKey ? "Connect OpenRouter first" : undefined}
-                disabled={!apiKey}
+                placeholder={!connected ? "Connect OpenRouter first" : undefined}
+                disabled={!connected}
               />
             </PromptInputBody>
             <PromptInputToolbar>
@@ -320,7 +316,7 @@ const ChatBotDemo = () => {
                 <PromptInputButton
                   variant={webSearch ? 'default' : 'ghost'}
                   onClick={() => setWebSearch(!webSearch)}
-                  disabled={!apiKey}
+                  disabled={!connected}
                 >
                   <GlobeIcon size={16} />
                   <span>Search</span>
@@ -330,7 +326,7 @@ const ChatBotDemo = () => {
                     setModel(value);
                   }}
                   value={model}
-                  disabled={!apiKey}
+                  disabled={!connected}
                 >
                   <PromptInputModelSelectTrigger>
                     <PromptInputModelSelectValue />
@@ -352,7 +348,7 @@ const ChatBotDemo = () => {
                   <span className="sr-only">Settings</span>
                 </Button>
               </PromptInputTools>
-              <PromptInputSubmit disabled={!input && !status || !apiKey} status={status || undefined} />
+              <PromptInputSubmit disabled={(!input && !status) || !connected} status={status || undefined} />
             </PromptInputToolbar>
           </PromptInput>
         </div>
@@ -362,5 +358,5 @@ const ChatBotDemo = () => {
 };
 
 export const Route = createFileRoute("/")({
-	component: ChatBotDemo,
+  component: ChatBotDemo,
 });
