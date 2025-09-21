@@ -6,6 +6,8 @@ Not locked down to any given LLM provider.
 
 Easily import into your existing apps.
 
+For contributors: see [AGENTS.md](AGENTS.md)
+
 ## Features
 
 - **[TypeScript](https://www.typescriptlang.org/)** - For type safety and improved developer experience
