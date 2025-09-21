@@ -62,6 +62,11 @@ const ChatBotDemo = () => {
   const [model, setModel] = useState<string>("");
   const [webSearch, setWebSearch] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [modelMenuOpen, setModelMenuOpen] = useState(false);
+
+  console.log({
+    model
+  })
 
   // Load saved model choice on mount
   useEffect(() => {
@@ -105,7 +110,11 @@ const ChatBotDemo = () => {
 
     try {
       const stored = localStorage.getItem(MODEL_STORAGE_KEY);
-      setModel(stored || 'openai/gpt-4o');
+      if (stored && modelOptions.find((m) => m.value === stored)) {
+        setModel(stored);
+      } else {
+        setModel('openai/gpt-4o');
+      }
     } catch {
       setModel('openai/gpt-4o');
     }
@@ -372,21 +381,33 @@ const ChatBotDemo = () => {
                 <PromptInputModelSelect
                   onValueChange={(value) => {
                     console.log(value)
-                    setModel(value);
+                    if (value) {
+                      setModel(value);
+                    }
                   }}
                   value={model}
                   disabled={!connected || modelsLoading || modelsError}
+                  open={modelMenuOpen}
+                  onOpenChange={setModelMenuOpen}
                 >
                   <PromptInputModelSelectTrigger>
                     <PromptInputModelSelectValue />
                   </PromptInputModelSelectTrigger>
-                  <PromptInputModelSelectContent>
-                    {modelOptions.map((m) => (
-                      <PromptInputModelSelectItem key={m.value} value={m.value}>
-                        {m.name}
+                  {modelMenuOpen ? (
+                    <PromptInputModelSelectContent>
+                      {modelOptions.map((m) => (
+                        <PromptInputModelSelectItem key={m.value} value={m.value}>
+                          {m.name}
+                        </PromptInputModelSelectItem>
+                      ))}
+                    </PromptInputModelSelectContent>
+                  ) : (
+                    <PromptInputModelSelectContent>
+                      <PromptInputModelSelectItem key={model || "openai/gpt-4o"} value={model || "openai/gpt-4o"}>
+                        {model || "openai/gpt-4o"}  
                       </PromptInputModelSelectItem>
-                    ))}
-                  </PromptInputModelSelectContent>
+                    </PromptInputModelSelectContent>
+                  )}
                 </PromptInputModelSelect>
                 <Button
                   variant="ghost"
