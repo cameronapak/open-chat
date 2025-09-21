@@ -59,7 +59,7 @@ const ChatBotDemo = () => {
   const [input, setInput] = useState('');
   const [connected, setConnected] = useState<boolean>(false);
   const [isOpen, setIsOpen] = useState(false);
-  const [model, setModel] = useState<string>('openai/gpt-4o');
+  const [model, setModel] = useState<string>("");
   const [webSearch, setWebSearch] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -102,9 +102,12 @@ const ChatBotDemo = () => {
   // If current model is not in the available list, fall back to a sensible default
   useEffect(() => {
     if (!modelOptions.length) return;
-    if (!modelOptions.some((o) => o.value === model)) {
-      const preferred = modelOptions.find((o) => o.value === 'openai/gpt-4o');
-      setModel(preferred?.value ?? modelOptions[0].value);
+
+    try {
+      const stored = localStorage.getItem(MODEL_STORAGE_KEY);
+      setModel(stored || 'openai/gpt-4o');
+    } catch {
+      setModel('openai/gpt-4o');
     }
   }, [modelOptions]);
 
