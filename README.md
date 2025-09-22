@@ -39,6 +39,7 @@ For contributors: see [AGENTS.md](AGENTS.md)
 - [ ] Local LLM support (via Transformers JS)
 - [ ] Personality Profile (tailor LLM to your preferences)
 - [ ] Web component chatbot export
+- [ ] Make it onto [the official MCP Clients list](https://modelcontextprotocol.io/clients)
 
 ## Getting Started
 
