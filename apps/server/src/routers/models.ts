@@ -1,6 +1,8 @@
 import { Hono } from 'hono';
 import { getCookie } from 'hono/cookie';
 import { decrypt } from '../lib/crypto';
+import { type OpenRouterModelsResponseType, OpenRouterModelsResponse } from "../lib/types";
+import { type } from 'arktype'
 
 const modelsRouter = new Hono();
 
@@ -31,9 +33,13 @@ modelsRouter.get('/', async (c) => {
 
     const resp = await fetch(url, { headers });
     const text = await resp.text();
-    let data: any;
+    let data: OpenRouterModelsResponseType;
     try {
-      data = text ? JSON.parse(text) : {};
+      const dataValidation = OpenRouterModelsResponse(JSON.parse(text));
+      if (dataValidation instanceof type.errors) {
+        throw new Error();
+      }
+      data = dataValidation || {};
     } catch {
       return c.json({ error: 'Invalid JSON from OpenRouter' }, 502);
     }

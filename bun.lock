@@ -18,7 +18,7 @@
         "arktype": "^2.1.22",
         "dotenv": "^17.2.1",
         "hono": "^4.8.2",
-        "zod": "^4.0.2",
+        "zod": "^4.0.2"
       },
       "devDependencies": {
         "@types/node": "^22.13.11",
