@@ -51,9 +51,8 @@ import { Loader } from '@/components/ai-elements/loader';
 
 import { useOpenRouterModels, type OpenRouterModel } from '@/lib/openrouter.models';
 
-type ModelOption = { name: string; value: string };
-
 const MODEL_STORAGE_KEY = 'openchat:selectedModel';
+const formatter = new Intl.NumberFormat("en-US");
 
 const ChatBotDemo = () => {
   const [input, setInput] = useState('');
@@ -63,10 +62,6 @@ const ChatBotDemo = () => {
   const [webSearch, setWebSearch] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [modelMenuOpen, setModelMenuOpen] = useState(false);
-
-  console.log({
-    model
-  })
 
   // Load saved model choice on mount
   useEffect(() => {
@@ -99,8 +94,8 @@ const ChatBotDemo = () => {
 
   // Fetch available models via TanStack Query + localStorage TTL cache
   const { data: modelList, isLoading: modelsLoading, isError: modelsError } = useOpenRouterModels();
-  const modelOptions = useMemo<ModelOption[]>(
-    () => (modelList ?? []).map((m: OpenRouterModel) => ({ name: m.name || m.id, value: m.id })),
+  const modelOptions = useMemo<OpenRouterModel[]>(
+    () => modelList || [],
     [modelList],
   );
 
@@ -110,7 +105,7 @@ const ChatBotDemo = () => {
 
     try {
       const stored = localStorage.getItem(MODEL_STORAGE_KEY);
-      if (stored && modelOptions.find((m) => m.value === stored)) {
+      if (stored && modelOptions.find((m) => m.id === stored)) {
         setModel(stored);
       } else {
         setModel('openai/gpt-4o');
@@ -396,8 +391,11 @@ const ChatBotDemo = () => {
                   {modelMenuOpen ? (
                     <PromptInputModelSelectContent>
                       {modelOptions.map((m) => (
-                        <PromptInputModelSelectItem key={m.value} value={m.value}>
-                          {m.name}
+                        <PromptInputModelSelectItem key={m.id} value={m.id}>
+                          <div className="flex flex-col gap-1">
+                            <p>{m.name}</p>
+                            {m.context_length ? <p className="text-xs text-muted-foreground font-mono">{formatter.format(m.context_length)} context</p> : null}
+                          </div>
                         </PromptInputModelSelectItem>
                       ))}
                     </PromptInputModelSelectContent>
