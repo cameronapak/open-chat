@@ -95,9 +95,10 @@ const ChatBotDemo = () => {
   // Fetch available models via TanStack Query + localStorage TTL cache
   const { data: modelList, isLoading: modelsLoading, isError: modelsError } = useOpenRouterModels();
   const modelOptions = useMemo<OpenRouterModel[]>(
-    () => modelList || [],
+    () => (modelList || []).sort((a, b) => a.name.localeCompare(b.name)),
     [modelList],
   );
+  const selectedModel = useMemo<OpenRouterModel | undefined>(() => modelOptions.find(modelOption => modelOption.id === model as string), [modelOptions, model])
 
   // If current model is not in the available list, fall back to a sensible default
   useEffect(() => {
@@ -236,7 +237,47 @@ const ChatBotDemo = () => {
             <CardContent className="py-4">
               {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
               {connected ? (
-                <p className="text-sm text-green-600">Connected to OpenRouter</p>
+                <PromptInputModelSelect
+                  onValueChange={(value) => {
+                    console.log(value)
+                    if (value) {
+                      setModel(value);
+                    }
+                  }}
+                  value={model}
+                  disabled={!connected || modelsLoading || modelsError}
+                  open={modelMenuOpen}
+                  onOpenChange={setModelMenuOpen}
+                >
+                  <PromptInputModelSelectTrigger className="w-full">
+                    <PromptInputModelSelectValue />
+                  </PromptInputModelSelectTrigger>
+                  {modelMenuOpen ? (
+                    <PromptInputModelSelectContent>
+                      {modelOptions.map((m) => (
+                        m.id === selectedModel?.id ? (
+                          <PromptInputModelSelectItem key={model || "openai/gpt-4o"} value={model || "openai/gpt-4o"}>
+                            {selectedModel?.name || "openai/gpt-4o"}
+                          </PromptInputModelSelectItem>
+                        ) : (
+                          <PromptInputModelSelectItem key={m.id} value={m.id}>
+                            <div className="flex-1 grid grid-cols gap-1">
+                              <p className="w-full">{m.name}</p>
+                              {m.context_length ? <p className="text-xs text-muted-foreground font-mono">{formatter.format(m.context_length)} context</p> : null}
+                              {m.pricing?.completion ? <p className="text-xs text-muted-foreground font-mono">{`\$${m.pricing?.completion || "0.00"}`}</p> : null}
+                            </div>
+                          </PromptInputModelSelectItem>
+                        )
+                      ))}
+                    </PromptInputModelSelectContent>
+                  ) : (
+                    <PromptInputModelSelectContent>
+                      <PromptInputModelSelectItem key={model || "openai/gpt-4o"} value={model || "openai/gpt-4o"}>
+                        {selectedModel?.name || "openai/gpt-4o"}
+                      </PromptInputModelSelectItem>
+                    </PromptInputModelSelectContent>
+                  )}
+                </PromptInputModelSelect>
               ) : (
                 <Button onClick={handleConnect} className="w-full">
                   <ExternalLink className="mr-2 h-4 w-4" />
@@ -306,7 +347,7 @@ const ChatBotDemo = () => {
                             {message.role === 'assistant' && i === messages.length - 1 && (
                               <Actions className="mt-2">
                                 <Action
-                                  onClick={() => {}}
+                                  onClick={() => { }}
                                   label="Retry"
                                 >
                                   <RefreshCcwIcon className="size-3" />
@@ -373,40 +414,6 @@ const ChatBotDemo = () => {
                   <GlobeIcon size={16} />
                   <span>Search</span>
                 </PromptInputButton>
-                <PromptInputModelSelect
-                  onValueChange={(value) => {
-                    console.log(value)
-                    if (value) {
-                      setModel(value);
-                    }
-                  }}
-                  value={model}
-                  disabled={!connected || modelsLoading || modelsError}
-                  open={modelMenuOpen}
-                  onOpenChange={setModelMenuOpen}
-                >
-                  <PromptInputModelSelectTrigger>
-                    <PromptInputModelSelectValue />
-                  </PromptInputModelSelectTrigger>
-                  {modelMenuOpen ? (
-                    <PromptInputModelSelectContent>
-                      {modelOptions.map((m) => (
-                        <PromptInputModelSelectItem key={m.id} value={m.id}>
-                          <div className="flex flex-col gap-1">
-                            <p>{m.name}</p>
-                            {m.context_length ? <p className="text-xs text-muted-foreground font-mono">{formatter.format(m.context_length)} context</p> : null}
-                          </div>
-                        </PromptInputModelSelectItem>
-                      ))}
-                    </PromptInputModelSelectContent>
-                  ) : (
-                    <PromptInputModelSelectContent>
-                      <PromptInputModelSelectItem key={model || "openai/gpt-4o"} value={model || "openai/gpt-4o"}>
-                        {model || "openai/gpt-4o"}  
-                      </PromptInputModelSelectItem>
-                    </PromptInputModelSelectContent>
-                  )}
-                </PromptInputModelSelect>
                 <Button
                   variant="ghost"
                   size="sm"
