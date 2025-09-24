@@ -11,4 +11,7 @@ An ongoing list of todos for this project:
 - [ ] Add reasoning component
 - [ ] Allow theme CSS variables for the component
 - [ ] Add MCP tool support
+  - [AuthKit from Pica](https://docs.picaos.com/core/authkit) seems like a wonderful contender for a MCP tool app store.
+  - [Official MCP Registry](https://mcp-registry.val.run/)
+  - I could create a faith.tools MCP Registry using the [MCP Registry Spec](https://github.com/modelcontextprotocol/registry/blob/main/docs/explanations/ecosystem-vision.md)
 - [ ] Add the MCP UI component

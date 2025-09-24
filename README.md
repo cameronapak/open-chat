@@ -29,7 +29,7 @@ For contributors: see [AGENTS.md](AGENTS.md)
 - [ ] Better Auth
 - [x] Open Router support
 - [ ] Get list of OpenRouter models based on [user provider preferences](https://openrouter.ai/docs/api-reference/list-models-filtered-by-user-provider-preferences)
-- MCP client support
+- [ ] MCP client support
   - [ ] MCP Tools
   - [ ] MCP Prompts
   - [ ] MCP Resources
