@@ -140,6 +140,9 @@ const ChatBotDemo = () => {
       new DefaultChatTransport({
         api: `${import.meta.env.VITE_SERVER_URL}/api/chat`,
         credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: () => ({ model: modelRef.current }),
       }),
     [],

@@ -10,12 +10,12 @@ export const modelsRouter = new Hono();
 const modelsRoute = modelsRouter.get(
   '/',
   zValidator("query", z.object({
-    category: z.string(),
+    category: z.string().optional(),
   })),
   async (c) => {
     try {
       const url = new URL('https://openrouter.ai/api/v1/models');
-      const category = c.req.query('category');
+      const category = c.req.valid("query")?.category;
       if (category) {
         url.searchParams.set('category', category);
       }
