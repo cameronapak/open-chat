@@ -4,7 +4,7 @@ An ongoing list of todos for this project:
 - [x] Show if a model is free or if it costs
 - [x] temp: rm add photos or videos
 - [ ] Host this app
-- [ ] Dynamically show internet search based on if the model supports it
+- [x] Dynamically show internet search based on if the model supports it (turns out any model does...)
 - [ ] Add info about [Open Inference](https://www.openinference.xyz/) into the settings dialog
 - [ ] Add a trash can to be able to delete a specific thread
 - [ ] Save threads in local storage
