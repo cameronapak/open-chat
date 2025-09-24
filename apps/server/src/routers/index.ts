@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
-import { chatRouter } from './chat';
-import { oauthRouter } from './oauth';
-import { modelsRouter } from './models';
+import { chatRouter } from '@/routers/chat';
+import { oauthRouter } from '@/routers/oauth';
+import { modelsRouter } from '@/routers/models';
 
 const appRouter = new Hono();
 

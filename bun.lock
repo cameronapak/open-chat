@@ -13,12 +13,13 @@
       "dependencies": {
         "@ai-sdk/openai": "^2.0.32",
         "@hono/node-server": "^1.14.4",
+        "@hono/zod-validator": "^0.7.3",
         "@openrouter/ai-sdk-provider": "^1.2.0",
         "ai": "^5.0.48",
         "arktype": "^2.1.22",
         "dotenv": "^17.2.1",
         "hono": "^4.8.2",
-        "zod": "^4.0.2"
+        "zod": "^4.1.11",
       },
       "devDependencies": {
         "@types/node": "^22.13.11",
@@ -381,6 +382,8 @@
     "@fontsource-variable/geist": ["@fontsource-variable/geist@5.2.8", "", {}, "sha512-cJ6m9e+8MQ5dCYJsLylfZrgBh6KkG4bOLckB35Tr9J/EqdkEM6QllH5PxqP1dhTvFup+HtMRPuz9xOjxXJggxw=="],
 
     "@hono/node-server": ["@hono/node-server@1.19.3", "", { "peerDependencies": { "hono": "^4" } }, "sha512-Fjyxfux0rMPXMSob79OmddfpK5ArJa2xLkLCV+zamHkbeXQtSNKOi0keiBKyHZ/hCRKjigjmKGp4AJnDFq8PUw=="],
+
+    "@hono/zod-validator": ["@hono/zod-validator@0.7.3", "", { "peerDependencies": { "hono": ">=3.9.0", "zod": "^3.25.0 || ^4.0.0" } }, "sha512-uYGdgVib3RlGD698WR5dVM0zB3UuPY5vHKXffGUbUh7r4xY+mFIhF3/v4AcQVLrU5CQdBso8BJr4wuVoCrjTuQ=="],
 
     "@hookform/resolvers": ["@hookform/resolvers@5.2.2", "", { "dependencies": { "@standard-schema/utils": "^0.3.0" }, "peerDependencies": { "react-hook-form": "^7.55.0" } }, "sha512-A/IxlMLShx3KjV/HeTcTfaMxdwy690+L/ZADoeaTltLx+CVuzkeVIPuybK3jrRfw7YZnmdKsVVHAlEPIAEUNlA=="],
 

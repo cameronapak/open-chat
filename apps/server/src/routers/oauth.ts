@@ -1,7 +1,9 @@
 import { Hono } from 'hono';
 import crypto from 'crypto';
 import { getCookie, setCookie, deleteCookie } from 'hono/cookie';
-import { encrypt } from '../lib/crypto';
+import { encrypt } from '@/lib/crypto';
+
+// @TODO - Convert this to Hono RPC
 
 export const oauthRouter = new Hono();
 
