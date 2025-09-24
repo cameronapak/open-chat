@@ -78,8 +78,8 @@ const ChatBotDemo = () => {
   // Keep a ref of the latest selected model so the transport can always read it
   const modelRef = useRef<string>(model);
   useEffect(() => {
-    modelRef.current = model;
-  }, [model]);
+    modelRef.current = model + (webSearch ? ':online' : '');
+  }, [model, webSearch]);
 
   // Persist model choice whenever it changes
   useEffect(() => {
@@ -98,6 +98,7 @@ const ChatBotDemo = () => {
     () => (modelList || []).sort((a, b) => a.name.localeCompare(b.name)),
     [modelList],
   );
+
   const selectedModel = useMemo<OpenRouterModel | undefined>(() => modelOptions.find(modelOption => modelOption.id === model as string), [modelOptions, model])
 
   // If current model is not in the available list, fall back to a sensible default
@@ -143,7 +144,10 @@ const ChatBotDemo = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: () => ({ model: modelRef.current }),
+        body: () => ({ 
+          // https://openrouter.ai/announcements/introducing-web-search-via-the-api
+          model: modelRef.current,
+        }),
       }),
     [],
   );
@@ -409,14 +413,14 @@ const ChatBotDemo = () => {
                     <PromptInputActionAddAttachments />
                   </PromptInputActionMenuContent>
                 </PromptInputActionMenu> */}
-                {/* <PromptInputButton
+                <PromptInputButton
                   variant={webSearch ? 'default' : 'ghost'}
                   onClick={() => setWebSearch(!webSearch)}
                   disabled={!connected}
                 >
                   <GlobeIcon size={16} />
                   <span>Search</span>
-                </PromptInputButton> */}
+                </PromptInputButton>
                 <Button
                   variant="ghost"
                   size="sm"
