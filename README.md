@@ -79,3 +79,13 @@ open-chat/
 ## Sources
 
 This project was created with [Better-T-Stack](https://github.com/AmanVarshney01/create-better-t-stack).
+
+## MCP Registries
+
+Here are some top-tier MCP registries I've been keeping my eyes on:
+
+- [Official MCP Registry](https://mcp-registry.val.run/)
+- [PulseMCP](https://www.pulsemcp.com/servers)
+- [Smithery](https://smithery.ai/)
+- [Pica](https://www.picaos.com/)
+- [Rube](https://rube.app/)
