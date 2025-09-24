@@ -18,19 +18,19 @@ export const OpenRouterModel = z.object({
   pricing: z.object({
     prompt: z.string(),
     completion: z.string(),
-    request: z.string(),
-    image: z.string(),
+    request: z.string().optional(),
+    image: z.string().optional(),
     web_search: z.string().optional(),
     internal_reasoning: z.string().optional(),
     input_cache_read: z.string().optional(),
     input_cache_write: z.string().optional()
   }),
   top_provider: z.object({
-    context_length: z.number(),
+    context_length: z.number().nullable(),
     max_completion_tokens: z.number().nullable(),
     is_moderated: z.boolean()
   }),
-  per_request_limits: z.object().optional(),
+  per_request_limits: z.object({}).nullable().optional(),
   supported_parameters: z.string().array().nullable()
 })
 
