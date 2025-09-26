@@ -384,7 +384,7 @@ const ChatBotDemo = () => {
                             <ReasoningContent>{part.text}</ReasoningContent>
                           </Reasoning>
                         );
-                      case 'data-ui-resource':
+                      case 'resource':
                         if (part.data && (part.data as any).uri?.startsWith('ui://')) {
                           const resourceData = part.data as any;
                           const uiResource = { type: 'resource' as const, resource: resourceData };
