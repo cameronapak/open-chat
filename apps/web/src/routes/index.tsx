@@ -34,8 +34,10 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Settings, ExternalLink } from 'lucide-react';
 import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport } from 'ai';
-import { Response } from '@/components/ai-elements/response';
 import { CopyIcon, GlobeIcon, RefreshCcwIcon } from 'lucide-react';
+import { toast } from 'sonner';
+import { isUIResource, UIResourceRenderer, type UIActionResult } from '@mcp-ui/client';
+import { Response } from '@/components/ai-elements/response';
 import {
   Source,
   Sources,
@@ -144,7 +146,7 @@ const ChatBotDemo = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: () => ({ 
+        body: () => ({
           // https://openrouter.ai/announcements/introducing-web-search-via-the-api
           model: modelRef.current,
         }),
@@ -381,6 +383,62 @@ const ChatBotDemo = () => {
                             <ReasoningTrigger />
                             <ReasoningContent>{part.text}</ReasoningContent>
                           </Reasoning>
+                        );
+                      case 'resource':
+                        if (part.resource && part.resource.uri?.startsWith('ui://') && isUIResource(part)) {
+                          return (
+                            <UIResourceRenderer
+                              key={`${message.id}-${i}`}
+                              resource={part.resource}
+                              supportedContentTypes={['rawHtml', 'externalUrl']}
+                              htmlProps={{
+                                style: {
+                                  width: '100%',
+                                  border: '2px solid var(--border)',
+                                  borderRadius: '0.5rem',
+                                  overflow: 'hidden',
+                                },
+                              }}
+                              onUIAction={async (result: UIActionResult) => {
+                                switch (result.type) {
+                                  case 'tool':
+                                    // Forward tool call to backend via new message
+                                    sendMessage({
+                                      role: 'user',
+                                      content: [
+                                        { type: 'text', text: `Execute tool: ${result.payload.toolName} with params: ${JSON.stringify(result.payload.params)}` }
+                                      ]
+                                    });
+                                    break;
+                                  case 'prompt':
+                                    // @TODO - implement prompt
+                                    toast.info(result.payload.prompt);
+                                    break;
+                                  case 'notify':
+                                    // @TODO - implement notify
+                                    toast(result.payload.message);
+                                    break;
+                                  case 'link':
+                                    window.open(result.payload.url, '_blank');
+                                    break;
+                                  case 'intent':
+                                    // @TODO - implement intent
+                                    console.log('Intent:', result.payload.intent, result.payload.params);
+                                    toast(`Intent: ${result.payload.intent}`);
+                                    break;
+                                }
+                                return { status: 'handled' };
+                              }}
+                            />
+                          );
+                        }
+
+                        return (
+                          <Message from={message.role} key={`${message.id}-${i}`}>
+                            <MessageContent>
+                              <p className="text-muted-foreground">Unsupported resource type</p>
+                            </MessageContent>
+                          </Message>
                         );
                       default:
                         return null;
