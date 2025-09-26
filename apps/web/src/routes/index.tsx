@@ -56,6 +56,16 @@ import { useOpenRouterModels, type OpenRouterModel } from '@/lib/openrouter.mode
 const MODEL_STORAGE_KEY = 'openchat:selectedModel';
 const formatter = new Intl.NumberFormat("en-US");
 
+interface UIResource {
+  type: 'resource';
+  resource: {
+    uri: string;       // e.g., ui://component/id
+    mimeType: 'text/html' | 'text/uri-list' | 'application/vnd.mcp-ui.remote-dom'; // text/html for HTML content, text/uri-list for URL content, application/vnd.mcp-ui.remote-dom for remote-dom content (Javascript)
+    text?: string;      // Inline HTML, external URL, or remote-dom script
+    blob?: string;      // Base64-encoded HTML, URL, or remote-dom script
+  };
+}
+
 const ChatBotDemo = () => {
   const [input, setInput] = useState('');
   const [connected, setConnected] = useState<boolean>(false);
@@ -158,7 +168,38 @@ const ChatBotDemo = () => {
     transport,
   });
 
-  const messages = rawMessages;
+  const exampleMCPUIMessage = {
+    id: crypto.randomUUID(),
+    role: "assistant" as "assistant" | "user" | "system",
+    parts: [
+      {
+        type: 'resource',
+        resource: {
+          uri: 'ui://example/raw-html',
+          mimeType: 'text/html',
+          text: "<h1>raw HTML via Text</h1><p>Content loaded rawly.</p><button onclick=\"window.parent.postMessage({ type: 'tool', payload: { toolName: 'uiInteraction', params: { action: 'rawClick', value: Date.now() } } }, '*')\">Click Me (raw)</button>",
+        }
+      }
+    ],
+  };
+
+  const exampleMCPUIiFrameMessage = {
+    id: crypto.randomUUID(),
+    role: "assistant" as "assistant" | "user" | "system",
+    parts: [
+      {
+        type: 'resource',
+        resource: {
+          uri: 'ui://example/raw-html',
+          mimeType: 'text/uri-list',
+          text: `https://app.fetch.bible`,
+        }
+      }
+    ],
+  };
+
+  const messages = [exampleMCPUIMessage, exampleMCPUIiFrameMessage, ...rawMessages];
+
   const sendMessage = (message: any, options?: any) => {
     if (!connected) {
       console.error('Not connected');
@@ -319,7 +360,7 @@ const ChatBotDemo = () => {
                   </MessageContent>
                 </Message>
               )}
-              {messages.map((message: any) => (
+              {messages.map((message) => (
                 <div key={message.id}>
                   {message.role === 'assistant' && message.parts.filter((part: any) => part.type === 'source-url').length > 0 && (
                     <Sources>
@@ -385,65 +426,66 @@ const ChatBotDemo = () => {
                           </Reasoning>
                         );
                       case 'resource':
-                        if (part.data && (part.data as any).uri?.startsWith('ui://')) {
-                          const resourceData = part.data as any;
+                        if (part.resource && (part.resource as any).uri?.startsWith('ui://')) {
+                          const resourceData = part.resource as any;
                           const uiResource = { type: 'resource' as const, resource: resourceData };
                           if (isUIResource(uiResource)) {
                             const isRemoteDom = resourceData.mimeType?.startsWith('application/vnd.mcp-ui.remote-dom');
                             return (
-                              <Message from={message.role} key={`${message.id}-${i}`}>
-                                <MessageContent>
-                                  <UIResourceRenderer
-                                    resource={resourceData}
-                                    supportedContentTypes={['rawHtml', 'externalUrl', 'remoteDom']}
-                                    htmlProps={{
-                                      style: {
-                                        width: '100%',
-                                        border: '2px solid var(--border)',
-                                        borderRadius: '0.5rem',
-                                        overflow: 'hidden',
-                                      },
-                                    }}
-                                    remoteDomProps={isRemoteDom ? {
-                                      library: basicComponentLibrary,
-                                      remoteElements: [remoteTextDefinition, remoteButtonDefinition],
-                                    } : undefined}
-                                    onUIAction={async (result: UIActionResult) => {
-                                      switch (result.type) {
-                                        case 'tool':
-                                          // Forward tool call to backend via new message
-                                          sendMessage({
-                                            role: 'user',
-                                            content: [
-                                              { type: 'text', text: `Execute tool: ${result.payload.toolName} with params: ${JSON.stringify(result.payload.params)}` }
-                                            ]
-                                          });
-                                          break;
-                                        case 'prompt':
-                                          // @TODO - implement prompt
-                                          toast.info(result.payload.prompt);
-                                          break;
-                                        case 'notify':
-                                          // @TODO - implement notify
-                                          toast(result.payload.message);
-                                          break;
-                                        case 'link':
-                                          window.open(result.payload.url, '_blank');
-                                          break;
-                                        case 'intent':
-                                          // @TODO - implement intent
-                                          console.log('Intent:', result.payload.intent, result.payload.params);
-                                          toast(`Intent: ${result.payload.intent}`);
-                                          break;
-                                      }
-                                      return { status: 'handled' };
-                                    }}
-                                  />
-                                </MessageContent>
-                              </Message>
+                              <UIResourceRenderer
+                                key={`${message.id}-${i}`}
+                                resource={resourceData}
+                                supportedContentTypes={['rawHtml', 'externalUrl', 'remoteDom']}
+                                htmlProps={{
+                                  style: {
+                                    width: '100%',
+                                    border: '2px solid var(--border)',
+                                    borderRadius: '0.625rem',
+                                    overflow: 'hidden',
+                                  },
+                                  autoResizeIframe: {
+                                    height: true,
+                                  }
+                                }}
+                                remoteDomProps={isRemoteDom ? {
+                                  library: basicComponentLibrary,
+                                  remoteElements: [remoteTextDefinition, remoteButtonDefinition],
+                                } : undefined}
+                                onUIAction={async (result: UIActionResult) => {
+                                  switch (result.type) {
+                                    case 'tool':
+                                      // Forward tool call to backend via new message
+                                      sendMessage({
+                                        role: 'user',
+                                        content: [
+                                          { type: 'text', text: `Execute tool: ${result.payload.toolName} with params: ${JSON.stringify(result.payload.params)}` }
+                                        ]
+                                      });
+                                      break;
+                                    case 'prompt':
+                                      // @TODO - implement prompt
+                                      toast.info(result.payload.prompt);
+                                      break;
+                                    case 'notify':
+                                      // @TODO - implement notify
+                                      toast(result.payload.message);
+                                      break;
+                                    case 'link':
+                                      window.open(result.payload.url, '_blank');
+                                      break;
+                                    case 'intent':
+                                      // @TODO - implement intent
+                                      console.log('Intent:', result.payload.intent, result.payload.params);
+                                      toast(`Intent: ${result.payload.intent}`);
+                                      break;
+                                  }
+                                  return { status: 'handled' };
+                                }}
+                              />
                             );
                           }
                         }
+
                         return (
                           <Message from={message.role} key={`${message.id}-${i}`}>
                             <MessageContent>
