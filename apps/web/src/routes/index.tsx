@@ -36,7 +36,7 @@ import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport } from 'ai';
 import { CopyIcon, GlobeIcon, RefreshCcwIcon } from 'lucide-react';
 import { toast } from 'sonner';
-import { isUIResource, UIResourceRenderer, type UIActionResult } from '@mcp-ui/client';
+import { isUIResource, UIResourceRenderer, type UIActionResult, basicComponentLibrary, remoteTextDefinition, remoteButtonDefinition } from '@mcp-ui/client';
 import { Response } from '@/components/ai-elements/response';
 import {
   Source,
@@ -384,55 +384,66 @@ const ChatBotDemo = () => {
                             <ReasoningContent>{part.text}</ReasoningContent>
                           </Reasoning>
                         );
-                      case 'resource':
-                        if (part.resource && part.resource.uri?.startsWith('ui://') && isUIResource(part)) {
-                          return (
-                            <UIResourceRenderer
-                              key={`${message.id}-${i}`}
-                              resource={part.resource}
-                              supportedContentTypes={['rawHtml', 'externalUrl']}
-                              htmlProps={{
-                                style: {
-                                  width: '100%',
-                                  border: '2px solid var(--border)',
-                                  borderRadius: '0.5rem',
-                                  overflow: 'hidden',
-                                },
-                              }}
-                              onUIAction={async (result: UIActionResult) => {
-                                switch (result.type) {
-                                  case 'tool':
-                                    // Forward tool call to backend via new message
-                                    sendMessage({
-                                      role: 'user',
-                                      content: [
-                                        { type: 'text', text: `Execute tool: ${result.payload.toolName} with params: ${JSON.stringify(result.payload.params)}` }
-                                      ]
-                                    });
-                                    break;
-                                  case 'prompt':
-                                    // @TODO - implement prompt
-                                    toast.info(result.payload.prompt);
-                                    break;
-                                  case 'notify':
-                                    // @TODO - implement notify
-                                    toast(result.payload.message);
-                                    break;
-                                  case 'link':
-                                    window.open(result.payload.url, '_blank');
-                                    break;
-                                  case 'intent':
-                                    // @TODO - implement intent
-                                    console.log('Intent:', result.payload.intent, result.payload.params);
-                                    toast(`Intent: ${result.payload.intent}`);
-                                    break;
-                                }
-                                return { status: 'handled' };
-                              }}
-                            />
-                          );
+                      case 'data-ui-resource':
+                        if (part.data && (part.data as any).uri?.startsWith('ui://')) {
+                          const resourceData = part.data as any;
+                          const uiResource = { type: 'resource' as const, resource: resourceData };
+                          if (isUIResource(uiResource)) {
+                            const isRemoteDom = resourceData.mimeType?.startsWith('application/vnd.mcp-ui.remote-dom');
+                            return (
+                              <Message from={message.role} key={`${message.id}-${i}`}>
+                                <MessageContent>
+                                  <UIResourceRenderer
+                                    resource={resourceData}
+                                    supportedContentTypes={['rawHtml', 'externalUrl', 'remoteDom']}
+                                    htmlProps={{
+                                      style: {
+                                        width: '100%',
+                                        border: '2px solid var(--border)',
+                                        borderRadius: '0.5rem',
+                                        overflow: 'hidden',
+                                      },
+                                    }}
+                                    remoteDomProps={isRemoteDom ? {
+                                      library: basicComponentLibrary,
+                                      remoteElements: [remoteTextDefinition, remoteButtonDefinition],
+                                    } : undefined}
+                                    onUIAction={async (result: UIActionResult) => {
+                                      switch (result.type) {
+                                        case 'tool':
+                                          // Forward tool call to backend via new message
+                                          sendMessage({
+                                            role: 'user',
+                                            content: [
+                                              { type: 'text', text: `Execute tool: ${result.payload.toolName} with params: ${JSON.stringify(result.payload.params)}` }
+                                            ]
+                                          });
+                                          break;
+                                        case 'prompt':
+                                          // @TODO - implement prompt
+                                          toast.info(result.payload.prompt);
+                                          break;
+                                        case 'notify':
+                                          // @TODO - implement notify
+                                          toast(result.payload.message);
+                                          break;
+                                        case 'link':
+                                          window.open(result.payload.url, '_blank');
+                                          break;
+                                        case 'intent':
+                                          // @TODO - implement intent
+                                          console.log('Intent:', result.payload.intent, result.payload.params);
+                                          toast(`Intent: ${result.payload.intent}`);
+                                          break;
+                                      }
+                                      return { status: 'handled' };
+                                    }}
+                                  />
+                                </MessageContent>
+                              </Message>
+                            );
+                          }
                         }
-
                         return (
                           <Message from={message.role} key={`${message.id}-${i}`}>
                             <MessageContent>
