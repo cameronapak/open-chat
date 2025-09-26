@@ -168,6 +168,8 @@ const ChatBotDemo = () => {
     transport,
   });
 
+  // @TODO - Test these more examples for MCP UI - https://mcp-aharvard.netlify.app/
+
   const exampleMCPUIMessage = {
     id: crypto.randomUUID(),
     role: "assistant" as "assistant" | "user" | "system",
