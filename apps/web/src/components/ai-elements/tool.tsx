@@ -29,7 +29,7 @@ export const Tool = ({ className, ...props }: ToolProps) => (
 );
 
 export type ToolHeaderProps = {
-  type: ToolUIPart["type"];
+  type: string;
   state: ToolUIPart["state"];
   className?: string;
 };
