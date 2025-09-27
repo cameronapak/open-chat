@@ -1,17 +1,14 @@
+export interface RegistryExtensions {
+  serverId: string;
+  versionId: string;
+  publishedAt: string;
+  updatedAt?: string;
+  isLatest: boolean;
+}
+
 export interface ServerMeta {
-  id: string;
-  is_latest: boolean;
-  published_at: string;
-  updated_at: string;
-}
-
-export interface PublisherMeta {
-  [key: string]: any;
-}
-
-export interface Meta {
-  "io.modelcontextprotocol.registry/official": ServerMeta;
-  "io.modelcontextprotocol.registry/publisher-provided": PublisherMeta;
+  "io.modelcontextprotocol.registry/official"?: RegistryExtensions;
+  "io.modelcontextprotocol.registry/publisher-provided"?: { [key: string]: any };
 }
 
 /**
@@ -339,24 +336,25 @@ export interface Repository {
 
 export interface Server {
   $schema?: string;
-  _meta?: Meta;
-  description: string;
   name: string;
+  description: string;
+  status?: string;
+  repository?: Repository;
+  version: string;
+  websiteUrl?: string;
   packages?: Package[] | null;
   remotes?: Remote[] | null;
-  repository?: Repository;
-  status?: string;
-  version: string;
+  _meta?: ServerMeta;
 }
 
-export interface ServerListMetadata {
-  count: number;
+export interface Metadata {
   next_cursor?: string;
+  count: number;
 }
 
 export interface ServerListResponse {
-  metadata: ServerListMetadata;
-  servers: Server[] | null;
+  servers: Server[];
+  metadata: Metadata;
 }
 
 export interface ListServersOptions {
