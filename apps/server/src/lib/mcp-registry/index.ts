@@ -375,6 +375,88 @@ export class ServerNamespace {
 }
 
 /**
+ * Admin namespace for MCP Registry API
+ */
+export class AdminNamespace {
+  private baseUrl: string;
+
+  constructor(baseUrl: string) {
+    this.baseUrl = baseUrl;
+  }
+
+  /**
+   * Update an existing MCP server (admin only)
+   * {@see https://registry.modelcontextprotocol.io/docs#/operations/edit-server}
+   */
+  async editServer(
+    serverId: string,
+    version: string,
+    server: Server,
+    registryToken: string
+  ): Promise<Server> {
+    const url = `${this.baseUrl}/v0/servers/${serverId}?version=${version}`;
+    
+    const response = await fetch(url, {
+      method: 'PUT',
+      headers: {
+        "Accept": "application/json, application/problem+json",
+        "Content-Type": "application/json",
+        "Authorization": registryToken
+      },
+      body: JSON.stringify(server)
+    });
+
+    if (!response.ok) {
+      throw new Error(
+        `Failed to edit server: ${response.status} ${response.statusText}`
+      );
+    }
+
+    return await response.json();
+  }
+}
+
+/**
+ * Publish namespace for MCP Registry API
+ */
+export class PublishNamespace {
+  private baseUrl: string;
+
+  constructor(baseUrl: string) {
+    this.baseUrl = baseUrl;
+  }
+
+  /**
+   * Publish a new MCP server to the registry or update an existing one
+   * {@see https://registry.modelcontextprotocol.io/docs#/operations/publish-server}
+   */
+  async publishServer(
+    server: Server,
+    registryToken: string
+  ): Promise<Server> {
+    const url = `${this.baseUrl}/v0/publish`;
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        "Accept": "application/json, application/problem+json",
+        "Content-Type": "application/json",
+        "Authorization": registryToken
+      },
+      body: JSON.stringify(server)
+    });
+
+    if (!response.ok) {
+      throw new Error(
+        `Failed to publish server: ${response.status} ${response.statusText}`
+      );
+    }
+
+    return await response.json();
+  }
+}
+
+/**
  * Simple client for the official MCP Registry API
  */
 export class MCPRegistryClient {
@@ -382,11 +464,15 @@ export class MCPRegistryClient {
   public auth: AuthNamespace;
   public server: ServerNamespace;
   public health: HealthNamespace;
+  public publish: PublishNamespace;
+  public admin: AdminNamespace;
 
   constructor(baseUrl: string = "https://registry.modelcontextprotocol.io") {
     this.baseUrl = baseUrl;
     this.auth = new AuthNamespace(this.baseUrl);
     this.server = new ServerNamespace(this.baseUrl);
     this.health = new HealthNamespace(this.baseUrl);
+    this.publish = new PublishNamespace(this.baseUrl);
+    this.admin = new AdminNamespace(this.baseUrl);
   }
 }
