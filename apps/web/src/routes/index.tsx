@@ -66,21 +66,6 @@ interface UIResource {
   };
 }
 
-const exampleMCPUIiFrameMessage = {
-  id: crypto.randomUUID(),
-  role: "assistant" as "assistant" | "user" | "system",
-  parts: [
-    {
-      type: 'resource',
-      resource: {
-        uri: 'ui://example/raw-html',
-        mimeType: 'text/uri-list',
-        text: `https://app.fetch.bible`,
-      }
-    } as UIResource,
-  ],
-};
-
 const ChatBotDemo = () => {
   const [input, setInput] = useState('');
   const [connected, setConnected] = useState<boolean>(false);
@@ -183,7 +168,7 @@ const ChatBotDemo = () => {
     transport,
   });
 
-  const messages = [exampleMCPUIiFrameMessage, ...rawMessages];
+  const messages = [...rawMessages];
 
   const sendMessage = (message: any, options?: any) => {
     if (!connected) {
