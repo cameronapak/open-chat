@@ -1,6 +1,3 @@
-// MCP Registry SDK - Simple class-based client for the official MCP Registry API
-// TypeScript interfaces based on the MCP Registry API documentation
-
 export interface ServerMeta {
   id: string;
   is_latest: boolean;
@@ -18,48 +15,321 @@ export interface Meta {
 }
 
 /**
- * {@see https://registry.modelcontextprotocol.io/docs#/schemas/Argument}
+ * Interface for input
+ * {@see https://registry.modelcontextprotocol.io/docs#/schemas/Input}
  */
-export interface Argument {
-  choices?: string[];
+export interface Input {
+  /**
+   * Array of choices or null
+   */
+  choices?: string[] | null;
+  
+  /**
+   * Default value
+   */
   default?: string;
+  
+  /**
+   * Description of the input
+   */
   description?: string;
+  
+  /**
+   * Format of the input
+   */
   format?: string;
+  
+  /**
+   * Whether the input is required
+   */
   is_required?: boolean;
+  
+  /**
+   * Whether the input is secret
+   */
   is_secret?: boolean;
+  
+  /**
+   * Whether the input is repeated
+   */
   is_repeated?: boolean;
+  
+  /**
+   * Name of the input
+   */
   name?: string;
+  
+  /**
+   * Type of the input
+   */
   type?: string;
+  
+  /**
+   * Value of the input
+   */
   value?: string;
+  
+  /**
+   * Value hint for the input
+   */
   value_hint?: string;
-  variables?: Record<string, Argument>;
+  
+  /**
+   * Variables for the input
+   */
+  variables?: Record<string, Input>;
 }
 
+/**
+ * Interface for input
+ * {@see https://registry.modelcontextprotocol.io/docs#/schemas/Input}
+ */
+export interface Input {
+  /**
+   * Array of choices or null
+   *
+   * Example:
+   * ["string"]
+   */
+  choices?: string[] | null;
+  
+  /**
+   * Default value
+   *
+   * Example:
+   * "string"
+   */
+  default?: string;
+  
+  /**
+   * Description of the input
+   *
+   * Example:
+   * "string"
+   */
+  description?: string;
+  
+  /**
+   * Format of the input
+   *
+   * Example:
+   * "string"
+   */
+  format?: string;
+  
+  /**
+   * Whether the input is required
+   *
+   * Example:
+   * true
+   */
+  isRequired?: boolean;
+  
+  /**
+   * Whether the input is secret
+   *
+   * Example:
+   * true
+   */
+  isSecret?: boolean;
+  
+  /**
+   * Value of the input
+   *
+   * Example:
+   * "string"
+   */
+  value?: string;
+}
+
+/**
+ * Interface for key value input
+ * {@see https://registry.modelcontextprotocol.io/docs#/schemas/KeyValueInput}
+ */
+export interface KeyValueInput {
+  /**
+   * Array of choices or null
+   *
+   * Example:
+   * ["string"]
+   */
+  choices?: string[] | null;
+  
+  /**
+   * Default value
+   *
+   * Example:
+   * "string"
+   */
+  default?: string;
+  
+  /**
+   * Description of the input
+   *
+   * Example:
+   * "string"
+   */
+  description?: string;
+  
+  /**
+   * Format of the input
+   *
+   * Example:
+   * "string"
+   */
+  format?: string;
+  
+  /**
+   * Whether the input is required
+   *
+   * Example:
+   * true
+   */
+  isRequired?: boolean;
+  
+  /**
+   * Whether the input is secret
+   *
+   * Example:
+   * true
+   */
+  isSecret?: boolean;
+  
+  /**
+   * Name of the input (required)
+   *
+   * Example:
+   * "string"
+   */
+  name: string;
+  
+  /**
+   * Value of the input
+   *
+   * Example:
+   * "string"
+   */
+  value?: string;
+  
+  /**
+   * Variables for the input (dictionary of KeyValueInput)
+   */
+  variables?: Record<string, KeyValueInput>;
+}
+
+/**
+ * Interface for ping response body
+ * {@see https://registry.modelcontextprotocol.io/docs#/schemas/PingBody}
+ */
+export interface PingBody {
+  /**
+   * Ping response
+   * @example true
+   */
+  pong: boolean;
+}
+
+/**
+ * {@see https://registry.modelcontextprotocol.io/docs#/schemas/Transport}
+ */
 export interface Transport {
   type: string;
   url: string;
-  headers?: Argument[];
+  headers?: Input[];
 }
 
+/**
+ * Interface for package
+ * {@see https://registry.modelcontextprotocol.io/docs#/schemas/Package}
+ */
 export interface Package {
-  environment_variables?: Argument[];
+  /**
+   * Environment variables for the package
+   *
+   * Example:
+   * [{"choices": [null], "default": "string", "description": "string", "format": "string", "isRequired": true, "isSecret": true, "name": "string", "value": "string", "variables": {}}]
+   */
+  environment_variables?: Input[] | null;
+  
+  /**
+   * SHA256 hash of the package file
+   *
+   * Example:
+   * "string"
+   */
   file_sha256?: string;
-  identifier?: string;
-  package_arguments?: Argument[];
+  
+  /**
+   * Package identifier
+   *
+   * Example:
+   * "string"
+   */
+  identifier: string;
+  
+  /**
+   * Package arguments
+   *
+   * Example:
+   * [{"choices": [null], "default": "string", "description": "string", "format": "string", "isRepeated": true, "isRequired": true, "isSecret": true, "name": "string", "type": "string", "value": "string", "valueHint": "string", "variables": {}}]
+   */
+  package_arguments?: Input[] | null;
+  
+  /**
+   * Registry base URL
+   *
+   * Example:
+   * "string"
+   */
   registry_base_url?: string;
-  registry_type?: string;
-  runtime_arguments?: Argument[];
+  
+  /**
+   * Registry type
+   *
+   * Example:
+   * "string"
+   */
+  registry_type: string;
+  
+  /**
+   * Runtime arguments
+   *
+   * Example:
+   * [{"choices": [null], "default": "string", "description": "string", "format": "string", "isRepeated": true, "isRequired": true, "isSecret": true, "name": "string", "type": "string", "value": "string", "valueHint": "string", "variables": {}}]
+   */
+  runtime_arguments?: Input[] | null;
+  
+  /**
+   * Runtime hint
+   *
+   * Example:
+   * "string"
+   */
   runtime_hint?: string;
+  
+  /**
+   * Transport configuration
+   */
   transport?: Transport;
-  version?: string;
+  
+  /**
+   * Package version
+   *
+   * Example:
+   * "string"
+   */
+  version: string;
 }
 
 export interface Remote {
   type: string;
   url: string;
-  headers?: Argument[];
+  headers?: Input[];
 }
 
+/**
+ * {@see https://registry.modelcontextprotocol.io/docs#/schemas/Repository}
+ */
 export interface Repository {
   id: string;
   source: string;
@@ -134,16 +404,19 @@ export interface GitHubOIDCTokenExchangeInputBody {
 export interface HTTPTokenExchangeInputBody {
   /**
    * Domain name
+   * @example "example.com"
    */
   domain: string;
   
   /**
-   * Hex-encoded signature of the timestamp
+   * Hex-encoded Ed25519 signature of timestamp
+   * @example "abcdef1234567890"
    */
   signed_timestamp: string;
   
   /**
    * RFC3339 timestamp
+   * @example "2023-01-01T00:00:00Z"
    */
   timestamp: string;
 }
@@ -185,9 +458,18 @@ export interface DNSTokenExchangeInputBody {
 
 /**
  * Interface for health check response
+ * {@see https://registry.modelcontextprotocol.io/docs#/schemas/HealthBody}
  */
 export interface HealthBody {
+  /**
+   * GitHub OAuth App Client ID
+   */
   github_client_id?: string;
+  
+  /**
+   * Health status
+   * @example "ok"
+   */
   status: string;
 }
 
@@ -543,6 +825,56 @@ export class HealthNamespace {
 }
 
 /**
+ * Ping namespace for MCP Registry API
+ */
+export class PingNamespace {
+  private baseUrl: string;
+
+  constructor(baseUrl: string) {
+    this.baseUrl = baseUrl;
+  }
+
+  /**
+   * Ping the registry API
+   * {@see https://registry.modelcontextprotocol.io/docs#/operations/ping}
+   */
+  async ping(): Promise<PingBody> {
+    const url = `${this.baseUrl}/v0/ping`;
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        "Accept": "application/json, application/problem+json",
+      },
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      let errorModel: ErrorModel;
+      
+      try {
+        errorModel = JSON.parse(errorText);
+      } catch {
+        errorModel = {
+          detail: errorText || `Failed to ping: ${response.status} ${response.statusText}`,
+          errors: null,
+          instance: "",
+          status: response.status,
+          title: response.statusText,
+          type: "about:blank"
+        };
+      }
+      
+      throw new Error(
+        `Failed to ping: ${errorModel.title || response.statusText} - ${errorModel.detail || errorText}`
+      );
+    }
+
+    return await response.json();
+  }
+}
+
+/**
  * Server namespace for MCP Registry API
  */
 export class ServerNamespace {
@@ -758,13 +1090,15 @@ export class PublishNamespace {
 }
 
 /**
- * Simple client for the official MCP Registry API
+ * MCP Registry SDK - Simple class-based client for the official MCP Registry API
+ * {@see https://registry.modelcontextprotocol.io/docs}
  */
 export class MCPRegistryClient {
   private baseUrl: string;
   public auth: AuthNamespace;
   public server: ServerNamespace;
   public health: HealthNamespace;
+  public ping: PingNamespace;
   public publish: PublishNamespace;
   public admin: AdminNamespace;
 
@@ -773,6 +1107,7 @@ export class MCPRegistryClient {
     this.auth = new AuthNamespace(this.baseUrl);
     this.server = new ServerNamespace(this.baseUrl);
     this.health = new HealthNamespace(this.baseUrl);
+    this.ping = new PingNamespace(this.baseUrl);
     this.publish = new PublishNamespace(this.baseUrl);
     this.admin = new AdminNamespace(this.baseUrl);
   }
