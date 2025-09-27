@@ -54,26 +54,29 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
   }, [open]);
 
   const fetchServers = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      // Use backend proxy instead of direct API call
-      const response = await fetch(`${API_BASE_URL}/api/registry/servers?limit=50`);
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      try {
+        setLoading(true);
+        setError(null);
+  
+        // Use backend proxy instead of direct API call
+        // Adding cache option to better utilize HTTP caching headers
+        const response = await fetch(`${API_BASE_URL}/api/registry/servers?limit=50`, {
+          cache: 'default' // Use browser's default caching behavior
+        });
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+  
+        const data: ServerListResponse = await response.json();
+        // Backend already filters to remote servers, so use directly
+        setServers(data.servers);
+      } catch (err: any) {
+        setError(err.message || 'Failed to fetch MCP servers');
+        console.error('Error fetching MCP servers:', err);
+      } finally {
+        setLoading(false);
       }
-
-      const data: ServerListResponse = await response.json();
-      // Backend already filters to remote servers, so use directly
-      setServers(data.servers);
-    } catch (err: any) {
-      setError(err.message || 'Failed to fetch MCP servers');
-      console.error('Error fetching MCP servers:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
 
   const handleSaveServer = (server: Server) => {
     try {
@@ -158,34 +161,6 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
       toast.error(err.message || 'Failed to add custom server');
     }
   };
-
-  // Debug logging for scroll area dimensions
-  useEffect(() => {
-    const logScrollAreaInfo = () => {
-      const dialogContent = document.querySelector('[data-radix-dialog-content]');
-      const scrollArea = document.querySelector('[data-radix-scroll-area-viewport]');
-
-      if (dialogContent && scrollArea) {
-        const dialogRect = dialogContent.getBoundingClientRect();
-        const scrollRect = scrollArea.getBoundingClientRect();
-        const scrollHeight = scrollArea.scrollHeight;
-        const clientHeight = scrollArea.clientHeight;
-
-        console.log('=== ScrollArea Debug Info ===');
-        console.log('Dialog height:', dialogRect.height);
-        console.log('ScrollArea height:', scrollRect.height);
-        console.log('ScrollArea scrollHeight:', scrollHeight);
-        console.log('ScrollArea clientHeight:', clientHeight);
-        console.log('Can scroll:', scrollHeight > clientHeight);
-        console.log('Overflow amount:', scrollHeight - clientHeight);
-      }
-    };
-
-    // Log on mount and after a short delay to ensure rendering is complete
-    const timeoutId = setTimeout(logScrollAreaInfo, 100);
-
-    return () => clearTimeout(timeoutId);
-  }, [servers, loading]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
