@@ -14,14 +14,14 @@ import { decrypt } from '@/lib/crypto';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import { randomUUID } from 'node:crypto';
 
-export const chatRouter = new Hono();
-
 interface MCPServerConfig {
   id: string
   name: string
   url: string
   enabled: boolean
 }
+
+export const chatRouter = new Hono();
 
 // Handle POST /api/chat
 const chatRoute = chatRouter.post('/', async (c) => {

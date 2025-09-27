@@ -39,6 +39,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Settings, ExternalLink } from 'lucide-react';
+import { MCPServerListDialog } from '@/components/mcp-server-list-dialog';
 import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport, type DynamicToolUIPart, type ToolUIPart, type UITool, type UIToolInvocation } from 'ai';
 import { CopyIcon, GlobeIcon, RefreshCcwIcon } from 'lucide-react';
@@ -65,6 +66,7 @@ import {
   ToolOutput,
 } from '@/components/ai-elements/tool';
 import { useOpenRouterModels, type OpenRouterModel } from '@/lib/openrouter.models';
+import { mcpStorage } from '@/lib/mcp-storage';
 
 const MODEL_STORAGE_KEY = 'openchat:selectedModel';
 const formatter = new Intl.NumberFormat("en-US");
@@ -90,6 +92,7 @@ const ChatBotDemo = () => {
   const [input, setInput] = useState('');
   const [connected, setConnected] = useState<boolean>(false);
   const [isOpen, setIsOpen] = useState(false);
+  const [mcpDialogOpen, setMcpDialogOpen] = useState(false);
   const [model, setModel] = useState<string>("");
   const [webSearch, setWebSearch] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -176,17 +179,22 @@ const ChatBotDemo = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: () => ({
-          // https://openrouter.ai/announcements/introducing-web-search-via-the-api
-          model: modelRef.current,
-          reasoning: true,
-          mcpServers: [{
-            id: '1',
-            name: 'Bible MCP',
-            url: 'https://bible-mcp.faith.tools/mcp',
-            enabled: true
-          }] as MCPServerConfig[]
-        }),
+        body: () => {
+          // Get enabled MCP servers from localStorage
+          const enabledServers = mcpStorage.getEnabledServers();
+
+          return {
+            // https://openrouter.ai/announcements/introducing-web-search-via-the-api
+            model: modelRef.current,
+            reasoning: true,
+            mcpServers: enabledServers.map(server => ({
+              id: server.id,
+              name: server.name,
+              url: server?.remotes?.find(r => r.type === "streamable-http")?.url,
+              enabled: true
+            }))
+          };
+        },
       }),
     [],
   );
@@ -237,6 +245,7 @@ const ChatBotDemo = () => {
   };
 
   const openSettings = () => setIsOpen(true);
+  const openMcpDialog = () => setMcpDialogOpen(true);
 
   const handleSubmit = (message: PromptInputMessage) => {
     const hasText = Boolean(message.text);
@@ -271,54 +280,64 @@ const ChatBotDemo = () => {
           </DialogHeader>
           <div className="py-4">
             {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
-            {connected ? (
-              <PromptInputModelSelect
-                onValueChange={(value) => {
-                  console.log(value)
-                  if (value) {
-                    setModel(value);
-                  }
-                }}
-                value={model}
-                disabled={!connected || modelsLoading || modelsError}
-                open={modelMenuOpen}
-                onOpenChange={setModelMenuOpen}
-              >
-                <PromptInputModelSelectTrigger className="w-full">
-                  <PromptInputModelSelectValue />
-                </PromptInputModelSelectTrigger>
-                {modelMenuOpen ? (
-                  <PromptInputModelSelectContent>
-                    {modelOptions.map((m) => (
-                      m.id === selectedModel?.id ? (
+              <div className="space-y-4">
+                <Button
+                  onClick={openMcpDialog}
+                  variant="outline"
+                  className="w-full"
+                >
+                  MCP Servers
+                </Button>
+
+                {connected ? (
+                  <PromptInputModelSelect
+                    onValueChange={(value) => {
+                      console.log(value)
+                      if (value) {
+                        setModel(value);
+                      }
+                    }}
+                    value={model}
+                    disabled={!connected || modelsLoading || modelsError}
+                    open={modelMenuOpen}
+                    onOpenChange={setModelMenuOpen}
+                  >
+                    <PromptInputModelSelectTrigger className="w-full">
+                      <PromptInputModelSelectValue />
+                    </PromptInputModelSelectTrigger>
+                    {modelMenuOpen ? (
+                      <PromptInputModelSelectContent>
+                        {modelOptions.map((m) => (
+                          m.id === selectedModel?.id ? (
+                            <PromptInputModelSelectItem key={model || "openai/gpt-4o"} value={model || "openai/gpt-4o"}>
+                              {selectedModel?.name || "openai/gpt-4o"}
+                            </PromptInputModelSelectItem>
+                          ) : (
+                            <PromptInputModelSelectItem key={m.id} value={m.id}>
+                              <div className="flex-1 grid grid-cols gap-1">
+                                <p className="w-full">{m.name}</p>
+                                {m.context_length ? <p className="text-xs text-muted-foreground font-mono">{formatter.format(m.context_length)} context</p> : null}
+                                {m.pricing?.completion ? <p className="text-xs text-muted-foreground font-mono">{`\$${m.pricing?.completion || "0.00"}`}</p> : null}
+                              </div>
+                            </PromptInputModelSelectItem>
+                          )
+                        ))}
+                      </PromptInputModelSelectContent>
+                    ) : (
+                      <PromptInputModelSelectContent>
                         <PromptInputModelSelectItem key={model || "openai/gpt-4o"} value={model || "openai/gpt-4o"}>
                           {selectedModel?.name || "openai/gpt-4o"}
                         </PromptInputModelSelectItem>
-                      ) : (
-                        <PromptInputModelSelectItem key={m.id} value={m.id}>
-                          <div className="flex-1 grid grid-cols gap-1">
-                            <p className="w-full">{m.name}</p>
-                            {m.context_length ? <p className="text-xs text-muted-foreground font-mono">{formatter.format(m.context_length)} context</p> : null}
-                            {m.pricing?.completion ? <p className="text-xs text-muted-foreground font-mono">{`\$${m.pricing?.completion || "0.00"}`}</p> : null}
-                          </div>
-                        </PromptInputModelSelectItem>
-                      )
-                    ))}
-                  </PromptInputModelSelectContent>
+                      </PromptInputModelSelectContent>
+                    )}
+                  </PromptInputModelSelect>
                 ) : (
-                  <PromptInputModelSelectContent>
-                    <PromptInputModelSelectItem key={model || "openai/gpt-4o"} value={model || "openai/gpt-4o"}>
-                      {selectedModel?.name || "openai/gpt-4o"}
-                    </PromptInputModelSelectItem>
-                  </PromptInputModelSelectContent>
+                  <Button onClick={handleConnect} className="w-full">
+                    <ExternalLink className="mr-2 h-4 w-4" />
+                    Connect with OpenRouter
+                  </Button>
                 )}
-              </PromptInputModelSelect>
-            ) : (
-              <Button onClick={handleConnect} className="w-full">
-                <ExternalLink className="mr-2 h-4 w-4" />
-                Connect with OpenRouter
-              </Button>
-            )}
+              </div>
           </div>
           <DialogFooter className="flex justify-end space-x-2">
             {connected && (
@@ -329,6 +348,11 @@ const ChatBotDemo = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <MCPServerListDialog
+        open={mcpDialogOpen}
+        onOpenChange={setMcpDialogOpen}
+      />
 
       <div className="max-w-4xl mx-auto p-6 relative size-full h-screen">
         <div className="flex flex-col h-full">
