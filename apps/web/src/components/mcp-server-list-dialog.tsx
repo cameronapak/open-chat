@@ -29,6 +29,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion"
 
 interface MCPServerListDialogProps {
   open: boolean;
@@ -194,15 +200,16 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
             <TabsContent value="integrations" className="relative grid grid-cols-1 gap-4 max-h-[300px] overflow-y-auto">
               <div
                 id="scroll-gradient-top"
-                className="from-background pointer-events-none sticky top-0 right-0 left-0 z-20 h-6 w-full bg-gradient-to-b to-transparent"
+                className="from-background pointer-events-none sticky top-0 right-0 left-0 z-30 h-6 w-full bg-gradient-to-b to-transparent"
               >
               </div>
+              
               {typedSavedServers.map((savedServer) => {
                 const isFromRegistry = servers.some(server =>
                   (server._meta?.['io.modelcontextprotocol.registry/official']?.serverId || server.name) === savedServer.id
                 )
                 return (
-                  <Card key={savedServer.id} className="py-3">
+                  <Card key={savedServer.id} className="py-3 shadow-none border">
                     <CardHeader className="px-3 grid grid-cols-1 auto-cols-min">
                       <CardTitle className="text-lg flex items-center gap-2">
                         {savedServer.name}
@@ -236,47 +243,9 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
                 );
               })}
 
-              {typedSavedServers.map((savedServer) => {
-                const isFromRegistry = servers.some(server =>
-                  (server._meta?.['io.modelcontextprotocol.registry/official']?.serverId || server.name) === savedServer.id
-                )
-                return (
-                  <Card key={savedServer.id} className="py-3">
-                    <CardHeader className="px-3 grid grid-cols-1 auto-cols-min">
-                      <CardTitle className="text-lg flex items-center gap-2">
-                        {savedServer.name}
-                        {!isFromRegistry && (
-                          <Badge variant="outline" className="text-xs">Custom</Badge>
-                        )}
-                      </CardTitle>
-                      <CardDescription className="mt-1">
-                        {savedServer.description}
-                      </CardDescription>
-                      <div className="flex items-center gap-2">
-                        {savedServer.websiteUrl && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => window.open(savedServer.websiteUrl, '_blank')}
-                          >
-                            <ExternalLink className="h-4 w-4" />
-                          </Button>
-                        )}
-                        {/* <Button
-                         variant="destructive"
-                         size="sm"
-                         onClick={() => handleRemoveServer(savedServer.id, savedServer.name)}
-                       >
-                         <Trash2 className="h-4 w-4" />
-                       </Button> */}
-                      </div>
-                    </CardHeader>
-                  </Card>
-                );
-              })}
               <div
                 id="scroll-gradient-bottom"
-                className="from-background pointer-events-none sticky right-0 bottom-0 left-0 z-20 h-6 w-full bg-gradient-to-t to-transparent"
+                className="from-background pointer-events-none sticky right-0 bottom-0 left-0 z-30 h-6 w-full bg-gradient-to-t to-transparent"
               >
               </div>
             </TabsContent>
