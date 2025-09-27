@@ -17,6 +17,9 @@ export interface Meta {
   "io.modelcontextprotocol.registry/publisher-provided": PublisherMeta;
 }
 
+/**
+ * {@see https://registry.modelcontextprotocol.io/docs#/schemas/Argument}
+ */
 export interface Argument {
   choices?: string[];
   default?: string;
@@ -130,6 +133,16 @@ export interface HTTPTokenExchangeInputBody {
  */
 export interface OIDCTokenExchangeInputBody {
   oidc_token: string;
+}
+
+/**
+ * Interface for DNS token exchange request body
+ * {@see https://registry.modelcontextprotocol.io/docs#/schemas/DNSTokenExchangeInputBody}
+ */
+export interface DNSTokenExchangeInputBody {
+  domain: string;
+  signed_timestamp: string;
+  timestamp: string;
 }
 
 /**
@@ -264,6 +277,33 @@ export class AuthNamespace {
     if (!response.ok) {
       throw new Error(
         `Failed to exchange OIDC token: ${response.status} ${response.statusText}`
+      );
+    }
+
+    return await response.json();
+  }
+
+  /**
+   * Exchange DNS signature for Registry JWT
+   * {@see https://registry.modelcontextprotocol.io/docs#/operations/exchange-dns-token}
+   */
+  async exchangeDNSSignatureForRegistryJWT(
+    dnsTokenExchangeInput: DNSTokenExchangeInputBody
+  ): Promise<TokenResponse> {
+    const url = `${this.baseUrl}/v0/auth/dns`;
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        "Accept": "application/json, application/problem+json",
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(dnsTokenExchangeInput)
+    });
+
+    if (!response.ok) {
+      throw new Error(
+        `Failed to exchange DNS signature: ${response.status} ${response.statusText}`
       );
     }
 
