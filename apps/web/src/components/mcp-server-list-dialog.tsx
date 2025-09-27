@@ -216,6 +216,7 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
               {savedServers.length} saved servers, {getEnabledServers().length} enabled
             </span>
           </div>
+
           <Button
             onClick={handleRefresh}
             disabled={loading}
@@ -230,7 +231,7 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
           </Button>
         </div>
 
-        <ScrollArea className="h-full overflow-y-auto">
+        <ScrollArea className="h-full !flex !flex-col !gap-4 overflow-y-auto">
           {loading ? (
             <>
               {Array.from({ length: 5 }).map((_, i) => (
@@ -255,7 +256,7 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
 
                 return (
                   <Card key={savedServer.id}>
-                    <CardHeader className="pb-3 grid grid-cols-1 auto-cols-min">
+                    <CardHeader className="grid grid-cols-1 auto-cols-min">
                       <CardTitle className="text-lg flex items-center gap-2">
                         {savedServer.name}
                         {!isFromRegistry && (
@@ -286,7 +287,7 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
                     </CardHeader>
                     <CardContent>
                       <div className="space-y-3">
-                        <div>
+                        {/* <div>
                           <p className="text-sm font-medium mb-2">Remote URLs:</p>
                           <div className="space-y-1">
                             {savedServer.remotes?.map((remote: any, index: number) => (
@@ -298,7 +299,7 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
                               </div>
                             ))}
                           </div>
-                        </div>
+                        </div> */}
 
                         <div className="flex items-center space-x-2 pt-2 border-t">
                           <Checkbox
@@ -320,11 +321,11 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
               })}
 
               {/* Show registry servers that aren't saved yet */}
-              {servers
+              {/* {servers
                 .filter(server => !isServerSaved(server._meta?.['io.modelcontextprotocol.registry/official']?.serverId || server.name))
                 .map((server) => (
                 <Card key={server._meta?.['io.modelcontextprotocol.registry/official']?.serverId || server.name}>
-                  <CardHeader className="pb-3 grid grid-cols-1 auto-cols-min">
+                  <CardHeader className="grid grid-cols-1 auto-cols-min">
                     <CardTitle className="text-lg">{server.name}</CardTitle>
                     <CardDescription className="mt-1">
                       {server.description}
@@ -349,25 +350,8 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
                       </Button>
                     </div>
                   </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      <div>
-                        <p className="text-sm font-medium mb-2">Remote URLs:</p>
-                        <div className="space-y-1">
-                          {server.remotes?.map((remote: any, index: number) => (
-                            <div key={index} className="flex items-center gap-2">
-                              <Badge variant="secondary">{remote.type}</Badge>
-                              <code className="text-xs bg-muted px-2 py-1 rounded">
-                                {remote.url}
-                              </code>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
                 </Card>
-              ))}
+              ))} */}
 
               {/* Show message if no servers */}
               {servers.length === 0 && typedSavedServers.length === 0 && (
