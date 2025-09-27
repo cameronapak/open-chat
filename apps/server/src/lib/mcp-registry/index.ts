@@ -99,8 +99,12 @@ export interface ListServersOptions {
 
 /**
  * Interface for GitHub token exchange request body
+ * {@see https://registry.modelcontextprotocol.io/docs#/schemas/GitHubTokenExchangeInputBody}
  */
 export interface GitHubTokenExchangeInputBody {
+  /**
+   * GitHub OAuth access token
+   */
   github_token: string;
 }
 
@@ -114,24 +118,44 @@ export interface TokenResponse {
 
 /**
  * Interface for GitHub OIDC token exchange request body
+ * {@see https://registry.modelcontextprotocol.io/docs#/schemas/GitHubOIDCTokenExchangeInputBody}
  */
 export interface GitHubOIDCTokenExchangeInputBody {
+  /**
+   * GitHub Actions OIDC token
+   */
   oidc_token: string;
 }
 
 /**
  * Interface for HTTP signature token exchange request body
+ * {@see https://registry.modelcontextprotocol.io/docs#/schemas/HTTPTokenExchangeInputBody}
  */
 export interface HTTPTokenExchangeInputBody {
+  /**
+   * Domain name
+   */
   domain: string;
+  
+  /**
+   * Hex-encoded signature of the timestamp
+   */
   signed_timestamp: string;
+  
+  /**
+   * RFC3339 timestamp
+   */
   timestamp: string;
 }
 
 /**
  * Interface for OIDC token exchange request body
+ * {@see https://registry.modelcontextprotocol.io/docs#/schemas/OIDCTokenExchangeInputBody}
  */
 export interface OIDCTokenExchangeInputBody {
+  /**
+   * OIDC ID token
+   */
   oidc_token: string;
 }
 
@@ -140,8 +164,22 @@ export interface OIDCTokenExchangeInputBody {
  * {@see https://registry.modelcontextprotocol.io/docs#/schemas/DNSTokenExchangeInputBody}
  */
 export interface DNSTokenExchangeInputBody {
+  /**
+   * Domain name
+   * @example "example.com"
+   */
   domain: string;
+  
+  /**
+   * Hex-encoded Ed25519 signature of timestamp
+   * @example "abcdef1234567890"
+   */
   signed_timestamp: string;
+  
+  /**
+   * RFC3339 timestamp
+   * @example "2023-01-01T00:00:00Z"
+   */
   timestamp: string;
 }
 
