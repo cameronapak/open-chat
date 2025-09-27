@@ -95,12 +95,67 @@ export interface ListServersOptions {
 }
 
 /**
- * Simple client for the official MCP Registry API
+ * Interface for GitHub token exchange request body
  */
-export class MCPRegistryClient {
+export interface GitHubTokenExchangeInputBody {
+  github_token: string;
+}
+
+/**
+ * Interface for token exchange response
+ */
+export interface TokenResponse {
+  expires_at: number;
+  registry_token: string;
+}
+
+/**
+ * Authentication namespace for MCP Registry API
+ */
+export class AuthNamespace {
   private baseUrl: string;
 
-  constructor(baseUrl: string = "https://registry.modelcontextprotocol.io") {
+  constructor(baseUrl: string) {
+    this.baseUrl = baseUrl;
+  }
+
+  /**
+   * Exchange GitHub OAuth access token for Registry JWT
+   * {@see https://registry.modelcontextprotocol.io/docs#/operations/exchange-github-token}
+   */
+  async exchangeGitHubOAuthAccessTokenForRegistryJWT(
+    githubToken: string
+  ): Promise<TokenResponse> {
+    const url = `${this.baseUrl}/v0/auth/github-at`;
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        "Accept": "application/json, application/problem+json",
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        github_token: githubToken
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(
+        `Failed to exchange GitHub token: ${response.status} ${response.statusText}`
+      );
+    }
+
+    return await response.json();
+  }
+}
+
+/**
+ * Server namespace for MCP Registry API
+ */
+export class ServerNamespace {
+  private baseUrl: string;
+
+  constructor(baseUrl: string) {
     this.baseUrl = baseUrl;
   }
 
@@ -160,5 +215,20 @@ export class MCPRegistryClient {
     }
 
     return await response.json();
+  }
+}
+
+/**
+ * Simple client for the official MCP Registry API
+ */
+export class MCPRegistryClient {
+  private baseUrl: string;
+  public auth: AuthNamespace;
+  public server: ServerNamespace;
+
+  constructor(baseUrl: string = "https://registry.modelcontextprotocol.io") {
+    this.baseUrl = baseUrl;
+    this.auth = new AuthNamespace(this.baseUrl);
+    this.server = new ServerNamespace(this.baseUrl);
   }
 }
