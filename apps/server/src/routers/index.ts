@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { chatRouter } from '@/routers/chat';
 import { oauthRouter } from '@/routers/oauth';
 import { modelsRouter } from '@/routers/models';
+import registryApp from '@/routers/registry';
 
 const appRouter = new Hono();
 
@@ -13,5 +14,8 @@ appRouter.route('/chat', chatRouter);
 
 // Models proxy under /api/models
 appRouter.route('/models', modelsRouter);
+
+// MCP Registry proxy under /api/registry
+appRouter.route('/registry', registryApp);
 
 export { appRouter };
