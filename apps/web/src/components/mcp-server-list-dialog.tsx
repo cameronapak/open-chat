@@ -193,27 +193,28 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
             </TabsList>
 
             <TabsContent value="integrations" className="relative grid grid-cols-1 gap-4 max-h-[300px] overflow-y-auto">
-              <Accordion type="single" collapsible className="w-full">
-                {typedSavedServers.map((savedServer) => {
-                  const isFromRegistry = servers.some(server =>
-                    (server._meta?.['io.modelcontextprotocol.registry/official']?.serverId || server.name) === savedServer.id
-                  )
-                  return (
-                    <AccordionItem key={savedServer.id} value={savedServer.id}>
-                      <AccordionTrigger className="px-3 py-3">
-                        <div className="flex items-center gap-2">
-                          {savedServer.name}
-                          {!isFromRegistry && (
-                            <Badge variant="secondary">Custom</Badge>
-                          )}
-                        </div>
-                      </AccordionTrigger>
-                      <AccordionContent className="px-3">
-                        <div className="grid grid-cols-1 auto-cols-min gap-2">
-                          <p className="text-muted-foreground">
-                            {savedServer.description}
-                          </p>
-                          {/* <div className="flex items-center gap-2">
+              {typedSavedServers.length ? (
+                <Accordion type="single" collapsible className="w-full">
+                  {typedSavedServers.map((savedServer) => {
+                    const isFromRegistry = servers.some(server =>
+                      (server._meta?.['io.modelcontextprotocol.registry/official']?.serverId || server.name) === savedServer.id
+                    )
+                    return (
+                      <AccordionItem key={savedServer.id} value={savedServer.id}>
+                        <AccordionTrigger className="px-3 py-3">
+                          <div className="flex items-center gap-2">
+                            {savedServer.name}
+                            {!isFromRegistry && (
+                              <Badge variant="secondary">Custom</Badge>
+                            )}
+                          </div>
+                        </AccordionTrigger>
+                        <AccordionContent className="px-3">
+                          <div className="grid grid-cols-1 auto-cols-min gap-2">
+                            <p className="text-muted-foreground">
+                              {savedServer.description}
+                            </p>
+                            {/* <div className="flex items-center gap-2">
                             {/ * {savedServer.websiteUrl && (
                               <Button
                                 variant="ghost"
@@ -231,12 +232,20 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
                               <Trash2 className="h-4 w-4" />
                             </Button> * /}
                           </div> */}
-                        </div>
-                      </AccordionContent>
-                    </AccordionItem>
-                  );
-                })}
-              </Accordion>
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
+                    );
+                  })}
+                </Accordion>
+              ) : (
+                <DrawerHeader className="flex flex-col items-center gap-2">
+                  <DrawerTitle>Integrations</DrawerTitle>
+                  <DrawerDescription>
+                    Added integrations will appear here.
+                  </DrawerDescription>
+                </DrawerHeader>
+              )}
             </TabsContent>
             <TabsContent value="custom" className="px-3 flex flex-col gap-6">
               <div className="flex flex-col gap-2">
