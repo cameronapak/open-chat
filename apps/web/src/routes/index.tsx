@@ -33,7 +33,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Settings, ExternalLink } from 'lucide-react';
 import { useChat } from '@ai-sdk/react';
-import { DefaultChatTransport, type ToolUIPart, type UITool, type UIToolInvocation } from 'ai';
+import { DefaultChatTransport, type DynamicToolUIPart, type ToolUIPart, type UITool, type UIToolInvocation } from 'ai';
 import { CopyIcon, GlobeIcon, RefreshCcwIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { isUIResource, UIResourceRenderer, type UIActionResult, basicComponentLibrary, remoteTextDefinition, remoteButtonDefinition } from '@mcp-ui/client';
@@ -405,10 +405,11 @@ const ChatBotDemo = () => {
                           </Reasoning>
                         );
                       case 'dynamic-tool':
-                        const toolPart = part as ToolUIPart;
+                        const toolPart = part as DynamicToolUIPart;
+                        console.log(message);
                         return (
                           <Tool key={`${message.id}-${i}`}>
-                            <ToolHeader type={toolPart.type} state={toolPart.state} />
+                            <ToolHeader title={toolPart.toolName} state={toolPart.state} />
                             <ToolContent>
                               <ToolInput input={toolPart.input} />
                               <ToolOutput errorText={toolPart.errorText} output={toolPart.output} />
