@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/accordion"
 import { Input } from './ui/input';
 import { getFavicon } from "@/lib/utils";
+import { Switch } from './ui/switch';
 
 interface MCPServerListDialogProps {
   open: boolean;
@@ -117,7 +118,7 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
       };
 
       addServer(serverConfig);
-      toast.success(`Saved ${server.name}`);
+      toast.info(`Saved ${server.name}`);
     } catch (err: any) {
       toast.error(err.message || 'Failed to save server');
     }
@@ -125,14 +126,14 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
 
   const handleRemoveServer = (serverId: string, serverName: string) => {
     removeServer(serverId);
-    toast.success(`Removed ${serverName}`);
+    toast.info(`Removed ${serverName}`);
   };
 
   const handleToggleServer = (serverId: string, serverName: string) => {
     toggleServer(serverId);
     const server = typedSavedServers.find(s => s.id === serverId);
     if (server) {
-      toast.success(`${serverName} ${server.enabled ? 'disabled' : 'enabled'}`);
+      toast.info(`${serverName} ${server.enabled ? 'disabled' : 'enabled'}`);
     }
   };
 
@@ -164,7 +165,7 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
       };
 
       addServer(customServer);
-      toast.success(`Added custom server: ${customName}`);
+      toast.info(`Saved: ${customName}`);
 
       // Clear form
       setCustomName('');
@@ -203,15 +204,22 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
                     return (
                       <AccordionItem key={savedServer.id} value={savedServer.id}>
                         <AccordionTrigger className="px-3 py-3">
-                          <div className="flex items-center gap-2">
+                          <div className="grid w-full grid-cols-[auto_1fr_auto] items-center gap-2">
                             <img
                               src={favicon}
                               className="h-6 w-6 rounded-full bg-white shadow-sm"
                             />
-                            {savedServer.name}
-                            {!isFromRegistry && (
-                              <Badge variant="secondary">Custom</Badge>
-                            )}
+                            <div>
+                              {savedServer.name}
+                              {!isFromRegistry && (
+                                <Badge variant="secondary">Custom</Badge>
+                              )}
+                            </div>
+                            <Switch
+                              onClick={(e) => e.stopPropagation()}
+                              checked={savedServer.enabled}
+                              onCheckedChange={() => handleToggleServer(savedServer.id, savedServer.name)}
+                            />
                           </div>
                         </AccordionTrigger>
                         <AccordionContent className="px-3">
