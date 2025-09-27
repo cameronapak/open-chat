@@ -1,3 +1,7 @@
+/**
+ * Interface for registry extensions
+ * {@see https://registry.modelcontextprotocol.io/docs#/schemas/RegistryExtensions}
+ */
 export interface RegistryExtensions {
   serverId: string;
   versionId: string;
