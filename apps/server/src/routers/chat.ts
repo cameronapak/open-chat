@@ -2,10 +2,12 @@ import { Hono } from 'hono';
 import { getCookie } from 'hono/cookie';
 import { 
   streamText, 
+  type ToolSet,
   convertToModelMessages, 
   type UIMessage,
   experimental_createMCPClient as createMCPClient,
-  type experimental_MCPClient as MCPClient
+  type experimental_MCPClient as MCPClient,
+  stepCountIs
 } from 'ai';
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import { decrypt } from '@/lib/crypto';
@@ -73,18 +75,21 @@ const chatRoute = chatRouter.post('/', async (c) => {
     }
 
     // Discover tools from all MCP clients and merge them (last-write-wins)
-    const toolSets = await Promise.all(mcpClients.map((client) => client.tools()));
-    const tools = Object.assign({}, ...toolSets);
+    const toolSets = await Promise.all(mcpClients.map((client) => client.tools())) satisfies ToolSet[];
+    const tools = Object.assign({}, ...toolSets) as ToolSet;
 
     const result = streamText({
       model: openrouter.chat(model),
       messages: convertToModelMessages(messages),
+      stopWhen: stepCountIs(5),
       tools,
       onFinish: async () => {
         await Promise.all(mcpClients.map((client) => client.close()));
       },
     });
-    return result.toUIMessageStreamResponse();
+    return result.toUIMessageStreamResponse({
+      sendReasoning: true,
+    });
   } catch (error: any) {
     // Ensure MCP clients are closed if an error occurs before streaming starts
     try {
