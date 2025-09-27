@@ -56,6 +56,7 @@ const chatRoute = chatRouter.post('/', async (c) => {
     const apiKey = decrypt(encryptedKey, secret);
     const openrouter = createOpenRouter({ apiKey });
 
+    // @TODO - Block client-supplied MCP URLs (SSRF risk). We’re instantiating StreamableHTTPClientTransport directly from the mcpServers payload, so any caller can coerce the server into reaching arbitrary/internal endpoints (e.g. AWS metadata, DB admin panels). That’s a textbook SSRF vector and must be plugged before shipping. Please load/allowlist MCP endpoints from trusted server-side config (or at least reject anything that isn’t explicitly whitelisted) and ignore/strip user-provided URLs.
     // Initialize MCP clients (POC-fast; accepts client-supplied URLs)
     for (const mcpServer of mcpServers ?? []) {
       if (!mcpServer.enabled) continue;
@@ -88,7 +89,7 @@ const chatRoute = chatRouter.post('/', async (c) => {
       },
     });
     return result.toUIMessageStreamResponse({
-      sendReasoning: true,
+      sendReasoning: reasoning,
     });
   } catch (error: any) {
     // Ensure MCP clients are closed if an error occurs before streaming starts

@@ -404,10 +404,10 @@ const ChatBotDemo = () => {
                           </Reasoning>
                         );
                       case 'dynamic-tool':
-                        const toolPart = part as ToolUIPart & { toolName: string };
+                        const toolPart = part as ToolUIPart;
                         return (
-                          <Tool>
-                            <ToolHeader type={toolPart.toolName} state={toolPart.state} />
+                          <Tool key={`${message.id}-${i}`}>
+                            <ToolHeader type={toolPart.type} state={toolPart.state} />
                             <ToolContent>
                               <ToolInput input={toolPart.input} />
                               <ToolOutput errorText={toolPart.errorText} output={toolPart.output} />
