@@ -110,6 +110,13 @@ export interface TokenResponse {
 }
 
 /**
+ * Interface for GitHub OIDC token exchange request body
+ */
+export interface GitHubOIDCTokenExchangeInputBody {
+  oidc_token: string;
+}
+
+/**
  * Authentication namespace for MCP Registry API
  */
 export class AuthNamespace {
@@ -142,6 +149,35 @@ export class AuthNamespace {
     if (!response.ok) {
       throw new Error(
         `Failed to exchange GitHub token: ${response.status} ${response.statusText}`
+      );
+    }
+
+    return await response.json();
+  }
+
+  /**
+   * Exchange GitHub OIDC token for Registry JWT
+   * {@see https://registry.modelcontextprotocol.io/docs#/operations/exchange-github-oidc-token}
+   */
+  async exchangeGitHubOIDCTokenForRegistryJWT(
+    oidcToken: string
+  ): Promise<TokenResponse> {
+    const url = `${this.baseUrl}/v0/auth/github-oidc`;
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        "Accept": "application/json, application/problem+json",
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        oidc_token: oidcToken
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(
+        `Failed to exchange GitHub OIDC token: ${response.status} ${response.statusText}`
       );
     }
 
