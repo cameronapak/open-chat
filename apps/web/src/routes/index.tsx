@@ -33,7 +33,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Settings, ExternalLink } from 'lucide-react';
 import { useChat } from '@ai-sdk/react';
-import { DefaultChatTransport } from 'ai';
+import { DefaultChatTransport, type ToolUIPart, type UITool, type UIToolInvocation } from 'ai';
 import { CopyIcon, GlobeIcon, RefreshCcwIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { isUIResource, UIResourceRenderer, type UIActionResult, basicComponentLibrary, remoteTextDefinition, remoteButtonDefinition } from '@mcp-ui/client';
@@ -50,7 +50,13 @@ import {
   ReasoningTrigger,
 } from '@/components/ai-elements/reasoning';
 import { Loader } from '@/components/ai-elements/loader';
-
+import {
+  Tool,
+  ToolContent,
+  ToolHeader,
+  ToolInput,
+  ToolOutput,
+} from '@/components/ai-elements/tool';
 import { useOpenRouterModels, type OpenRouterModel } from '@/lib/openrouter.models';
 
 const MODEL_STORAGE_KEY = 'openchat:selectedModel';
@@ -64,6 +70,13 @@ interface UIResource {
     text?: string;      // Inline HTML, external URL, or remote-dom script
     blob?: string;      // Base64-encoded HTML, URL, or remote-dom script
   };
+}
+
+interface MCPServerConfig {
+  id: string
+  name: string
+  url: string
+  enabled: boolean
 }
 
 const ChatBotDemo = () => {
@@ -159,6 +172,12 @@ const ChatBotDemo = () => {
         body: () => ({
           // https://openrouter.ai/announcements/introducing-web-search-via-the-api
           model: modelRef.current,
+          mcpServers: [{
+            id: '1',
+            name: 'Bible MCP',
+            url: 'https://bible-mcp.faith.tools/mcp',
+            enabled: true
+          }] as MCPServerConfig[]
         }),
       }),
     [],
@@ -384,6 +403,17 @@ const ChatBotDemo = () => {
                             <ReasoningContent>{part.text}</ReasoningContent>
                           </Reasoning>
                         );
+                      case 'dynamic-tool':
+                        const toolPart = part as ToolUIPart;
+                        return (
+                          <Tool>
+                            <ToolHeader type={toolPart.type} state={toolPart.state} />
+                            <ToolContent>
+                              <ToolInput input={toolPart.input} />
+                              <ToolOutput errorText={toolPart.errorText} output={toolPart.output} />
+                            </ToolContent>
+                          </Tool>
+                        )
                       case 'resource':
                         if (part.resource && (part.resource as UIResource["resource"]).uri?.startsWith('ui://')) {
                           const resourceData = part.resource as UIResource["resource"];
