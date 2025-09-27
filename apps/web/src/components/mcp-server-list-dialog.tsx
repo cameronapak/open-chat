@@ -46,6 +46,7 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
   // Custom server form state
   const [customName, setCustomName] = useState('');
   const [customUrl, setCustomUrl] = useState('');
+  const [customDescription, setCustomDescription] = useState('');
 
   const {
     servers: savedServers,
@@ -154,7 +155,7 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
       const customServer: SavedMCPServer = {
         id: serverId,
         name: customName.trim(),
-        description: 'Custom MCP server',
+        description: customDescription.trim() || 'Custom MCP server',
         version: '1.0.0',
         remotes: [{
           type: 'streamable-http',
@@ -170,6 +171,7 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
       // Clear form
       setCustomName('');
       setCustomUrl('');
+      setCustomDescription('');
     } catch (err: any) {
       toast.error(err.message || 'Failed to add custom server');
     }
@@ -281,6 +283,12 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
                   placeholder="https://example.com/mcp"
                   value={customUrl}
                   onChange={(e) => setCustomUrl(e.target.value)}
+                />
+                <Input
+                  type="text"
+                  placeholder="Description (optional)"
+                  value={customDescription}
+                  onChange={(e) => setCustomDescription(e.target.value)}
                 />
                 <Button
                   onClick={handleAddCustomServer}
