@@ -133,6 +133,14 @@ export interface OIDCTokenExchangeInputBody {
 }
 
 /**
+ * Interface for health check response
+ */
+export interface HealthBody {
+  github_client_id?: string;
+  status: string;
+}
+
+/**
  * Authentication namespace for MCP Registry API
  */
 export class AuthNamespace {
@@ -264,6 +272,40 @@ export class AuthNamespace {
 }
 
 /**
+ * Health namespace for MCP Registry API
+ */
+export class HealthNamespace {
+  private baseUrl: string;
+
+  constructor(baseUrl: string) {
+    this.baseUrl = baseUrl;
+  }
+
+  /**
+   * Check the health status of the API
+   * {@see https://registry.modelcontextprotocol.io/docs#/operations/get-health}
+   */
+  async getHealth(): Promise<HealthBody> {
+    const url = `${this.baseUrl}/v0/health`;
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        "Accept": "application/json, application/problem+json",
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(
+        `Failed to get health status: ${response.status} ${response.statusText}`
+      );
+    }
+
+    return await response.json();
+  }
+}
+
+/**
  * Server namespace for MCP Registry API
  */
 export class ServerNamespace {
@@ -339,10 +381,12 @@ export class MCPRegistryClient {
   private baseUrl: string;
   public auth: AuthNamespace;
   public server: ServerNamespace;
+  public health: HealthNamespace;
 
   constructor(baseUrl: string = "https://registry.modelcontextprotocol.io") {
     this.baseUrl = baseUrl;
     this.auth = new AuthNamespace(this.baseUrl);
     this.server = new ServerNamespace(this.baseUrl);
+    this.health = new HealthNamespace(this.baseUrl);
   }
 }
