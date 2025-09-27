@@ -30,6 +30,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion"
 import { Input } from './ui/input';
+import { getFavicon } from "@/lib/utils";
 
 interface MCPServerListDialogProps {
   open: boolean;
@@ -199,10 +200,17 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
                     const isFromRegistry = servers.some(server =>
                       (server._meta?.['io.modelcontextprotocol.registry/official']?.serverId || server.name) === savedServer.id
                     )
+
+                    const favicon = getFavicon(savedServer.remotes?.[0].url || "")
+
                     return (
                       <AccordionItem key={savedServer.id} value={savedServer.id}>
                         <AccordionTrigger className="px-3 py-3">
                           <div className="flex items-center gap-2">
+                            <img 
+                              src={favicon} 
+                              className="h-6 w-6 rounded-full bg-white shadow-sm"
+                            />
                             {savedServer.name}
                             {!isFromRegistry && (
                               <Badge variant="secondary">Custom</Badge>
