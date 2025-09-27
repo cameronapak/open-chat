@@ -396,8 +396,8 @@ const ChatBotDemo = () => {
                           </Reasoning>
                         );
                       case 'resource':
-                        if (part.resource && (part.resource as any).uri?.startsWith('ui://')) {
-                          const resourceData = part.resource as any;
+                        if (part.resource && (part.resource as UIResource["resource"]).uri?.startsWith('ui://')) {
+                          const resourceData = part.resource as UIResource["resource"];
                           const uiResource = { type: 'resource' as const, resource: resourceData };
                           if (isUIResource(uiResource)) {
                             const isRemoteDom = resourceData.mimeType?.startsWith('application/vnd.mcp-ui.remote-dom');
