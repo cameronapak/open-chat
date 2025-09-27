@@ -35,7 +35,7 @@ For contributors: see [AGENTS.md](AGENTS.md)
   - [ ] MCP Resources
 - [ ] One-click MCP install
 - [ ] Add your own MCP server
-- [ ] MCP UI support
+- [x] MCP UI support
 - [ ] Local LLM support (via Transformers JS)
 - [ ] Personality Profile (tailor LLM to your preferences)
 - [ ] Web component chatbot export

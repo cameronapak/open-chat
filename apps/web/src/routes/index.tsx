@@ -34,8 +34,10 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Settings, ExternalLink } from 'lucide-react';
 import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport } from 'ai';
-import { Response } from '@/components/ai-elements/response';
 import { CopyIcon, GlobeIcon, RefreshCcwIcon } from 'lucide-react';
+import { toast } from 'sonner';
+import { isUIResource, UIResourceRenderer, type UIActionResult, basicComponentLibrary, remoteTextDefinition, remoteButtonDefinition } from '@mcp-ui/client';
+import { Response } from '@/components/ai-elements/response';
 import {
   Source,
   Sources,
@@ -53,6 +55,16 @@ import { useOpenRouterModels, type OpenRouterModel } from '@/lib/openrouter.mode
 
 const MODEL_STORAGE_KEY = 'openchat:selectedModel';
 const formatter = new Intl.NumberFormat("en-US");
+
+interface UIResource {
+  type: 'resource';
+  resource: {
+    uri: string;       // e.g., ui://component/id
+    mimeType: 'text/html' | 'text/uri-list' | 'application/vnd.mcp-ui.remote-dom'; // text/html for HTML content, text/uri-list for URL content, application/vnd.mcp-ui.remote-dom for remote-dom content (Javascript)
+    text?: string;      // Inline HTML, external URL, or remote-dom script
+    blob?: string;      // Base64-encoded HTML, URL, or remote-dom script
+  };
+}
 
 const ChatBotDemo = () => {
   const [input, setInput] = useState('');
@@ -144,7 +156,7 @@ const ChatBotDemo = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: () => ({ 
+        body: () => ({
           // https://openrouter.ai/announcements/introducing-web-search-via-the-api
           model: modelRef.current,
         }),
@@ -156,7 +168,8 @@ const ChatBotDemo = () => {
     transport,
   });
 
-  const messages = rawMessages;
+  const messages = [...rawMessages];
+
   const sendMessage = (message: any, options?: any) => {
     if (!connected) {
       console.error('Not connected');
@@ -317,7 +330,7 @@ const ChatBotDemo = () => {
                   </MessageContent>
                 </Message>
               )}
-              {messages.map((message: any) => (
+              {messages.map((message) => (
                 <div key={message.id}>
                   {message.role === 'assistant' && message.parts.filter((part: any) => part.type === 'source-url').length > 0 && (
                     <Sources>
@@ -381,6 +394,71 @@ const ChatBotDemo = () => {
                             <ReasoningTrigger />
                             <ReasoningContent>{part.text}</ReasoningContent>
                           </Reasoning>
+                        );
+                      case 'resource':
+                        if (part.resource && (part.resource as UIResource["resource"]).uri?.startsWith('ui://')) {
+                          const resourceData = part.resource as UIResource["resource"];
+                          const uiResource = { type: 'resource' as const, resource: resourceData };
+                          if (isUIResource(uiResource)) {
+                            const isRemoteDom = resourceData.mimeType?.startsWith('application/vnd.mcp-ui.remote-dom');
+                            return (
+                              <UIResourceRenderer
+                                key={`${message.id}-${i}`}
+                                resource={resourceData}
+                                supportedContentTypes={['rawHtml', 'externalUrl', 'remoteDom']}
+                                htmlProps={{
+                                  iframeProps: {
+                                    className: "w-full max-w-[80%] rounded-xl border-2 min-h-[200px]"
+                                  },
+                                  autoResizeIframe: {
+                                    height: true,
+                                  }
+                                }}
+                                remoteDomProps={isRemoteDom ? {
+                                  library: basicComponentLibrary,
+                                  remoteElements: [remoteTextDefinition, remoteButtonDefinition],
+                                } : undefined}
+                                onUIAction={async (result: UIActionResult) => {
+                                  switch (result.type) {
+                                    case 'tool':
+                                      // Forward tool call to backend via new message
+                                      sendMessage({
+                                        role: 'user',
+                                        content: [
+                                          { type: 'text', text: `Execute tool: ${result.payload.toolName} with params: ${JSON.stringify(result.payload.params)}` }
+                                        ]
+                                      });
+                                      break;
+                                    case 'prompt':
+                                      // @TODO - implement prompt
+                                      toast.info(result.payload.prompt);
+                                      break;
+                                    case 'notify':
+                                      // @TODO - implement notify
+                                      toast(result.payload.message);
+                                      break;
+                                    case 'link':
+                                      window.open(result.payload.url, '_blank');
+                                      break;
+                                    case 'intent':
+                                      // @TODO - implement intent
+                                      console.log('Intent:', result.payload.intent, result.payload.params);
+                                      toast(`Intent: ${result.payload.intent}`);
+                                      break;
+                                  }
+                                  return { status: 'handled' };
+                                }}
+                              />
+                            );
+                          }
+                        }
+
+                        return (
+                          <Message from={message.role} key={`${message.id}-${i}`}>
+                            <MessageContent>
+                              <p className="text-muted-foreground">Unsupported resource type</p>
+                            </MessageContent>
+                          </Message>
                         );
                       default:
                         return null;
