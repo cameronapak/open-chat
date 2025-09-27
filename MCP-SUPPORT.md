@@ -12,7 +12,7 @@ Most likely MCP's will be called "Connectors" on the client-side.
 
 ## MCP Registry
 
-- [x] I can get the list of servers from the Official MCP registry
+- [x] I can get the list of servers from the [Official MCP registry](./apps/server/src/lib/mcp-registry/index.ts)
 - [x] I can connect to an MCP server from the official registry
 - [ ] I can filter / sort the Official MCP registry
 - [ ] I can add a custom MCP subregistry
