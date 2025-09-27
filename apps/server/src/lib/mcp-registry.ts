@@ -126,6 +126,13 @@ export interface HTTPTokenExchangeInputBody {
 }
 
 /**
+ * Interface for OIDC token exchange request body
+ */
+export interface OIDCTokenExchangeInputBody {
+  oidc_token: string;
+}
+
+/**
  * Authentication namespace for MCP Registry API
  */
 export class AuthNamespace {
@@ -220,6 +227,35 @@ export class AuthNamespace {
     if (!response.ok) {
       throw new Error(
         `Failed to exchange HTTP signature: ${response.status} ${response.statusText}`
+      );
+    }
+
+    return await response.json();
+  }
+
+  /**
+   * Exchange OIDC ID token for Registry JWT
+   * {@see https://registry.modelcontextprotocol.io/docs#/operations/exchange-oidc-token}
+   */
+  async exchangeOIDCIDTokenForRegistryJWT(
+    oidcToken: string
+  ): Promise<TokenResponse> {
+    const url = `${this.baseUrl}/v0/auth/oidc`;
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        "Accept": "application/json, application/problem+json",
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        oidc_token: oidcToken
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(
+        `Failed to exchange OIDC token: ${response.status} ${response.statusText}`
       );
     }
 
