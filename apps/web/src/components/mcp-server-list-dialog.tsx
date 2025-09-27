@@ -6,17 +6,17 @@ import { useMCPServerStorage, type SavedMCPServer } from '@/lib/mcp-storage';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Plus, Trash2, ExternalLink, Puzzle } from 'lucide-react';
 import {
-  Drawer,
-  DrawerClose,
-  DrawerContent,
-  DrawerDescription,
-  DrawerFooter,
-  DrawerHeader,
-  DrawerTitle,
-  // DrawerHeader,
-  // DrawerTitle,
-  // DrawerTrigger,
-} from "@/components/ui/drawer"
+   Drawer,
+   DrawerClose,
+   AnimatedDrawerContent,
+   DrawerDescription,
+   DrawerFooter,
+   DrawerHeader,
+   DrawerTitle,
+   // DrawerHeader,
+   // DrawerTitle,
+   // DrawerTrigger,
+ } from "@/components/ui/drawer"
 import {
   Tabs,
   TabsContent,
@@ -179,7 +179,7 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="grid grid-rows-[auto_1fr_auto] grid-cols-1 max-w-md mx-auto">
+      <AnimatedDrawerContent className="grid grid-rows-[auto_1fr_auto] grid-cols-1 max-w-md mx-auto">
         <section className="grid grid-cols-1 p-4">
           <Tabs defaultValue="integrations" className="grid grid-rows-[1fr_auto] gap-4">
             <TabsList className="grid grid-cols-2 w-full">
@@ -294,7 +294,7 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
             <Button variant="outline">Close</Button>
           </DrawerClose>
         </DrawerFooter>
-      </DrawerContent>
+      </AnimatedDrawerContent>
     </Drawer>
   );
 }
