@@ -172,6 +172,7 @@ const ChatBotDemo = () => {
         body: () => ({
           // https://openrouter.ai/announcements/introducing-web-search-via-the-api
           model: modelRef.current,
+          reasoning: true,
           mcpServers: [{
             id: '1',
             name: 'Bible MCP',
