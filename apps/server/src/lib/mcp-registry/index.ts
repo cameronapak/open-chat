@@ -1,542 +1,17 @@
-/**
- * Interface for registry extensions
- * {@see https://registry.modelcontextprotocol.io/docs#/schemas/RegistryExtensions}
- */
-export interface RegistryExtensions {
-  serverId: string;
-  versionId: string;
-  publishedAt: string;
-  updatedAt?: string;
-  isLatest: boolean;
-}
-
-export interface ServerMeta {
-  "io.modelcontextprotocol.registry/official"?: RegistryExtensions;
-  "io.modelcontextprotocol.registry/publisher-provided"?: { [key: string]: any };
-}
-
-/**
- * Interface for input
- * {@see https://registry.modelcontextprotocol.io/docs#/schemas/Input}
- */
-export interface Input {
-  /**
-   * Array of choices or null
-   */
-  choices?: string[] | null;
-  
-  /**
-   * Default value
-   */
-  default?: string;
-  
-  /**
-   * Description of the input
-   */
-  description?: string;
-  
-  /**
-   * Format of the input
-   */
-  format?: string;
-  
-  /**
-   * Whether the input is required
-   */
-  is_required?: boolean;
-  
-  /**
-   * Whether the input is secret
-   */
-  is_secret?: boolean;
-  
-  /**
-   * Whether the input is repeated
-   */
-  is_repeated?: boolean;
-  
-  /**
-   * Name of the input
-   */
-  name?: string;
-  
-  /**
-   * Type of the input
-   */
-  type?: string;
-  
-  /**
-   * Value of the input
-   */
-  value?: string;
-  
-  /**
-   * Value hint for the input
-   */
-  value_hint?: string;
-  
-  /**
-   * Variables for the input
-   */
-  variables?: Record<string, Input>;
-}
-
-/**
- * Interface for input
- * {@see https://registry.modelcontextprotocol.io/docs#/schemas/Input}
- */
-export interface Input {
-  /**
-   * Array of choices or null
-   *
-   * Example:
-   * ["string"]
-   */
-  choices?: string[] | null;
-  
-  /**
-   * Default value
-   *
-   * Example:
-   * "string"
-   */
-  default?: string;
-  
-  /**
-   * Description of the input
-   *
-   * Example:
-   * "string"
-   */
-  description?: string;
-  
-  /**
-   * Format of the input
-   *
-   * Example:
-   * "string"
-   */
-  format?: string;
-  
-  /**
-   * Whether the input is required
-   *
-   * Example:
-   * true
-   */
-  isRequired?: boolean;
-  
-  /**
-   * Whether the input is secret
-   *
-   * Example:
-   * true
-   */
-  isSecret?: boolean;
-  
-  /**
-   * Value of the input
-   *
-   * Example:
-   * "string"
-   */
-  value?: string;
-}
-
-/**
- * Interface for key value input
- * {@see https://registry.modelcontextprotocol.io/docs#/schemas/KeyValueInput}
- */
-export interface KeyValueInput {
-  /**
-   * Array of choices or null
-   *
-   * Example:
-   * ["string"]
-   */
-  choices?: string[] | null;
-  
-  /**
-   * Default value
-   *
-   * Example:
-   * "string"
-   */
-  default?: string;
-  
-  /**
-   * Description of the input
-   *
-   * Example:
-   * "string"
-   */
-  description?: string;
-  
-  /**
-   * Format of the input
-   *
-   * Example:
-   * "string"
-   */
-  format?: string;
-  
-  /**
-   * Whether the input is required
-   *
-   * Example:
-   * true
-   */
-  isRequired?: boolean;
-  
-  /**
-   * Whether the input is secret
-   *
-   * Example:
-   * true
-   */
-  isSecret?: boolean;
-  
-  /**
-   * Name of the input (required)
-   *
-   * Example:
-   * "string"
-   */
-  name: string;
-  
-  /**
-   * Value of the input
-   *
-   * Example:
-   * "string"
-   */
-  value?: string;
-  
-  /**
-   * Variables for the input (dictionary of KeyValueInput)
-   */
-  variables?: Record<string, KeyValueInput>;
-}
-
-/**
- * Interface for ping response body
- * {@see https://registry.modelcontextprotocol.io/docs#/schemas/PingBody}
- */
-export interface PingBody {
-  /**
-   * Ping response
-   * @example true
-   */
-  pong: boolean;
-}
-
-/**
- * {@see https://registry.modelcontextprotocol.io/docs#/schemas/Transport}
- */
-export interface Transport {
-  type: string;
-  url: string;
-  headers?: Input[];
-}
-
-/**
- * Interface for package
- * {@see https://registry.modelcontextprotocol.io/docs#/schemas/Package}
- */
-export interface Package {
-  /**
-   * Environment variables for the package
-   *
-   * Example:
-   * [{"choices": [null], "default": "string", "description": "string", "format": "string", "isRequired": true, "isSecret": true, "name": "string", "value": "string", "variables": {}}]
-   */
-  environment_variables?: Input[] | null;
-  
-  /**
-   * SHA256 hash of the package file
-   *
-   * Example:
-   * "string"
-   */
-  file_sha256?: string;
-  
-  /**
-   * Package identifier
-   *
-   * Example:
-   * "string"
-   */
-  identifier: string;
-  
-  /**
-   * Package arguments
-   *
-   * Example:
-   * [{"choices": [null], "default": "string", "description": "string", "format": "string", "isRepeated": true, "isRequired": true, "isSecret": true, "name": "string", "type": "string", "value": "string", "valueHint": "string", "variables": {}}]
-   */
-  package_arguments?: Input[] | null;
-  
-  /**
-   * Registry base URL
-   *
-   * Example:
-   * "string"
-   */
-  registry_base_url?: string;
-  
-  /**
-   * Registry type
-   *
-   * Example:
-   * "string"
-   */
-  registry_type: string;
-  
-  /**
-   * Runtime arguments
-   *
-   * Example:
-   * [{"choices": [null], "default": "string", "description": "string", "format": "string", "isRepeated": true, "isRequired": true, "isSecret": true, "name": "string", "type": "string", "value": "string", "valueHint": "string", "variables": {}}]
-   */
-  runtime_arguments?: Input[] | null;
-  
-  /**
-   * Runtime hint
-   *
-   * Example:
-   * "string"
-   */
-  runtime_hint?: string;
-  
-  /**
-   * Transport configuration
-   */
-  transport?: Transport;
-  
-  /**
-   * Package version
-   *
-   * Example:
-   * "string"
-   */
-  version: string;
-}
-
-export interface Remote {
-  type: string;
-  url: string;
-  headers?: Input[];
-}
-
-/**
- * {@see https://registry.modelcontextprotocol.io/docs#/schemas/Repository}
- */
-export interface Repository {
-  id: string;
-  source: string;
-  subfolder?: string;
-  url: string;
-}
-
-export interface Server {
-  $schema?: string;
-  name: string;
-  description: string;
-  status?: string;
-  repository?: Repository;
-  version: string;
-  websiteUrl?: string;
-  packages?: Package[] | null;
-  remotes?: Remote[] | null;
-  _meta?: ServerMeta;
-}
-
-export interface Metadata {
-  next_cursor?: string;
-  count: number;
-}
-
-export interface ServerListResponse {
-  servers: Server[];
-  metadata: Metadata;
-}
-
-export interface ListServersOptions {
-  cursor?: string;
-  limit?: number;
-  search?: string;
-  updated_since?: string;
-  version?: string;
-}
-
-/**
- * Interface for GitHub token exchange request body
- * {@see https://registry.modelcontextprotocol.io/docs#/schemas/GitHubTokenExchangeInputBody}
- */
-export interface GitHubTokenExchangeInputBody {
-  /**
-   * GitHub OAuth access token
-   */
-  github_token: string;
-}
-
-/**
- * Interface for token exchange response
- */
-export interface TokenResponse {
-  expires_at: number;
-  registry_token: string;
-}
-
-/**
- * Interface for GitHub OIDC token exchange request body
- * {@see https://registry.modelcontextprotocol.io/docs#/schemas/GitHubOIDCTokenExchangeInputBody}
- */
-export interface GitHubOIDCTokenExchangeInputBody {
-  /**
-   * GitHub Actions OIDC token
-   */
-  oidc_token: string;
-}
-
-/**
- * Interface for HTTP signature token exchange request body
- * {@see https://registry.modelcontextprotocol.io/docs#/schemas/HTTPTokenExchangeInputBody}
- */
-export interface HTTPTokenExchangeInputBody {
-  /**
-   * Domain name
-   * @example "example.com"
-   */
-  domain: string;
-  
-  /**
-   * Hex-encoded Ed25519 signature of timestamp
-   * @example "abcdef1234567890"
-   */
-  signed_timestamp: string;
-  
-  /**
-   * RFC3339 timestamp
-   * @example "2023-01-01T00:00:00Z"
-   */
-  timestamp: string;
-}
-
-/**
- * Interface for OIDC token exchange request body
- * {@see https://registry.modelcontextprotocol.io/docs#/schemas/OIDCTokenExchangeInputBody}
- */
-export interface OIDCTokenExchangeInputBody {
-  /**
-   * OIDC ID token
-   */
-  oidc_token: string;
-}
-
-/**
- * Interface for DNS token exchange request body
- * {@see https://registry.modelcontextprotocol.io/docs#/schemas/DNSTokenExchangeInputBody}
- */
-export interface DNSTokenExchangeInputBody {
-  /**
-   * Domain name
-   * @example "example.com"
-   */
-  domain: string;
-  
-  /**
-   * Hex-encoded Ed25519 signature of timestamp
-   * @example "abcdef1234567890"
-   */
-  signed_timestamp: string;
-  
-  /**
-   * RFC3339 timestamp
-   * @example "2023-01-01T00:00:00Z"
-   */
-  timestamp: string;
-}
-
-/**
- * Interface for health check response
- * {@see https://registry.modelcontextprotocol.io/docs#/schemas/HealthBody}
- */
-export interface HealthBody {
-  /**
-   * GitHub OAuth App Client ID
-   */
-  github_client_id?: string;
-  
-  /**
-   * Health status
-   * @example "ok"
-   */
-  status: string;
-}
-
-/**
- * Interface for error detail
- * {@see https://registry.modelcontextprotocol.io/docs#/schemas/ErrorDetail}
- */
-export interface ErrorDetail {
-  /**
-   * Where the error occurred, e.g. 'body.items[3].tags' or 'path.thing-id'
-   */
-  location: string;
-  
-  /**
-   * Error message text
-   */
-  message: string;
-  
-  /**
-   * The value at the given location
-   */
-  value: any;
-}
-
-/**
- * Interface for error model
- * {@see https://registry.modelcontextprotocol.io/docs#/schemas/ErrorModel}
- */
-export interface ErrorModel {
-  /**
-   * A human-readable explanation specific to this occurrence of the problem.
-   * @example "Property foo is required but is missing."
-   */
-  detail: string;
-  
-  /**
-   * Optional list of individual error details
-   */
-  errors: ErrorDetail[] | null;
-  
-  /**
-   * A URI reference that identifies the specific occurrence of the problem.
-   * @example "https://example.com/error-log/abc123"
-   */
-  instance: string;
-  
-  /**
-   * HTTP status code
-   * @example 400
-   */
-  status: number;
-  
-  /**
-   * A short, human-readable summary of the problem type. This value should not change between occurrences of the error.
-   * @example "Bad Request"
-   */
-  title: string;
-  
-  /**
-   * A URI reference to human-readable documentation for the error.
-   * @default "about:blank"
-   * @example "https://example.com/errors/example"
-   */
-  type: string;
-}
+import type {
+  PingBody,
+  Server,
+  ServerListResponse,
+  ListServersOptions,
+  TokenResponse,
+  DNSTokenExchangeInputBody,
+  HTTPTokenExchangeInputBody,
+  HealthBody,
+  ErrorModel,
+  GitHubTokenExchangeInputBody,
+  GitHubOIDCTokenExchangeInputBody,
+  OIDCTokenExchangeInputBody,
+} from './types.zod';
 
 /**
  * Authentication namespace for MCP Registry API
@@ -553,7 +28,7 @@ export class AuthNamespace {
    * {@see https://registry.modelcontextprotocol.io/docs#/operations/exchange-github-token}
    */
   async exchangeGitHubOAuthAccessTokenForRegistryJWT(
-    githubToken: string
+    { github_token }: GitHubTokenExchangeInputBody
   ): Promise<TokenResponse> {
     const url = `${this.baseUrl}/v0/auth/github-at`;
     
@@ -564,7 +39,7 @@ export class AuthNamespace {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        github_token: githubToken
+        github_token: github_token
       })
     });
 
@@ -598,7 +73,7 @@ export class AuthNamespace {
    * {@see https://registry.modelcontextprotocol.io/docs#/operations/exchange-github-oidc-token}
    */
   async exchangeGitHubOIDCTokenForRegistryJWT(
-    oidcToken: string
+    { oidc_token }: GitHubOIDCTokenExchangeInputBody
   ): Promise<TokenResponse> {
     const url = `${this.baseUrl}/v0/auth/github-oidc`;
     
@@ -609,7 +84,7 @@ export class AuthNamespace {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        oidc_token: oidcToken
+        oidc_token
       })
     });
 
@@ -642,11 +117,11 @@ export class AuthNamespace {
    * Exchange HTTP signature for Registry JWT
    * {@see https://registry.modelcontextprotocol.io/docs#/operations/exchange-http-token}
    */
-  async exchangeHTTPSignatureForRegistryJWT(
-    domain: string,
-    signedTimestamp: string,
-    timestamp: string
-  ): Promise<TokenResponse> {
+  async exchangeHTTPSignatureForRegistryJWT({
+    domain,
+    signed_timestamp,
+    timestamp
+  }: HTTPTokenExchangeInputBody): Promise<TokenResponse> {
     const url = `${this.baseUrl}/v0/auth/http`;
     
     const response = await fetch(url, {
@@ -657,7 +132,7 @@ export class AuthNamespace {
       },
       body: JSON.stringify({
         domain: domain,
-        signed_timestamp: signedTimestamp,
+        signed_timestamp: signed_timestamp,
         timestamp: timestamp
       })
     });
@@ -692,7 +167,7 @@ export class AuthNamespace {
    * {@see https://registry.modelcontextprotocol.io/docs#/operations/exchange-oidc-token}
    */
   async exchangeOIDCIDTokenForRegistryJWT(
-    oidcToken: string
+    { oidc_token }: OIDCTokenExchangeInputBody
   ): Promise<TokenResponse> {
     const url = `${this.baseUrl}/v0/auth/oidc`;
     
@@ -703,7 +178,7 @@ export class AuthNamespace {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        oidc_token: oidcToken
+        oidc_token: oidc_token
       })
     });
 
