@@ -30,6 +30,10 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Custom server form state
+  const [customName, setCustomName] = useState('');
+  const [customUrl, setCustomUrl] = useState('');
+
   const {
     servers: savedServers,
     addServer,
@@ -121,6 +125,40 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
     fetchServers();
   };
 
+  const handleAddCustomServer = () => {
+    if (!customName.trim() || !customUrl.trim()) {
+      toast.error('Name and URL are required');
+      return;
+    }
+
+    try {
+      // Create a simple ID from the name
+      const serverId = `custom-${customName.toLowerCase().replace(/\s+/g, '-')}`;
+
+      const customServer: SavedMCPServer = {
+        id: serverId,
+        name: customName.trim(),
+        description: 'Custom MCP server',
+        version: '1.0.0',
+        remotes: [{
+          type: 'streamable-http',
+          url: customUrl.trim()
+        }],
+        savedAt: new Date().toISOString(),
+        enabled: true
+      };
+
+      addServer(customServer);
+      toast.success(`Added custom server: ${customName}`);
+
+      // Clear form
+      setCustomName('');
+      setCustomUrl('');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to add custom server');
+    }
+  };
+
   // Debug logging for scroll area dimensions
   useEffect(() => {
     const logScrollAreaInfo = () => {
@@ -157,6 +195,36 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
           <DialogDescription>
             Browse and manage MCP servers from the registry. Only remote servers are shown.
           </DialogDescription>
+
+          {/* Custom Server Form */}
+          <div className="space-y-3 p-4 border rounded-lg bg-muted/50">
+            <h4 className="text-sm font-medium">Add Custom Server</h4>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+              <input
+                type="text"
+                placeholder="Server name"
+                value={customName}
+                onChange={(e) => setCustomName(e.target.value)}
+                className="px-3 py-2 border rounded-md text-sm"
+              />
+              <input
+                type="url"
+                placeholder="Server URL"
+                value={customUrl}
+                onChange={(e) => setCustomUrl(e.target.value)}
+                className="px-3 py-2 border rounded-md text-sm"
+              />
+              <Button
+                onClick={handleAddCustomServer}
+                disabled={!customName.trim() || !customUrl.trim()}
+                size="sm"
+              >
+                <Plus className="h-4 w-4 mr-1" />
+                Add
+              </Button>
+            </div>
+          </div>
+
           {error && (
             <div className="p-4 border border-red-200 rounded-md bg-red-50">
               <p className="text-red-600 text-sm">{error}</p>
@@ -201,48 +269,41 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
             </>
           ) : (
             <>
-              {servers.map((server) => {
-                const isSaved = isServerSaved(server._meta?.['io.modelcontextprotocol.registry/official']?.serverId || server.name);
-                const savedServer = typedSavedServers.find(s => s.id === (server._meta?.['io.modelcontextprotocol.registry/official']?.serverId || server.name));
+              {/* Show saved servers first (including custom ones) */}
+              {typedSavedServers.map((savedServer) => {
+                const isFromRegistry = servers.some(server =>
+                  (server._meta?.['io.modelcontextprotocol.registry/official']?.serverId || server.name) === savedServer.id
+                );
 
                 return (
-                  <Card key={server._meta?.['io.modelcontextprotocol.registry/official']?.serverId || server.name}>
+                  <Card key={savedServer.id}>
                     <CardHeader className="pb-3 grid grid-cols-1 auto-cols-min">
-                      <CardTitle className="text-lg">{server.name}</CardTitle>
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        {savedServer.name}
+                        {!isFromRegistry && (
+                          <Badge variant="outline" className="text-xs">Custom</Badge>
+                        )}
+                      </CardTitle>
                       <CardDescription className="mt-1">
-                        {server.description}
+                        {savedServer.description}
                       </CardDescription>
                       <div className="flex items-center gap-2">
-                        {server.websiteUrl && (
+                        {savedServer.websiteUrl && (
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => window.open(server.websiteUrl, '_blank')}
+                            onClick={() => window.open(savedServer.websiteUrl, '_blank')}
                           >
                             <ExternalLink className="h-4 w-4" />
                           </Button>
                         )}
-                        {isSaved ? (
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => handleRemoveServer(
-                              server._meta?.['io.modelcontextprotocol.registry/official']?.serverId || server.name,
-                              server.name
-                            )}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        ) : (
-                          <Button
-                            variant="default"
-                            size="sm"
-                            onClick={() => handleSaveServer(server)}
-                          >
-                            <Plus className="h-4 w-4 mr-1" />
-                            Save
-                          </Button>
-                        )}
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => handleRemoveServer(savedServer.id, savedServer.name)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
                     </CardHeader>
                     <CardContent>
@@ -250,7 +311,7 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
                         <div>
                           <p className="text-sm font-medium mb-2">Remote URLs:</p>
                           <div className="space-y-1">
-                            {server.remotes?.map((remote: any, index: number) => (
+                            {savedServer.remotes?.map((remote: any, index: number) => (
                               <div key={index} className="flex items-center gap-2">
                                 <Badge variant="secondary">{remote.type}</Badge>
                                 <code className="text-xs bg-muted px-2 py-1 rounded">
@@ -261,29 +322,81 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
                           </div>
                         </div>
 
-                        {isSaved && (
-                          <div className="flex items-center space-x-2 pt-2 border-t">
-                            <Checkbox
-                              id={`enable-${server._meta?.['io.modelcontextprotocol.registry/official']?.serverId || server.name}`}
-                              checked={savedServer?.enabled || false}
-                              onCheckedChange={() => handleToggleServer(
-                                server._meta?.['io.modelcontextprotocol.registry/official']?.serverId || server.name,
-                                server.name
-                              )}
-                            />
-                            <label
-                              htmlFor={`enable-${server._meta?.['io.modelcontextprotocol.registry/official']?.serverId || server.name}`}
-                              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                            >
-                              Enable this server in chat
-                            </label>
-                          </div>
-                        )}
+                        <div className="flex items-center space-x-2 pt-2 border-t">
+                          <Checkbox
+                            id={`enable-${savedServer.id}`}
+                            checked={savedServer.enabled || false}
+                            onCheckedChange={() => handleToggleServer(savedServer.id, savedServer.name)}
+                          />
+                          <label
+                            htmlFor={`enable-${savedServer.id}`}
+                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                          >
+                            Enable this server in chat
+                          </label>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
                 );
               })}
+
+              {/* Show registry servers that aren't saved yet */}
+              {servers
+                .filter(server => !isServerSaved(server._meta?.['io.modelcontextprotocol.registry/official']?.serverId || server.name))
+                .map((server) => (
+                <Card key={server._meta?.['io.modelcontextprotocol.registry/official']?.serverId || server.name}>
+                  <CardHeader className="pb-3 grid grid-cols-1 auto-cols-min">
+                    <CardTitle className="text-lg">{server.name}</CardTitle>
+                    <CardDescription className="mt-1">
+                      {server.description}
+                    </CardDescription>
+                    <div className="flex items-center gap-2">
+                      {server.websiteUrl && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => window.open(server.websiteUrl, '_blank')}
+                        >
+                          <ExternalLink className="h-4 w-4" />
+                        </Button>
+                      )}
+                      <Button
+                        variant="default"
+                        size="sm"
+                        onClick={() => handleSaveServer(server)}
+                      >
+                        <Plus className="h-4 w-4 mr-1" />
+                        Save
+                      </Button>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      <div>
+                        <p className="text-sm font-medium mb-2">Remote URLs:</p>
+                        <div className="space-y-1">
+                          {server.remotes?.map((remote: any, index: number) => (
+                            <div key={index} className="flex items-center gap-2">
+                              <Badge variant="secondary">{remote.type}</Badge>
+                              <code className="text-xs bg-muted px-2 py-1 rounded">
+                                {remote.url}
+                              </code>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+
+              {/* Show message if no servers */}
+              {servers.length === 0 && typedSavedServers.length === 0 && (
+                <div className="text-center py-8 text-muted-foreground">
+                  <p>No servers available. Add a custom server above or check back later.</p>
+                </div>
+              )}
             </>
           )}
         </ScrollArea>
