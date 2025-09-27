@@ -1,31 +1,34 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import type { Server, ServerListResponse } from '../../../server/src/lib/mcp-registry/types.zod';
 import { useMCPServerStorage, type SavedMCPServer } from '@/lib/mcp-storage';
+import { Badge } from '@/components/ui/badge';
 import { Loader2, Plus, Trash2, ExternalLink, Puzzle } from 'lucide-react';
 import {
   Drawer,
   DrawerClose,
   DrawerContent,
-  DrawerDescription,
+  // DrawerDescription,
   DrawerFooter,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerTrigger,
+  // DrawerHeader,
+  // DrawerTitle,
+  // DrawerTrigger,
 } from "@/components/ui/drawer"
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  // CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 
 interface MCPServerListDialogProps {
   open: boolean;
@@ -174,47 +177,150 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="max-w-md mx-auto">
-        <DrawerHeader>
-          <DrawerTitle>
-            <Puzzle className="inline-block text-muted-foreground align-baseline h-4 w-4 mr-1" />
-            Connectors
-          </DrawerTitle>
-          {/* <DrawerDescription>This action cannot be undone.</DrawerDescription> */}
-        </DrawerHeader>
+      <DrawerContent className="grid grid-rows-[auto_1fr_auto] grid-cols-1 max-w-md mx-auto">
         <section className="grid grid-cols-1 p-4">
-          <div className="space-y-3 p-4 border rounded-lg bg-muted/50">
-            <h4 className="text-sm font-medium">Add Custom Server</h4>
-            <div className="grid grid-cols-1 gap-4">
-              <input
-                type="text"
-                placeholder="Server name"
-                value={customName}
-                onChange={(e) => setCustomName(e.target.value)}
-                className="px-3 py-2 border rounded-md text-sm"
-              />
-              <input
-                type="url"
-                placeholder="Server URL"
-                value={customUrl}
-                onChange={(e) => setCustomUrl(e.target.value)}
-                className="px-3 py-2 border rounded-md text-sm"
-              />
-              <Button
-                onClick={handleAddCustomServer}
-                disabled={!customName.trim() || !customUrl.trim()}
-                size="sm"
+          <Tabs defaultValue="integrations" className="grid grid-rows-[1fr_auto] gap-4">
+            <TabsList className="grid grid-cols-2 w-full">
+              <TabsTrigger value="integrations">
+                <Puzzle className="h-4 w-4 mr-1 text-muted-foreground" />
+                Integrations
+              </TabsTrigger>
+              <TabsTrigger value="custom">
+                <Plus className="h-4 w-4 mr-1 text-muted-foreground" />
+                Custom
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="integrations" className="relative grid grid-cols-1 gap-4 max-h-[300px] overflow-y-auto">
+              <div
+                id="scroll-gradient-top"
+                className="from-background pointer-events-none sticky top-0 right-0 left-0 z-20 h-6 w-full bg-gradient-to-b to-transparent"
               >
-                <Plus className="h-4 w-4 mr-1" />
-                Add
-              </Button>
-            </div>
-          </div>
+              </div>
+              {typedSavedServers.map((savedServer) => {
+                const isFromRegistry = servers.some(server =>
+                  (server._meta?.['io.modelcontextprotocol.registry/official']?.serverId || server.name) === savedServer.id
+                )
+                return (
+                  <Card key={savedServer.id} className="py-3">
+                    <CardHeader className="px-3 grid grid-cols-1 auto-cols-min">
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        {savedServer.name}
+                        {!isFromRegistry && (
+                          <Badge variant="outline" className="text-xs">Custom</Badge>
+                        )}
+                      </CardTitle>
+                      <CardDescription className="mt-1">
+                        {savedServer.description}
+                      </CardDescription>
+                      <div className="flex items-center gap-2">
+                        {savedServer.websiteUrl && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => window.open(savedServer.websiteUrl, '_blank')}
+                          >
+                            <ExternalLink className="h-4 w-4" />
+                          </Button>
+                        )}
+                        {/* <Button
+                         variant="destructive"
+                         size="sm"
+                         onClick={() => handleRemoveServer(savedServer.id, savedServer.name)}
+                       >
+                         <Trash2 className="h-4 w-4" />
+                       </Button> */}
+                      </div>
+                    </CardHeader>
+                  </Card>
+                );
+              })}
+
+              {typedSavedServers.map((savedServer) => {
+                const isFromRegistry = servers.some(server =>
+                  (server._meta?.['io.modelcontextprotocol.registry/official']?.serverId || server.name) === savedServer.id
+                )
+                return (
+                  <Card key={savedServer.id} className="py-3">
+                    <CardHeader className="px-3 grid grid-cols-1 auto-cols-min">
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        {savedServer.name}
+                        {!isFromRegistry && (
+                          <Badge variant="outline" className="text-xs">Custom</Badge>
+                        )}
+                      </CardTitle>
+                      <CardDescription className="mt-1">
+                        {savedServer.description}
+                      </CardDescription>
+                      <div className="flex items-center gap-2">
+                        {savedServer.websiteUrl && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => window.open(savedServer.websiteUrl, '_blank')}
+                          >
+                            <ExternalLink className="h-4 w-4" />
+                          </Button>
+                        )}
+                        {/* <Button
+                         variant="destructive"
+                         size="sm"
+                         onClick={() => handleRemoveServer(savedServer.id, savedServer.name)}
+                       >
+                         <Trash2 className="h-4 w-4" />
+                       </Button> */}
+                      </div>
+                    </CardHeader>
+                  </Card>
+                );
+              })}
+              <div
+                id="scroll-gradient-bottom"
+                className="from-background pointer-events-none sticky right-0 bottom-0 left-0 z-20 h-6 w-full bg-gradient-to-t to-transparent"
+              >
+              </div>
+            </TabsContent>
+            <TabsContent value="custom">
+              <Card>
+                <CardHeader>
+                  <CardTitle>New Integration</CardTitle>
+                  <CardDescription>
+                    Add a custom Model Context Protocol server.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="flex flex-col gap-4">
+                  <input
+                    type="text"
+                    placeholder="Server name"
+                    value={customName}
+                    onChange={(e) => setCustomName(e.target.value)}
+                    className="px-3 py-2 border rounded-md text-sm"
+                  />
+                  <input
+                    type="url"
+                    placeholder="Server URL"
+                    value={customUrl}
+                    onChange={(e) => setCustomUrl(e.target.value)}
+                    className="px-3 py-2 border rounded-md text-sm"
+                  />
+                  <Button
+                    onClick={handleAddCustomServer}
+                    disabled={!customName.trim() || !customUrl.trim()}
+                    size="sm"
+                  >
+                    <Plus className="h-4 w-4 mr-1" />
+                    Add
+                  </Button>
+                </CardContent>
+              </Card>
+
+            </TabsContent>
+          </Tabs>
         </section>
         <DrawerFooter>
-          <Button>Submit</Button>
+          {/* <Button>Submit</Button> */}
           <DrawerClose asChild>
-            <Button variant="outline">Cancel</Button>
+            <Button variant="outline">Close</Button>
           </DrawerClose>
         </DrawerFooter>
       </DrawerContent>
