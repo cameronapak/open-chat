@@ -30,7 +30,14 @@ import {
 import { Actions, Action } from '@/components/ai-elements/actions';
 import { Fragment, useState, useEffect, useMemo, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Settings, ExternalLink } from 'lucide-react';
 import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport, type DynamicToolUIPart, type ToolUIPart, type UITool, type UIToolInvocation } from 'ai';
@@ -254,79 +261,74 @@ const ChatBotDemo = () => {
 
   return (
     <>
-      {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <Card className="w-full max-w-md mx-4">
-            <CardHeader>
-              <CardTitle>OpenRouter Authentication</CardTitle>
-              <CardDescription>
-                Connect your OpenRouter account to use the chat.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="py-4">
-              {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
-              {connected ? (
-                <PromptInputModelSelect
-                  onValueChange={(value) => {
-                    console.log(value)
-                    if (value) {
-                      setModel(value);
-                    }
-                  }}
-                  value={model}
-                  disabled={!connected || modelsLoading || modelsError}
-                  open={modelMenuOpen}
-                  onOpenChange={setModelMenuOpen}
-                >
-                  <PromptInputModelSelectTrigger className="w-full">
-                    <PromptInputModelSelectValue />
-                  </PromptInputModelSelectTrigger>
-                  {modelMenuOpen ? (
-                    <PromptInputModelSelectContent>
-                      {modelOptions.map((m) => (
-                        m.id === selectedModel?.id ? (
-                          <PromptInputModelSelectItem key={model || "openai/gpt-4o"} value={model || "openai/gpt-4o"}>
-                            {selectedModel?.name || "openai/gpt-4o"}
-                          </PromptInputModelSelectItem>
-                        ) : (
-                          <PromptInputModelSelectItem key={m.id} value={m.id}>
-                            <div className="flex-1 grid grid-cols gap-1">
-                              <p className="w-full">{m.name}</p>
-                              {m.context_length ? <p className="text-xs text-muted-foreground font-mono">{formatter.format(m.context_length)} context</p> : null}
-                              {m.pricing?.completion ? <p className="text-xs text-muted-foreground font-mono">{`\$${m.pricing?.completion || "0.00"}`}</p> : null}
-                            </div>
-                          </PromptInputModelSelectItem>
-                        )
-                      ))}
-                    </PromptInputModelSelectContent>
-                  ) : (
-                    <PromptInputModelSelectContent>
-                      <PromptInputModelSelectItem key={model || "openai/gpt-4o"} value={model || "openai/gpt-4o"}>
-                        {selectedModel?.name || "openai/gpt-4o"}
-                      </PromptInputModelSelectItem>
-                    </PromptInputModelSelectContent>
-                  )}
-                </PromptInputModelSelect>
-              ) : (
-                <Button onClick={handleConnect} className="w-full">
-                  <ExternalLink className="mr-2 h-4 w-4" />
-                  Connect with OpenRouter
-                </Button>
-              )}
-            </CardContent>
-            <CardFooter className="flex justify-end space-x-2">
-              <Button variant="outline" onClick={() => setIsOpen(false)}>
-                Close
+      <Dialog open={isOpen} onOpenChange={setIsOpen}>
+        <DialogContent className="w-full max-w-md">
+          <DialogHeader>
+            <DialogTitle>OpenRouter Authentication</DialogTitle>
+            <DialogDescription>
+              Connect your OpenRouter account to use the chat.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
+            {connected ? (
+              <PromptInputModelSelect
+                onValueChange={(value) => {
+                  console.log(value)
+                  if (value) {
+                    setModel(value);
+                  }
+                }}
+                value={model}
+                disabled={!connected || modelsLoading || modelsError}
+                open={modelMenuOpen}
+                onOpenChange={setModelMenuOpen}
+              >
+                <PromptInputModelSelectTrigger className="w-full">
+                  <PromptInputModelSelectValue />
+                </PromptInputModelSelectTrigger>
+                {modelMenuOpen ? (
+                  <PromptInputModelSelectContent>
+                    {modelOptions.map((m) => (
+                      m.id === selectedModel?.id ? (
+                        <PromptInputModelSelectItem key={model || "openai/gpt-4o"} value={model || "openai/gpt-4o"}>
+                          {selectedModel?.name || "openai/gpt-4o"}
+                        </PromptInputModelSelectItem>
+                      ) : (
+                        <PromptInputModelSelectItem key={m.id} value={m.id}>
+                          <div className="flex-1 grid grid-cols gap-1">
+                            <p className="w-full">{m.name}</p>
+                            {m.context_length ? <p className="text-xs text-muted-foreground font-mono">{formatter.format(m.context_length)} context</p> : null}
+                            {m.pricing?.completion ? <p className="text-xs text-muted-foreground font-mono">{`\$${m.pricing?.completion || "0.00"}`}</p> : null}
+                          </div>
+                        </PromptInputModelSelectItem>
+                      )
+                    ))}
+                  </PromptInputModelSelectContent>
+                ) : (
+                  <PromptInputModelSelectContent>
+                    <PromptInputModelSelectItem key={model || "openai/gpt-4o"} value={model || "openai/gpt-4o"}>
+                      {selectedModel?.name || "openai/gpt-4o"}
+                    </PromptInputModelSelectItem>
+                  </PromptInputModelSelectContent>
+                )}
+              </PromptInputModelSelect>
+            ) : (
+              <Button onClick={handleConnect} className="w-full">
+                <ExternalLink className="mr-2 h-4 w-4" />
+                Connect with OpenRouter
               </Button>
-              {connected && (
-                <Button variant="destructive" onClick={handleDisconnect}>
-                  Disconnect
-                </Button>
-              )}
-            </CardFooter>
-          </Card>
-        </div>
-      )}
+            )}
+          </div>
+          <DialogFooter className="flex justify-end space-x-2">
+            {connected && (
+              <Button variant="destructive" onClick={handleDisconnect}>
+                Disconnect
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <div className="max-w-4xl mx-auto p-6 relative size-full h-screen">
         <div className="flex flex-col h-full">
