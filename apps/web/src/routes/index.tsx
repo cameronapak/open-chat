@@ -164,19 +164,11 @@ const ChatBotDemo = () => {
     [],
   );
 
-  const { messages: rawMessages, sendMessage: rawSendMessage, status: rawStatus } = useChat({
+  const { messages: rawMessages, sendMessage, status: rawStatus } = useChat({
     transport,
   });
 
   const messages = [...rawMessages];
-
-  const sendMessage = (message: any, options?: any) => {
-    if (!connected) {
-      console.error('Not connected');
-      return;
-    }
-    return rawSendMessage(message, options);
-  };
   const status = rawStatus;
 
   // Connect using server-initiated PKCE start
@@ -235,10 +227,7 @@ const ChatBotDemo = () => {
       {
         text: message.text || 'Sent with attachments',
         files: message.files
-      },
-      {
-        webSearch: webSearch,
-      },
+      }
     );
     setInput('');
   };
@@ -421,13 +410,8 @@ const ChatBotDemo = () => {
                                 onUIAction={async (result: UIActionResult) => {
                                   switch (result.type) {
                                     case 'tool':
-                                      // Forward tool call to backend via new message
-                                      sendMessage({
-                                        role: 'user',
-                                        content: [
-                                          { type: 'text', text: `Execute tool: ${result.payload.toolName} with params: ${JSON.stringify(result.payload.params)}` }
-                                        ]
-                                      });
+                                      // @TODO - Forward tool call to backend via new message
+                                      toast.info(result.payload.toolName);
                                       break;
                                     case 'prompt':
                                       // @TODO - implement prompt
