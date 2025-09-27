@@ -14,6 +14,7 @@
         "@ai-sdk/openai": "^2.0.32",
         "@hono/node-server": "^1.14.4",
         "@hono/zod-validator": "^0.7.3",
+        "@modelcontextprotocol/sdk": "^1.18.2",
         "@openrouter/ai-sdk-provider": "^1.2.0",
         "ai": "^5.0.48",
         "arktype": "^2.1.22",
