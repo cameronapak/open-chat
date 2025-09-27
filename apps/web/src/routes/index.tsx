@@ -67,19 +67,19 @@ interface UIResource {
 }
 
 const exampleMCPUIiFrameMessage = {
-    id: crypto.randomUUID(),
-    role: "assistant" as "assistant" | "user" | "system",
-    parts: [
-      {
-        type: 'resource',
-        resource: {
-          uri: 'ui://example/raw-html',
-          mimeType: 'text/uri-list',
-          text: `https://app.fetch.bible`,
-        }
-      } as UIResource,
-    ],
-  };
+  id: crypto.randomUUID(),
+  role: "assistant" as "assistant" | "user" | "system",
+  parts: [
+    {
+      type: 'resource',
+      resource: {
+        uri: 'ui://example/raw-html',
+        mimeType: 'text/uri-list',
+        text: `https://app.fetch.bible`,
+      }
+    } as UIResource,
+  ],
+};
 
 const ChatBotDemo = () => {
   const [input, setInput] = useState('');
@@ -423,7 +423,7 @@ const ChatBotDemo = () => {
                                 supportedContentTypes={['rawHtml', 'externalUrl', 'remoteDom']}
                                 htmlProps={{
                                   iframeProps: {
-                                    className: "w-full max-w-[80%] rounded-xl border-2"
+                                    className: "w-full max-w-[80%] rounded-xl border-2 min-h-[200px]"
                                   },
                                   autoResizeIframe: {
                                     height: true,
