@@ -126,8 +126,11 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
   };
 
   const handleRemoveServer = (serverId: string, serverName: string) => {
-    removeServer(serverId);
-    toast.info(`Removed ${serverName}`);
+    const confirmed = confirm(`Do you want to delete ${serverName} integration?`);
+    if (confirmed) {
+      removeServer(serverId);
+      toast.info(`Removed ${serverName}`);
+    }
   };
 
   const handleToggleServer = (serverId: string, serverName: string) => {
@@ -214,7 +217,7 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
                             <div>
                               {savedServer.name}
                               {!isFromRegistry && (
-                                <Badge variant="secondary">Custom</Badge>
+                                <Badge variant="secondary" className="ml-2">Custom</Badge>
                               )}
                             </div>
                             <Switch
@@ -229,24 +232,15 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
                             <p className="text-muted-foreground">
                               {savedServer.description}
                             </p>
-                            {/* <div className="flex items-center gap-2">
-                            {/ * {savedServer.websiteUrl && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => window.open(savedServer.websiteUrl, '_blank')}
-                              >
-                                <ExternalLink className="h-4 w-4" />
-                              </Button>
-                            )} * /}
-                            {/ * <Button
-                              variant="destructive"
+                            <Button
+                              variant="ghost"
+                              className="w-fit -translate-x-1.5 text-muted-foreground"
                               size="sm"
                               onClick={() => handleRemoveServer(savedServer.id, savedServer.name)}
                             >
                               <Trash2 className="h-4 w-4" />
-                            </Button> * /}
-                          </div> */}
+                              Remove Integration
+                            </Button>
                           </div>
                         </AccordionContent>
                       </AccordionItem>
