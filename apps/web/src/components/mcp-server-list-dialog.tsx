@@ -15,7 +15,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import type { Server, ServerListResponse } from '../../../server/src/lib/mcp-registry/types.zod';
 import { useMCPServerStorage, type SavedMCPServer } from '@/lib/mcp-storage';
-import { Loader2, Plus, Trash2, ExternalLink } from 'lucide-react';
+import { Loader2, Plus, Trash2, ExternalLink, Puzzle } from 'lucide-react';
 
 interface MCPServerListDialogProps {
   open: boolean;
@@ -191,8 +191,11 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="grid overflow-hidden grid-rows-[auto_auto_1fr] grid-cols-1 max-h-[80vh]">
         <DialogHeader>
-          <DialogTitle>MCP Servers</DialogTitle>
-          <DialogDescription>
+          <DialogTitle>
+            <Puzzle className="inline-block text-muted-foreground align-baseline h-4 w-4 mr-1" />
+            Connectors
+          </DialogTitle>
+          <DialogDescription className="text-balance">
             Browse and manage MCP servers from the registry. Only remote servers are shown.
           </DialogDescription>
 

@@ -38,7 +38,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Settings, ExternalLink } from 'lucide-react';
+import { Settings, ExternalLink, Puzzle } from 'lucide-react';
 import { MCPServerListDialog } from '@/components/mcp-server-list-dialog';
 import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport, type DynamicToolUIPart, type ToolUIPart, type UITool, type UIToolInvocation } from 'ai';
@@ -541,15 +541,15 @@ const ChatBotDemo = () => {
                   size="sm"
                   onClick={openMcpDialog}
                 >
-                  <MCPLogo className="!h-5 !w-5" />
-                  <span className="sr-only">MCP</span>
+                  <Puzzle className="h-4 w-4 text-muted-foreground" />
+                  <span className="sr-only">Integrations</span>
                 </Button>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={openSettings}
                 >
-                  <Settings className="h-4 w-4" />
+                  <Settings className="h-4 w-4 text-muted-foreground" />
                   <span className="sr-only">Settings</span>
                 </Button>
               </PromptInputTools>
