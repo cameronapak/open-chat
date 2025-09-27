@@ -6,17 +6,14 @@ import { useMCPServerStorage, type SavedMCPServer } from '@/lib/mcp-storage';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Plus, Trash2, ExternalLink, Puzzle } from 'lucide-react';
 import {
-   Drawer,
-   DrawerClose,
-   AnimatedDrawerContent,
-   DrawerDescription,
-   DrawerFooter,
-   DrawerHeader,
-   DrawerTitle,
-   // DrawerHeader,
-   // DrawerTitle,
-   // DrawerTrigger,
- } from "@/components/ui/drawer"
+  Drawer,
+  DrawerClose,
+  AnimatedDrawerContent,
+  DrawerDescription,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerTitle,
+} from "@/components/ui/drawer"
 import {
   Tabs,
   TabsContent,
@@ -207,8 +204,8 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
                       <AccordionItem key={savedServer.id} value={savedServer.id}>
                         <AccordionTrigger className="px-3 py-3">
                           <div className="flex items-center gap-2">
-                            <img 
-                              src={favicon} 
+                            <img
+                              src={favicon}
                               className="h-6 w-6 rounded-full bg-white shadow-sm"
                             />
                             {savedServer.name}

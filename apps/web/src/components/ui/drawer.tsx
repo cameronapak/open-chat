@@ -1,6 +1,6 @@
 import * as React from "react"
 import { Drawer as DrawerPrimitive } from "vaul"
-import { motion, AnimatePresence } from "framer-motion"
+import { motion } from "framer-motion"
 import useMeasure from "react-use-measure"
 
 import { cn } from "@/lib/utils"
@@ -102,6 +102,7 @@ function AnimatedDrawerContent({
           animate={{
             height: bounds.height || defaultHeight,
           }}
+          transition={{ type: "spring", bounce: 0, duration: 0.3 }}
           className="overflow-hidden will-change-transform"
         >
           <div ref={ref}>
