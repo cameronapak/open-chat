@@ -181,7 +181,7 @@ export const mcpStorage = {
   getEnabledServers(): MCPServerConfig[] {
     const servers = this.getSavedServers();
     return servers
-      .filter(server => server.enabled)
+      .filter(server => server.enabled && server.remotes?.find(r => r.type === "streamable-http"))
       .map(({ savedAt, enabled, ...config }) => config);
   },
 

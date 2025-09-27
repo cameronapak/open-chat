@@ -185,14 +185,16 @@ const ChatBotDemo = () => {
 
           return {
             // https://openrouter.ai/announcements/introducing-web-search-via-the-api
+            // @TODO - support SSE
             model: modelRef.current,
             reasoning: true,
-            mcpServers: enabledServers.map(server => ({
-              id: server.id,
-              name: server.name,
-              url: server?.remotes?.find(r => r.type === "streamable-http")?.url,
-              enabled: true
-            }))
+            mcpServers: enabledServers
+              .map(server => ({
+                id: server.id,
+                name: server.name,
+                url: server?.remotes?.find(r => r.type === "streamable-http")?.url,
+                enabled: true
+              }))
           };
         },
       }),

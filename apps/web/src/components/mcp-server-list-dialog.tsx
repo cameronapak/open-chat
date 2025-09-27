@@ -94,6 +94,7 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
           ...remote,
           headers: remote.headers?.filter(header => header !== null) || undefined
         })) || undefined,
+        savedAt: new Date().toISOString()
       };
 
       addServer(serverConfig);

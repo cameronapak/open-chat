@@ -7,7 +7,8 @@ import {
   type UIMessage,
   experimental_createMCPClient as createMCPClient,
   type experimental_MCPClient as MCPClient,
-  stepCountIs
+  stepCountIs,
+  type ModelMessage
 } from 'ai';
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import { decrypt } from '@/lib/crypto';
@@ -20,6 +21,21 @@ interface MCPServerConfig {
   url: string
   enabled: boolean
 }
+
+// Taken from use-mcp Repo
+const systemPrompt = {
+  role: 'system' as const,
+  content: `
+    - Do not wrap your responses in html tags.
+    - Do not apply any formatting to your responses.
+    - You are an expert conversational chatbot. Your objective is to be as helpful as possible.
+    - You must keep your responses relevant to the user's prompt.
+    - You must respond with a maximum of 512 tokens (300 words).
+    - You must respond clearly and concisely, and explain your logic if required.
+    - You must not provide any personal information.
+    - Do not respond with your own personal opinions, and avoid topics unrelated to the user's prompt.
+  `,
+} as ModelMessage;
 
 export const chatRouter = new Hono();
 
@@ -81,7 +97,7 @@ const chatRoute = chatRouter.post('/', async (c) => {
 
     const result = streamText({
       model: openrouter.chat(model),
-      messages: convertToModelMessages(messages),
+      messages: [systemPrompt, ...convertToModelMessages(messages)],
       stopWhen: stepCountIs(5),
       tools,
       onFinish: async () => {

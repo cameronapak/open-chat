@@ -52,7 +52,8 @@ registryApp.get('/servers', zValidator('query', z.object({
     // Filter to only remote servers as the frontend expects
     const remoteServers = response.servers.filter(server =>
       server.remotes && server.remotes.length > 0
-    );
+      && server.remotes.find(r => r.type === "streamable-http")
+    )
 
     return c.json({
       ...response,
