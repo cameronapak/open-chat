@@ -67,6 +67,7 @@ import {
 } from '@/components/ai-elements/tool';
 import { useOpenRouterModels, type OpenRouterModel } from '@/lib/openrouter.models';
 import { mcpStorage } from '@/lib/mcp-storage';
+import { MCPLogo } from "@/components/mcp-logo";
 
 const MODEL_STORAGE_KEY = 'openchat:selectedModel';
 const formatter = new Intl.NumberFormat("en-US");
@@ -283,14 +284,6 @@ const ChatBotDemo = () => {
           <div className="py-4">
             {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
               <div className="space-y-4">
-                <Button
-                  onClick={openMcpDialog}
-                  variant="outline"
-                  className="w-full"
-                >
-                  MCP Servers
-                </Button>
-
                 {connected ? (
                   <PromptInputModelSelect
                     onValueChange={(value) => {
@@ -304,7 +297,7 @@ const ChatBotDemo = () => {
                     open={modelMenuOpen}
                     onOpenChange={setModelMenuOpen}
                   >
-                    <PromptInputModelSelectTrigger className="w-full">
+                    <PromptInputModelSelectTrigger className="w-full border">
                       <PromptInputModelSelectValue />
                     </PromptInputModelSelectTrigger>
                     {modelMenuOpen ? (
@@ -543,6 +536,14 @@ const ChatBotDemo = () => {
                   <GlobeIcon size={16} />
                   <span>Search</span>
                 </PromptInputButton>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={openMcpDialog}
+                >
+                  <MCPLogo className="!h-5 !w-5" />
+                  <span className="sr-only">MCP</span>
+                </Button>
                 <Button
                   variant="ghost"
                   size="sm"
