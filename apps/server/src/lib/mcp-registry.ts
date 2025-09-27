@@ -117,6 +117,15 @@ export interface GitHubOIDCTokenExchangeInputBody {
 }
 
 /**
+ * Interface for HTTP signature token exchange request body
+ */
+export interface HTTPTokenExchangeInputBody {
+  domain: string;
+  signed_timestamp: string;
+  timestamp: string;
+}
+
+/**
  * Authentication namespace for MCP Registry API
  */
 export class AuthNamespace {
@@ -178,6 +187,39 @@ export class AuthNamespace {
     if (!response.ok) {
       throw new Error(
         `Failed to exchange GitHub OIDC token: ${response.status} ${response.statusText}`
+      );
+    }
+
+    return await response.json();
+  }
+
+  /**
+   * Exchange HTTP signature for Registry JWT
+   * {@see https://registry.modelcontextprotocol.io/docs#/operations/exchange-http-token}
+   */
+  async exchangeHTTPSignatureForRegistryJWT(
+    domain: string,
+    signedTimestamp: string,
+    timestamp: string
+  ): Promise<TokenResponse> {
+    const url = `${this.baseUrl}/v0/auth/http`;
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        "Accept": "application/json, application/problem+json",
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        domain: domain,
+        signed_timestamp: signedTimestamp,
+        timestamp: timestamp
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(
+        `Failed to exchange HTTP signature: ${response.status} ${response.statusText}`
       );
     }
 
