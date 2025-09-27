@@ -154,6 +154,69 @@ export interface HealthBody {
 }
 
 /**
+ * Interface for error detail
+ * {@see https://registry.modelcontextprotocol.io/docs#/schemas/ErrorDetail}
+ */
+export interface ErrorDetail {
+  /**
+   * Where the error occurred, e.g. 'body.items[3].tags' or 'path.thing-id'
+   */
+  location: string;
+  
+  /**
+   * Error message text
+   */
+  message: string;
+  
+  /**
+   * The value at the given location
+   */
+  value: any;
+}
+
+/**
+ * Interface for error model
+ * {@see https://registry.modelcontextprotocol.io/docs#/schemas/ErrorModel}
+ */
+export interface ErrorModel {
+  /**
+   * A human-readable explanation specific to this occurrence of the problem.
+   * @example "Property foo is required but is missing."
+   */
+  detail: string;
+  
+  /**
+   * Optional list of individual error details
+   */
+  errors: ErrorDetail[] | null;
+  
+  /**
+   * A URI reference that identifies the specific occurrence of the problem.
+   * @example "https://example.com/error-log/abc123"
+   */
+  instance: string;
+  
+  /**
+   * HTTP status code
+   * @example 400
+   */
+  status: number;
+  
+  /**
+   * A short, human-readable summary of the problem type. This value should not change between occurrences of the error.
+   * @example "Bad Request"
+   */
+  title: string;
+  
+  /**
+   * A URI reference to human-readable documentation for the error.
+   * @default "about:blank"
+   * @example "https://example.com/errors/example"
+   */
+  type: string;
+}
+
+/**
  * Authentication namespace for MCP Registry API
  */
 export class AuthNamespace {
@@ -184,8 +247,24 @@ export class AuthNamespace {
     });
 
     if (!response.ok) {
+      const errorText = await response.text();
+      let errorModel: ErrorModel;
+      
+      try {
+        errorModel = JSON.parse(errorText);
+      } catch {
+        errorModel = {
+          detail: errorText || `Failed to exchange GitHub token: ${response.status} ${response.statusText}`,
+          errors: null,
+          instance: "",
+          status: response.status,
+          title: response.statusText,
+          type: "about:blank"
+        };
+      }
+      
       throw new Error(
-        `Failed to exchange GitHub token: ${response.status} ${response.statusText}`
+        `Failed to exchange GitHub token: ${errorModel.title || response.statusText} - ${errorModel.detail || errorText}`
       );
     }
 
@@ -213,8 +292,24 @@ export class AuthNamespace {
     });
 
     if (!response.ok) {
+      const errorText = await response.text();
+      let errorModel: ErrorModel;
+      
+      try {
+        errorModel = JSON.parse(errorText);
+      } catch {
+        errorModel = {
+          detail: errorText || `Failed to exchange GitHub OIDC token: ${response.status} ${response.statusText}`,
+          errors: null,
+          instance: "",
+          status: response.status,
+          title: response.statusText,
+          type: "about:blank"
+        };
+      }
+      
       throw new Error(
-        `Failed to exchange GitHub OIDC token: ${response.status} ${response.statusText}`
+        `Failed to exchange GitHub OIDC token: ${errorModel.title || response.statusText} - ${errorModel.detail || errorText}`
       );
     }
 
@@ -246,8 +341,24 @@ export class AuthNamespace {
     });
 
     if (!response.ok) {
+      const errorText = await response.text();
+      let errorModel: ErrorModel;
+      
+      try {
+        errorModel = JSON.parse(errorText);
+      } catch {
+        errorModel = {
+          detail: errorText || `Failed to exchange HTTP signature: ${response.status} ${response.statusText}`,
+          errors: null,
+          instance: "",
+          status: response.status,
+          title: response.statusText,
+          type: "about:blank"
+        };
+      }
+      
       throw new Error(
-        `Failed to exchange HTTP signature: ${response.status} ${response.statusText}`
+        `Failed to exchange HTTP signature: ${errorModel.title || response.statusText} - ${errorModel.detail || errorText}`
       );
     }
 
@@ -275,8 +386,24 @@ export class AuthNamespace {
     });
 
     if (!response.ok) {
+      const errorText = await response.text();
+      let errorModel: ErrorModel;
+      
+      try {
+        errorModel = JSON.parse(errorText);
+      } catch {
+        errorModel = {
+          detail: errorText || `Failed to exchange OIDC token: ${response.status} ${response.statusText}`,
+          errors: null,
+          instance: "",
+          status: response.status,
+          title: response.statusText,
+          type: "about:blank"
+        };
+      }
+      
       throw new Error(
-        `Failed to exchange OIDC token: ${response.status} ${response.statusText}`
+        `Failed to exchange OIDC token: ${errorModel.title || response.statusText} - ${errorModel.detail || errorText}`
       );
     }
 
@@ -302,8 +429,24 @@ export class AuthNamespace {
     });
 
     if (!response.ok) {
+      const errorText = await response.text();
+      let errorModel: ErrorModel;
+      
+      try {
+        errorModel = JSON.parse(errorText);
+      } catch {
+        errorModel = {
+          detail: errorText || `Failed to exchange DNS signature: ${response.status} ${response.statusText}`,
+          errors: null,
+          instance: "",
+          status: response.status,
+          title: response.statusText,
+          type: "about:blank"
+        };
+      }
+      
       throw new Error(
-        `Failed to exchange DNS signature: ${response.status} ${response.statusText}`
+        `Failed to exchange DNS signature: ${errorModel.title || response.statusText} - ${errorModel.detail || errorText}`
       );
     }
 
@@ -336,8 +479,24 @@ export class HealthNamespace {
     });
 
     if (!response.ok) {
+      const errorText = await response.text();
+      let errorModel: ErrorModel;
+      
+      try {
+        errorModel = JSON.parse(errorText);
+      } catch {
+        errorModel = {
+          detail: errorText || `Failed to get health status: ${response.status} ${response.statusText}`,
+          errors: null,
+          instance: "",
+          status: response.status,
+          title: response.statusText,
+          type: "about:blank"
+        };
+      }
+      
       throw new Error(
-        `Failed to get health status: ${response.status} ${response.statusText}`
+        `Failed to get health status: ${errorModel.title || response.statusText} - ${errorModel.detail || errorText}`
       );
     }
 
@@ -383,8 +542,24 @@ export class ServerNamespace {
     });
 
     if (!response.ok) {
+      const errorText = await response.text();
+      let errorModel: ErrorModel;
+      
+      try {
+        errorModel = JSON.parse(errorText);
+      } catch {
+        errorModel = {
+          detail: errorText || `Failed to list servers: ${response.status} ${response.statusText}`,
+          errors: null,
+          instance: "",
+          status: response.status,
+          title: response.statusText,
+          type: "about:blank"
+        };
+      }
+      
       throw new Error(
-        `Failed to list servers: ${response.status} ${response.statusText}`,
+        `Failed to list servers: ${errorModel.title || response.statusText} - ${errorModel.detail || errorText}`,
       );
     }
 
@@ -405,8 +580,24 @@ export class ServerNamespace {
     });
 
     if (!response.ok) {
+      const errorText = await response.text();
+      let errorModel: ErrorModel;
+      
+      try {
+        errorModel = JSON.parse(errorText);
+      } catch {
+        errorModel = {
+          detail: errorText || `Failed to get server ${id}: ${response.status} ${response.statusText}`,
+          errors: null,
+          instance: "",
+          status: response.status,
+          title: response.statusText,
+          type: "about:blank"
+        };
+      }
+      
       throw new Error(
-        `Failed to get server ${id}: ${response.status} ${response.statusText}`,
+        `Failed to get server ${id}: ${errorModel.title || response.statusText} - ${errorModel.detail || errorText}`,
       );
     }
 
@@ -447,8 +638,24 @@ export class AdminNamespace {
     });
 
     if (!response.ok) {
+      const errorText = await response.text();
+      let errorModel: ErrorModel;
+      
+      try {
+        errorModel = JSON.parse(errorText);
+      } catch {
+        errorModel = {
+          detail: errorText || `Failed to edit server: ${response.status} ${response.statusText}`,
+          errors: null,
+          instance: "",
+          status: response.status,
+          title: response.statusText,
+          type: "about:blank"
+        };
+      }
+      
       throw new Error(
-        `Failed to edit server: ${response.status} ${response.statusText}`
+        `Failed to edit server: ${errorModel.title || response.statusText} - ${errorModel.detail || errorText}`
       );
     }
 
@@ -487,8 +694,24 @@ export class PublishNamespace {
     });
 
     if (!response.ok) {
+      const errorText = await response.text();
+      let errorModel: ErrorModel;
+      
+      try {
+        errorModel = JSON.parse(errorText);
+      } catch {
+        errorModel = {
+          detail: errorText || `Failed to publish server: ${response.status} ${response.statusText}`,
+          errors: null,
+          instance: "",
+          status: response.status,
+          title: response.statusText,
+          type: "about:blank"
+        };
+      }
+      
       throw new Error(
-        `Failed to publish server: ${response.status} ${response.statusText}`
+        `Failed to publish server: ${errorModel.title || response.statusText} - ${errorModel.detail || errorText}`
       );
     }
 
