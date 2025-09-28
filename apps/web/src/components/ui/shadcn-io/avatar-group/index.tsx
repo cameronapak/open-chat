@@ -147,7 +147,7 @@ function AvatarGroup({
   variant = 'motion',
   transition = { type: 'spring', stiffness: 300, damping: 17 },
   invertOverlap = false,
-  translate = '-30%',
+  translate = '-15%',
   tooltipProps = { side: 'top', sideOffset: 24 },
   animate = false,
   size = 40,

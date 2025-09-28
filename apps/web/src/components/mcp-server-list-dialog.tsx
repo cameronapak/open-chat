@@ -216,9 +216,9 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
                             />
                             <div>
                               {savedServer.name}
-                              {!isFromRegistry && (
+                              {/* {!isFromRegistry && (
                                 <Badge variant="secondary" className="ml-2">Custom</Badge>
-                              )}
+                              )} */}
                             </div>
                             <Switch
                               onClick={(e) => e.stopPropagation()}
