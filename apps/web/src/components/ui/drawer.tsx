@@ -102,7 +102,7 @@ function AnimatedDrawerContent({
           animate={{
             height: bounds.height || defaultHeight,
           }}
-          transition={{ type: "spring", bounce: 0, duration: 0.3 }}
+          transition={{ type: "spring", bounce: 0.25, duration: 0.65 }}
           className="overflow-hidden will-change-transform"
         >
           <div ref={ref}>
