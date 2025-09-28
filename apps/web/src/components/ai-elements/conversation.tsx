@@ -11,7 +11,7 @@ export type ConversationProps = ComponentProps<typeof StickToBottom>;
 
 export const Conversation = ({ className, ...props }: ConversationProps) => (
   <StickToBottom
-    className={cn("relative flex-1 overflow-y-auto", className)}
+    className={cn("relative flex-1 overflow-y-auto will-change-transform", className)}
     initial="smooth"
     resize="smooth"
     role="log"
@@ -27,7 +27,14 @@ export const ConversationContent = ({
   className,
   ...props
 }: ConversationContentProps) => (
-  <StickToBottom.Content className={cn("p-4", className)} {...props} />
+  <StickToBottom.Content
+    className={cn("p-4", className)}
+    // Doing this to promote the message container 
+    // to a hardware-accelerated layer, reducing GPU 
+    // painting costs during textarea interactions
+    style={{ transform: 'translateZ(0)' }}
+    {...props}
+  />
 );
 
 export type ConversationEmptyStateProps = ComponentProps<"div"> & {
