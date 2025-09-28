@@ -227,7 +227,12 @@ const ChatBotDemo = () => {
 
   const shouldShowAvatarGroup = Boolean(enabledServers.length || enableWebSearch)
 
-  const { messages: rawMessages, sendMessage, status: rawStatus } = useChat({
+  const { 
+    messages: rawMessages, 
+    sendMessage, 
+    stop,
+    status: rawStatus,
+   } = useChat({
     transport,
   });
 
@@ -276,6 +281,11 @@ const ChatBotDemo = () => {
   const openMcpDialog = () => setMcpDialogOpen(true);
 
   const handleSubmit = (message: PromptInputMessage, event: FormEvent<HTMLFormElement>) => {
+    if (status === "streaming") {
+      stop();
+      return;
+    }
+
     const hasText = Boolean(message.text);
     const hasAttachments = Boolean(message.files?.length);
 
@@ -582,7 +592,10 @@ const ChatBotDemo = () => {
                   </TooltipContent>
                 </Tooltip>
               </PromptInputTools>
-              <PromptInputSubmit disabled={!connected || !model} status={status || undefined} />
+              <PromptInputSubmit
+                disabled={!connected || !model}
+                status={status || undefined}
+              />
             </PromptInputToolbar>
           </PromptInput>
         </div>
