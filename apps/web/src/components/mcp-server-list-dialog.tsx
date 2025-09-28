@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import type { Server, ServerListResponse } from '../../../server/src/lib/mcp-registry/types.zod';
 import { useMCPServerStorage, type SavedMCPServer } from '@/lib/mcp-storage';
-import { Plus, Trash2, Puzzle, Globe, CircleDollarSign } from 'lucide-react';
+import { Plus, Trash2, Puzzle, Globe } from 'lucide-react';
 import {
   Drawer,
   DrawerClose,
@@ -59,7 +59,6 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
     // getEnabledServers,
   } = useMCPServerStorage();
 
-  // Type assertion for savedServers since useMCPServerStorage returns SavedMCPServer[]
   const typedSavedServers = savedServers as SavedMCPServer[];
 
   // Fetch servers when dialog opens
@@ -93,40 +92,6 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
       setLoading(false);
     }
   };
-
-  // @TODO - re-implement when I add official registry
-  // const handleSaveServer = (server: Server) => {
-  //   try {
-  //     // Convert server to config format
-  //     const remote = server.remotes?.[0];
-  //     if (!remote) {
-  //       throw new Error('Server has no remote URLs');
-  //     }
-
-  //     const serverConfig: SavedMCPServer = {
-  //       id: server._meta?.['io.modelcontextprotocol.registry/official']?.serverId || server.name,
-  //       name: server.name,
-  //       description: server.description,
-  //       version: server.version,
-  //       websiteUrl: server.websiteUrl,
-  //       repository: server.repository,
-  //       packages: server.packages?.map(pkg => ({
-  //         ...pkg,
-  //         environment_variables: pkg.environment_variables?.filter(env => env !== null) || undefined
-  //       })) || undefined,
-  //       remotes: server.remotes?.map(remote => ({
-  //         ...remote,
-  //         headers: remote.headers?.filter(header => header !== null) || undefined
-  //       })) || undefined,
-  //       savedAt: new Date().toISOString()
-  //     };
-
-  //     addServer(serverConfig);
-  //     toast.info(`Saved ${server.name}`);
-  //   } catch (err: any) {
-  //     toast.error(err.message || 'Failed to save server');
-  //   }
-  // };
 
   const handleRemoveServer = (serverId: string, serverName: string) => {
     const confirmed = confirm(`Do you want to delete ${serverName} integration?`);
