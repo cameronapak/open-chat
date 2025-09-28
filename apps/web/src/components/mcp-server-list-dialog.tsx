@@ -224,12 +224,14 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
                   required
                   label="Integration name"
                   type="text"
+                  autoComplete='off'
                   placeholder="Notion MCP"
                   name="integration-name"
                 />
                 <InputWithLabel
                   id="url"
                   required
+                  autoComplete='off'
                   label="URL"
                   type="url"
                   placeholder="https://example.com/mcp"
@@ -237,6 +239,7 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
                 />
                 <InputWithLabel
                   id="description"
+                  autoComplete='off'
                   label="Description (optional)"
                   type="text"
                   placeholder="What does this integration do?"
