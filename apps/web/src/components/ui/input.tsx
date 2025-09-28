@@ -1,5 +1,5 @@
 import * as React from "react"
-
+import { Label } from "@/components/ui/label"
 import { cn } from "@/lib/utils"
 
 function Input({ className, type, ...props }: React.ComponentProps<"input">) {
@@ -18,4 +18,15 @@ function Input({ className, type, ...props }: React.ComponentProps<"input">) {
   )
 }
 
-export { Input }
+function InputWithLabel({ label, id, ...props }: { label: string; id: string }) {
+  return (
+    <div className="grid w-full max-w-sm items-center gap-3">
+      <Label htmlFor={id}>{label}</Label>
+      <Input id={id} placeholder="Email" {...props} />
+    </div>
+  )
+}
+
+
+export { Input, InputWithLabel }
+
