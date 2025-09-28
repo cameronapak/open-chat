@@ -54,7 +54,7 @@ export interface SavedMCPServer extends MCPServerConfig {
 }
 
 export interface MCPServerStorage {
-  servers: Server[];
+  servers: SavedMCPServer[];
   addServer: (server: MCPServerConfig) => void;
   removeServer: (serverId: string) => void;
   toggleServer: (serverId: string) => void;

@@ -1,7 +1,5 @@
-import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import type { Server, ServerListResponse } from '../../../server/src/lib/mcp-registry/types.zod';
 import { useMCPServerStorage, type SavedMCPServer } from '@/lib/mcp-storage';
 import { Plus, Trash2, Puzzle, Globe } from 'lucide-react';
 import {
@@ -36,73 +34,105 @@ interface MCPServerListDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-// Backend API base URL
-const API_BASE_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3000';
+// // Backend API base URL
+// const API_BASE_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3000';
+
+function IntegrationsAccordionList({ servers, onToggleServer, onRemoveServer }: { servers: SavedMCPServer[], onToggleServer: (serverId: string) => void, onRemoveServer: (serverId: string) => void }) {
+  const [enableWebSearch, setEnableWebSearch] = useAtom(enableOpenRouterWebSearch);
+  
+  const handleRemoveServer = (serverId: string, serverName: string) => {
+    const confirmed = confirm(`Do you want to delete ${serverName} integration?`);
+    if (confirmed) {
+      onRemoveServer(serverId);
+      toast.info(`Removed ${serverName}`);
+    }
+  };
+
+  return (
+    <Accordion type="single" collapsible className="w-full">
+      <AccordionItem value="open-router-online">
+        <AccordionTrigger className="px-3 py-3" asChild>
+          <div className="grid w-full grid-cols-[auto_1fr_auto] items-center gap-2">
+            <div className="flex items-center justify-center h-6 w-6 rounded-full bg-white shadow-sm">
+              <Globe className="h-4 w-4 text-muted-foreground" />
+            </div>
+            <div>
+              Web Search
+            </div>
+            <Switch
+              onClick={(e) => e.stopPropagation()}
+              checked={enableWebSearch}
+              onCheckedChange={() => setEnableWebSearch(!enableWebSearch)}
+            />
+          </div>
+        </AccordionTrigger>
+        <AccordionContent className="px-3">
+          <div className="grid grid-cols-1 auto-cols-min gap-2">
+            <p className="text-muted-foreground">
+              Get real-time web search results.
+              <a
+                href="https://openrouter.ai/docs/features/web-search"
+                target="_blank"
+                className="ml-1 hover:text-primary underline"
+              >
+                Learn about pricing
+              </a>
+            </p>
+          </div>
+        </AccordionContent>
+      </AccordionItem>
+
+      {servers.map((savedServer) => {
+        const favicon = getFavicon(savedServer.remotes?.[0].url || "")
+
+        return (
+          <AccordionItem key={savedServer.id} value={savedServer.id}>
+            <AccordionTrigger className="px-3 py-3" asChild>
+              <div className="grid w-full grid-cols-[auto_1fr_auto] items-center gap-2">
+                <img
+                  src={favicon}
+                  className="h-6 w-6 rounded-full bg-white shadow-sm"
+                />
+                <h3>
+                  {savedServer.name}
+                </h3>
+                <Switch
+                  onClick={(e) => e.stopPropagation()}
+                  checked={savedServer.enabled}
+                  onCheckedChange={() => onToggleServer(savedServer.id)}
+                />
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="px-3">
+              <div className="grid grid-cols-1 auto-cols-min gap-2">
+                <p className="text-muted-foreground">
+                  {savedServer.description}
+                </p>
+                <Button
+                  variant="ghost"
+                  className="w-fit -translate-x-1.5 text-muted-foreground"
+                  size="sm"
+                  onClick={() => handleRemoveServer(savedServer.id, savedServer.name)}
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Remove Integration
+                </Button>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+        );
+      })}
+    </Accordion>
+  )
+}
 
 export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogProps) {
-  const [servers, setServers] = useState<Server[]>([]);
-  const [_loading, setLoading] = useState(false);
-  const [_error, setError] = useState<string | null>(null);
-  const [enableWebSearch, setEnableWebSearch] = useAtom(enableOpenRouterWebSearch);
-
   const {
     servers: savedServers,
     addServer,
     removeServer,
     toggleServer,
-    // isServerSaved,
-    // getEnabledServers,
   } = useMCPServerStorage();
-
-  const typedSavedServers = savedServers as SavedMCPServer[];
-
-  // Fetch servers when dialog opens
-  useEffect(() => {
-    if (open) {
-      fetchServers();
-    }
-  }, [open]);
-
-  const fetchServers = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      // Use backend proxy instead of direct API call
-      // Adding cache option to better utilize HTTP caching headers
-      const response = await fetch(`${API_BASE_URL}/api/registry/servers?limit=50`, {
-        cache: 'default' // Use browser's default caching behavior
-      });
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const data: ServerListResponse = await response.json();
-      // Backend already filters to remote servers, so use directly
-      setServers(data.servers);
-    } catch (err: any) {
-      setError(err.message || 'Failed to fetch MCP servers');
-      console.error('Error fetching MCP servers:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleRemoveServer = (serverId: string, serverName: string) => {
-    const confirmed = confirm(`Do you want to delete ${serverName} integration?`);
-    if (confirmed) {
-      removeServer(serverId);
-      toast.info(`Removed ${serverName}`);
-    }
-  };
-
-  const handleToggleServer = (serverId: string, serverName: string) => {
-    toggleServer(serverId);
-  };
-
-  // const handleRefresh = () => {
-  //   fetchServers();
-  // };
 
   const handleAddCustomServer = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -159,7 +189,7 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
             </TabsList>
 
             <TabsContent value="integrations" className="relative grid grid-cols-1 gap-4 max-h-[300px] overflow-y-auto">
-              {typedSavedServers.length ? null : (
+              {savedServers.length ? null : (
                 <DrawerHeader className="flex flex-col items-center gap-2">
                   <DrawerTitle>Integrations</DrawerTitle>
                   <DrawerDescription>
@@ -168,84 +198,11 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
                 </DrawerHeader>
               )}
 
-              <Accordion type="single" collapsible className="w-full">
-                <AccordionItem value="open-router-online">
-                  <AccordionTrigger className="px-3 py-3" asChild>
-                    <div className="grid w-full grid-cols-[auto_1fr_auto] items-center gap-2">
-                      <div className="flex items-center justify-center h-6 w-6 rounded-full bg-white shadow-sm">
-                        <Globe className="h-4 w-4 text-muted-foreground" />
-                      </div>
-                      <div>
-                        Web Search
-                      </div>
-                      <Switch
-                        onClick={(e) => e.stopPropagation()}
-                        checked={enableWebSearch}
-                        onCheckedChange={() => setEnableWebSearch(!enableWebSearch)}
-                      />
-                    </div>
-                  </AccordionTrigger>
-                  <AccordionContent className="px-3">
-                    <div className="grid grid-cols-1 auto-cols-min gap-2">
-                      <p className="text-muted-foreground">
-                        Get real-time web search results.
-                        <a
-                          href="https://openrouter.ai/docs/features/web-search"
-                          target="_blank"
-                          className="ml-1 hover:text-primary underline"
-                        >
-                          Learn about pricing
-                        </a>
-                      </p>
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
-
-                {typedSavedServers.map((savedServer) => {
-                  const isFromRegistry = servers.some(server =>
-                    (server._meta?.['io.modelcontextprotocol.registry/official']?.serverId || server.name) === savedServer.id
-                  )
-
-                  const favicon = getFavicon(savedServer.remotes?.[0].url || "")
-
-                  return (
-                    <AccordionItem key={savedServer.id} value={savedServer.id}>
-                      <AccordionTrigger className="px-3 py-3" asChild>
-                        <div className="grid w-full grid-cols-[auto_1fr_auto] items-center gap-2">
-                          <img
-                            src={favicon}
-                            className="h-6 w-6 rounded-full bg-white shadow-sm"
-                          />
-                          <h3>
-                            {savedServer.name}
-                          </h3>
-                          <Switch
-                            onClick={(e) => e.stopPropagation()}
-                            checked={savedServer.enabled}
-                            onCheckedChange={() => handleToggleServer(savedServer.id, savedServer.name)}
-                          />
-                        </div>
-                      </AccordionTrigger>
-                      <AccordionContent className="px-3">
-                        <div className="grid grid-cols-1 auto-cols-min gap-2">
-                          <p className="text-muted-foreground">
-                            {savedServer.description}
-                          </p>
-                          <Button
-                            variant="ghost"
-                            className="w-fit -translate-x-1.5 text-muted-foreground"
-                            size="sm"
-                            onClick={() => handleRemoveServer(savedServer.id, savedServer.name)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                            Remove Integration
-                          </Button>
-                        </div>
-                      </AccordionContent>
-                    </AccordionItem>
-                  );
-                })}
-              </Accordion>
+              <IntegrationsAccordionList
+                servers={savedServers} 
+                onToggleServer={toggleServer} 
+                onRemoveServer={removeServer}
+              />
             </TabsContent>
             <TabsContent value="custom" className="px-3 flex flex-col gap-6">
               <div className="flex flex-col gap-2">
