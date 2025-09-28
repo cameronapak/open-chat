@@ -27,7 +27,6 @@ import { sanitizeUrl } from 'strict-url-sanitise'
 import { BrowserOAuthClientProvider } from '@/lib/auth/browser-provider'
 import type { UseMcpOptions, UseMcpResult } from './use-mcp.types'
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js'
-import type { RequestOptions } from '@modelcontextprotocol/sdk/types.js'
 
 const DEFAULT_RECONNECT_DELAY = 3000
 const DEFAULT_RETRY_DELAY = 5000
@@ -73,6 +72,9 @@ export function useMcp(options: UseMcpOptions): UseMcpResult {
   const [resources, setResources] = useState<Resource[]>([])
   const [resourceTemplates, setResourceTemplates] = useState<ResourceTemplate[]>([])
   const [prompts, setPrompts] = useState<Prompt[]>([])
+  const [serverInfo, setServerInfo] = useState<{ name: string; version: string } | undefined>(undefined)
+  const [serverCapabilities, setServerCapabilities] = useState<Record<string, any> | undefined>(undefined)
+  const [protocolVersion, setProtocolVersion] = useState<string | undefined>(undefined)
   const [error, setError] = useState<string | undefined>(undefined)
   const [log, setLog] = useState<UseMcpResult['log']>([])
   const [authUrl, setAuthUrl] = useState<string | undefined>(undefined)
@@ -133,6 +135,9 @@ export function useMcp(options: UseMcpOptions): UseMcpResult {
         setResources([])
         setResourceTemplates([])
         setPrompts([])
+        setServerInfo(undefined)
+        setServerCapabilities(undefined)
+        setProtocolVersion(undefined)
         setError(undefined)
         setAuthUrl(undefined)
       }
@@ -321,12 +326,28 @@ export function useMcp(options: UseMcpOptions): UseMcpResult {
         addLog('debug', `About to call client.connect() with transport instance`)
         addLog('debug', `Transport instance type: ${transportInstance.constructor.name}`)
 
-        await clientRef.current!.connect(transportInstance)
+        const initializeResponse = await clientRef.current!.connect(transportInstance)
 
         // --- Success Path ---
         addLog('info', `Client connected via ${transportType.toUpperCase()}. Loading tools, resources, and prompts...`)
         successfulTransportRef.current = transportType // Store successful type
         setState('loading')
+
+        // Capture server information from client properties
+        const client = clientRef.current as any
+        if (client.serverInfo) {
+          setServerInfo(client.serverInfo)
+          addLog('debug', `Server info: ${client.serverInfo.name} v${client.serverInfo.version}`)
+        }
+        if (client.serverCapabilities || client.capabilities) {
+          const caps = client.serverCapabilities || client.capabilities
+          setServerCapabilities(caps)
+          addLog('debug', `Server capabilities:`, caps)
+        }
+        if (client.protocolVersion) {
+          setProtocolVersion(client.protocolVersion)
+          addLog('debug', `Protocol version: ${client.protocolVersion}`)
+        }
 
         const toolsResponse = await clientRef.current!.request({ method: 'tools/list' }, ListToolsResultSchema)
 
@@ -527,7 +548,7 @@ export function useMcp(options: UseMcpOptions): UseMcpResult {
 
   // callTool is stable (depends on stable addLog, failConnection, connect, and URL)
   const callTool = useCallback(
-    async (name: string, args?: Record<string, unknown>, options?: RequestOptions) => {
+    async (name: string, args?: Record<string, unknown>, options?: any) => {
       // Use stateRef for check, state for throwing error message
       if (stateRef.current !== 'ready' || !clientRef.current) {
         throw new Error(`MCP client is not ready (current state: ${state}). Cannot call tool "${name}".`)
@@ -860,6 +881,9 @@ export function useMcp(options: UseMcpOptions): UseMcpResult {
     resources,
     resourceTemplates,
     prompts,
+    serverInfo,
+    serverCapabilities,
+    protocolVersion,
     error,
     log,
     authUrl,

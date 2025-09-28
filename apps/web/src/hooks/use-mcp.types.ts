@@ -1,4 +1,4 @@
-import type { Tool, Resource, ResourceTemplate, Prompt, RequestOptions } from '@modelcontextprotocol/sdk/types.js'
+import type { Tool, Resource, ResourceTemplate, Prompt } from '@modelcontextprotocol/sdk/types.js'
 import { BrowserOAuthClientProvider } from '@/lib/auth/browser-provider'
 
 export type UseMcpOptions = {
@@ -50,6 +50,12 @@ export type UseMcpResult = {
   resourceTemplates: ResourceTemplate[]
   /** List of prompts available from the connected MCP server */
   prompts: Prompt[]
+  /** Server information from the initialize response (name, version) */
+  serverInfo?: { name: string; version: string }
+  /** Server capabilities from the initialize response */
+  serverCapabilities?: Record<string, any>
+  /** Protocol version negotiated during initialization */
+  protocolVersion?: string
   /**
    * The current state of the MCP connection:
    * - 'discovering': Checking server existence and capabilities (including auth requirements).
@@ -77,7 +83,7 @@ export type UseMcpResult = {
    * @returns A promise that resolves with the tool's result.
    * @throws If the client is not in the 'ready' state or the call fails.
    */
-  callTool: (name: string, args?: Record<string, unknown>) => Promise<any>
+  callTool: (name: string, args?: Record<string, unknown>, options?: any) => Promise<any>
   /**
    * Function to list resources from the MCP server.
    * @returns A promise that resolves when resources are refreshed.
@@ -124,3 +130,7 @@ export type UseMcpResult = {
   /** The OAuth client provider used for authentication */
   authProvider: BrowserOAuthClientProvider | null
 }
+
+// Export server information types for TypeScript users
+export type ServerInfo = { name: string; version: string }
+export type ServerCapabilities = Record<string, any>
