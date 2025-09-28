@@ -30,7 +30,7 @@ import {
 } from '@/components/ai-elements/prompt-input';
 import { getFavicon } from "@/lib/utils";
 import { Actions, Action } from '@/components/ai-elements/actions';
-import { Fragment, useState, useEffect, useMemo, useRef } from 'react';
+import { Fragment, useState, useEffect, useMemo, useRef, type FormEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -105,7 +105,6 @@ interface MCPServerConfig {
 }
 
 const ChatBotDemo = () => {
-  const [input, setInput] = useState('');
   const [connected, setConnected] = useState<boolean>(false);
   const [isOpen, setIsOpen] = useState(false);
   const [mcpDialogOpen, setMcpDialogOpen] = useState(false);
@@ -265,7 +264,7 @@ const ChatBotDemo = () => {
   const openSettings = () => setIsOpen(true);
   const openMcpDialog = () => setMcpDialogOpen(true);
 
-  const handleSubmit = (message: PromptInputMessage) => {
+  const handleSubmit = (message: PromptInputMessage, event: FormEvent<HTMLFormElement>) => {
     const hasText = Boolean(message.text);
     const hasAttachments = Boolean(message.files?.length);
 
@@ -277,13 +276,13 @@ const ChatBotDemo = () => {
       return;
     }
 
-    sendMessage(
-      {
-        text: message.text || 'Sent with attachments',
-        files: message.files
-      }
-    );
-    setInput('');
+    sendMessage({
+      text: message.text || 'Sent with attachments',
+      files: message.files,
+    });
+
+    // Reset the form to clear the textarea without rerendering the parent
+    event.currentTarget.reset();
   };
 
   const enabledIntegrationServers = mcpStorage.getEnabledServers();
@@ -562,8 +561,7 @@ const ChatBotDemo = () => {
                 {(attachment) => <PromptInputAttachment data={attachment} />}
               </PromptInputAttachments>
               <PromptInputTextarea
-                onChange={(e) => setInput(e.target.value)}
-                value={input}
+                className="transition-none"
                 placeholder={!connected ? "Connect OpenRouter first" : undefined}
                 disabled={!connected}
               />
@@ -606,7 +604,7 @@ const ChatBotDemo = () => {
                   </TooltipContent>
                 </Tooltip>
               </PromptInputTools>
-              <PromptInputSubmit disabled={(!input && !status) || !connected || !model} status={status || undefined} />
+              <PromptInputSubmit disabled={!connected || !model} status={status || undefined} />
             </PromptInputToolbar>
           </PromptInput>
         </div>
