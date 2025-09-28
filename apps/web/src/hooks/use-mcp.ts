@@ -865,5 +865,6 @@ export function useMcp(options: UseMcpOptions): UseMcpResult {
     disconnect,
     authenticate,
     clearStorage,
+    authProvider: authProviderRef.current,
   }
 }

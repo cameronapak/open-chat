@@ -1,4 +1,5 @@
 import type { Tool, Resource, ResourceTemplate, Prompt } from '@modelcontextprotocol/sdk/types.js'
+import { BrowserOAuthClientProvider } from '@/lib/auth/browser-provider'
 
 export type UseMcpOptions = {
   /** The /sse URL of your remote MCP server */
@@ -120,4 +121,6 @@ export type UseMcpResult = {
   authenticate: () => void
   /** Clears all stored authentication data (tokens, client info, etc.) for this server URL from localStorage. */
   clearStorage: () => void
+  /** The OAuth client provider used for authentication */
+  authProvider: BrowserOAuthClientProvider | null
 }
