@@ -82,6 +82,7 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { enableOpenRouterWebSearch } from '@/lib/atoms';
 import { useAtom } from 'jotai';
+import { ModeToggle } from '@/components/mode-toggle';
 
 const MODEL_STORAGE_KEY = 'openchat:selectedModel';
 const formatter = new Intl.NumberFormat("en-US");
@@ -375,6 +376,10 @@ const ChatBotDemo = () => {
                   Connect with OpenRouter
                 </Button>
               )}
+              <div className="flex items-center justify-between">
+                <span>Dark Mode</span>
+                <ModeToggle />
+              </div>
             </div>
           </div>
           <DialogFooter className="flex justify-end space-x-2">
