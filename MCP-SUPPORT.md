@@ -33,6 +33,6 @@ Most likely MCP's will be called "Connectors" on the client-side.
 
 Too many tools connected at the same time makes it very hard for the LLM to know which one to choose. 
 
-- [ ] For every chat, I must manually toggle which Connectors to use. 
+- [x] For every chat, I must manually toggle which Connectors to use. 
 - [ ] I can tell a connector to always be used in chat
 - [ ] Given I save/install an MCP on the client, I must validate the server connection before actually saving it.
