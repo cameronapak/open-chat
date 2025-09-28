@@ -18,7 +18,7 @@ function Input({ className, type, ...props }: React.ComponentProps<"input">) {
   )
 }
 
-function InputWithLabel({ label, id, ...props }: { label: string; id: string }) {
+function InputWithLabel({ label, id, ...props }: { label: string; id: string } & React.ComponentProps<"input">) {
   return (
     <div className="grid w-full max-w-sm items-center gap-3">
       <Label htmlFor={id}>{label}</Label>

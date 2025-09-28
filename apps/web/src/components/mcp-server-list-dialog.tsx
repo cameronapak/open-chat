@@ -23,7 +23,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion"
-import { Input } from './ui/input';
+import { InputWithLabel } from './ui/input';
 import { getFavicon } from "@/lib/utils";
 import { Switch } from './ui/switch';
 import { enableOpenRouterWebSearch } from '@/lib/atoms';
@@ -217,21 +217,27 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
                 onSubmit={handleAddCustomServer}
                 className="flex flex-col gap-4"
               >
-                <Input
+                <InputWithLabel
+                  id="integration-name"
                   required
+                  label="Integration name"
                   type="text"
-                  placeholder="Integration name"
+                  placeholder="Notion MCP"
                   name="integration-name"
                 />
-                <Input
+                <InputWithLabel
+                  id="url"
                   required
+                  label="URL"
                   type="url"
                   placeholder="https://example.com/mcp"
                   name="url"
                 />
-                <Input
+                <InputWithLabel
+                  id="description"
+                  label="Description (optional)"
                   type="text"
-                  placeholder="Description (optional)"
+                  placeholder="What does this integration do?"
                   name="description"
                 />
                 <Button
