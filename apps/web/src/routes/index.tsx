@@ -291,10 +291,8 @@ const ChatBotDemo = () => {
 
   if (enableWebSearch) {
     avatars.push(
-      <Avatar key="open-router-web-search" className="size-6 bg-white border">
-        <div className="flex items-center justify-center h-6 w-6 rounded-full bg-white shadow-sm">
-          <Globe className="h-4 w-4 text-muted-foreground" />
-        </div>
+      <Avatar key="open-router-web-search" className="flex items-center justify-center size-6 bg-white border">
+        <Globe className="h-4 w-4 text-muted-foreground" />
         <AvatarGroupTooltip>
           <p>Web Search</p>
         </AvatarGroupTooltip>
