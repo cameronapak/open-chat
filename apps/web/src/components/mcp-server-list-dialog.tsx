@@ -207,12 +207,8 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
 
               <Accordion type="single" collapsible className="w-full">
                 <AccordionItem value="open-router-online">
-                  <AccordionTrigger className="px-3 py-3">
+                  <AccordionTrigger className="px-3 py-3" asChild>
                     <div className="grid w-full grid-cols-[auto_1fr_auto] items-center gap-2">
-                      {/* <img
-                        src={getFavicon("https://openrouter.ai")}
-                        className="h-6 w-6 rounded-full bg-white shadow-sm"
-                      /> */}
                       <div className="flex items-center justify-center h-6 w-6 rounded-full bg-white shadow-sm">
                         <Globe className="h-4 w-4 text-muted-foreground" />
                       </div>
@@ -251,18 +247,15 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
 
                   return (
                     <AccordionItem key={savedServer.id} value={savedServer.id}>
-                      <AccordionTrigger className="px-3 py-3">
+                      <AccordionTrigger className="px-3 py-3" asChild>
                         <div className="grid w-full grid-cols-[auto_1fr_auto] items-center gap-2">
                           <img
                             src={favicon}
                             className="h-6 w-6 rounded-full bg-white shadow-sm"
                           />
-                          <div>
+                          <h3>
                             {savedServer.name}
-                            {/* {!isFromRegistry && (
-                                <Badge variant="secondary" className="ml-2">Custom</Badge>
-                              )} */}
-                          </div>
+                          </h3>
                           <Switch
                             onClick={(e) => e.stopPropagation()}
                             checked={savedServer.enabled}
