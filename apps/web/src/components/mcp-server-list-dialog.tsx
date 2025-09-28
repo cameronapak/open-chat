@@ -1,10 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import type { Server, ServerListResponse } from '../../../server/src/lib/mcp-registry/types.zod';
 import { useMCPServerStorage, type SavedMCPServer } from '@/lib/mcp-storage';
-import { Badge } from '@/components/ui/badge';
-import { Loader2, Plus, Trash2, ExternalLink, Puzzle } from 'lucide-react';
+import { Plus, Trash2, Puzzle, Globe, CircleDollarSign } from 'lucide-react';
 import {
   Drawer,
   DrawerClose,
@@ -29,6 +28,8 @@ import {
 import { Input } from './ui/input';
 import { getFavicon } from "@/lib/utils";
 import { Switch } from './ui/switch';
+import { enableOpenRouterWebSearch } from '@/lib/atoms';
+import { useAtom } from 'jotai';
 
 interface MCPServerListDialogProps {
   open: boolean;
@@ -40,21 +41,22 @@ const API_BASE_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3000';
 
 export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogProps) {
   const [servers, setServers] = useState<Server[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [_loading, setLoading] = useState(false);
+  const [_error, setError] = useState<string | null>(null);
 
   // Custom server form state
   const [customName, setCustomName] = useState('');
   const [customUrl, setCustomUrl] = useState('');
   const [customDescription, setCustomDescription] = useState('');
+  const [enableWebSearch, setEnableWebSearch] = useAtom(enableOpenRouterWebSearch);
 
   const {
     servers: savedServers,
     addServer,
     removeServer,
     toggleServer,
-    isServerSaved,
-    getEnabledServers,
+    // isServerSaved,
+    // getEnabledServers,
   } = useMCPServerStorage();
 
   // Type assertion for savedServers since useMCPServerStorage returns SavedMCPServer[]
@@ -92,38 +94,39 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
     }
   };
 
-  const handleSaveServer = (server: Server) => {
-    try {
-      // Convert server to config format
-      const remote = server.remotes?.[0];
-      if (!remote) {
-        throw new Error('Server has no remote URLs');
-      }
+  // @TODO - re-implement when I add official registry
+  // const handleSaveServer = (server: Server) => {
+  //   try {
+  //     // Convert server to config format
+  //     const remote = server.remotes?.[0];
+  //     if (!remote) {
+  //       throw new Error('Server has no remote URLs');
+  //     }
 
-      const serverConfig: SavedMCPServer = {
-        id: server._meta?.['io.modelcontextprotocol.registry/official']?.serverId || server.name,
-        name: server.name,
-        description: server.description,
-        version: server.version,
-        websiteUrl: server.websiteUrl,
-        repository: server.repository,
-        packages: server.packages?.map(pkg => ({
-          ...pkg,
-          environment_variables: pkg.environment_variables?.filter(env => env !== null) || undefined
-        })) || undefined,
-        remotes: server.remotes?.map(remote => ({
-          ...remote,
-          headers: remote.headers?.filter(header => header !== null) || undefined
-        })) || undefined,
-        savedAt: new Date().toISOString()
-      };
+  //     const serverConfig: SavedMCPServer = {
+  //       id: server._meta?.['io.modelcontextprotocol.registry/official']?.serverId || server.name,
+  //       name: server.name,
+  //       description: server.description,
+  //       version: server.version,
+  //       websiteUrl: server.websiteUrl,
+  //       repository: server.repository,
+  //       packages: server.packages?.map(pkg => ({
+  //         ...pkg,
+  //         environment_variables: pkg.environment_variables?.filter(env => env !== null) || undefined
+  //       })) || undefined,
+  //       remotes: server.remotes?.map(remote => ({
+  //         ...remote,
+  //         headers: remote.headers?.filter(header => header !== null) || undefined
+  //       })) || undefined,
+  //       savedAt: new Date().toISOString()
+  //     };
 
-      addServer(serverConfig);
-      toast.info(`Saved ${server.name}`);
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to save server');
-    }
-  };
+  //     addServer(serverConfig);
+  //     toast.info(`Saved ${server.name}`);
+  //   } catch (err: any) {
+  //     toast.error(err.message || 'Failed to save server');
+  //   }
+  // };
 
   const handleRemoveServer = (serverId: string, serverName: string) => {
     const confirmed = confirm(`Do you want to delete ${serverName} integration?`);
@@ -135,15 +138,11 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
 
   const handleToggleServer = (serverId: string, serverName: string) => {
     toggleServer(serverId);
-    const server = typedSavedServers.find(s => s.id === serverId);
-    if (server) {
-      toast.info(`${serverName} ${server.enabled ? 'disabled' : 'enabled'}`);
-    }
   };
 
-  const handleRefresh = () => {
-    fetchServers();
-  };
+  // const handleRefresh = () => {
+  //   fetchServers();
+  // };
 
   const handleAddCustomServer = () => {
     if (!customName.trim() || !customUrl.trim()) {
@@ -197,57 +196,7 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
             </TabsList>
 
             <TabsContent value="integrations" className="relative grid grid-cols-1 gap-4 max-h-[300px] overflow-y-auto">
-              {typedSavedServers.length ? (
-                <Accordion type="single" collapsible className="w-full">
-                  {typedSavedServers.map((savedServer) => {
-                    const isFromRegistry = servers.some(server =>
-                      (server._meta?.['io.modelcontextprotocol.registry/official']?.serverId || server.name) === savedServer.id
-                    )
-
-                    const favicon = getFavicon(savedServer.remotes?.[0].url || "")
-
-                    return (
-                      <AccordionItem key={savedServer.id} value={savedServer.id}>
-                        <AccordionTrigger className="px-3 py-3">
-                          <div className="grid w-full grid-cols-[auto_1fr_auto] items-center gap-2">
-                            <img
-                              src={favicon}
-                              className="h-6 w-6 rounded-full bg-white shadow-sm"
-                            />
-                            <div>
-                              {savedServer.name}
-                              {/* {!isFromRegistry && (
-                                <Badge variant="secondary" className="ml-2">Custom</Badge>
-                              )} */}
-                            </div>
-                            <Switch
-                              onClick={(e) => e.stopPropagation()}
-                              checked={savedServer.enabled}
-                              onCheckedChange={() => handleToggleServer(savedServer.id, savedServer.name)}
-                            />
-                          </div>
-                        </AccordionTrigger>
-                        <AccordionContent className="px-3">
-                          <div className="grid grid-cols-1 auto-cols-min gap-2">
-                            <p className="text-muted-foreground">
-                              {savedServer.description}
-                            </p>
-                            <Button
-                              variant="ghost"
-                              className="w-fit -translate-x-1.5 text-muted-foreground"
-                              size="sm"
-                              onClick={() => handleRemoveServer(savedServer.id, savedServer.name)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                              Remove Integration
-                            </Button>
-                          </div>
-                        </AccordionContent>
-                      </AccordionItem>
-                    );
-                  })}
-                </Accordion>
-              ) : (
+              {typedSavedServers.length ? null : (
                 <DrawerHeader className="flex flex-col items-center gap-2">
                   <DrawerTitle>Integrations</DrawerTitle>
                   <DrawerDescription>
@@ -255,6 +204,92 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
                   </DrawerDescription>
                 </DrawerHeader>
               )}
+
+              <Accordion type="single" collapsible className="w-full">
+                <AccordionItem value="open-router-online">
+                  <AccordionTrigger className="px-3 py-3">
+                    <div className="grid w-full grid-cols-[auto_1fr_auto] items-center gap-2">
+                      {/* <img
+                        src={getFavicon("https://openrouter.ai")}
+                        className="h-6 w-6 rounded-full bg-white shadow-sm"
+                      /> */}
+                      <div className="flex items-center justify-center h-6 w-6 rounded-full bg-white shadow-sm">
+                        <Globe className="h-4 w-4 text-muted-foreground" />
+                      </div>
+                      <div>
+                        Web Search
+                      </div>
+                      <Switch
+                        onClick={(e) => e.stopPropagation()}
+                        checked={enableWebSearch}
+                        onCheckedChange={() => setEnableWebSearch(!enableWebSearch)}
+                      />
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="px-3">
+                    <div className="grid grid-cols-1 auto-cols-min gap-2">
+                      <p className="text-muted-foreground">
+                        Get real-time web search results.
+                        <a 
+                          href="https://openrouter.ai/docs/features/web-search" 
+                          target="_blank"
+                          className="ml-1 hover:text-primary underline"
+                        >
+                          Learn about pricing
+                        </a>
+                      </p>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+
+                {typedSavedServers.map((savedServer) => {
+                  const isFromRegistry = servers.some(server =>
+                    (server._meta?.['io.modelcontextprotocol.registry/official']?.serverId || server.name) === savedServer.id
+                  )
+
+                  const favicon = getFavicon(savedServer.remotes?.[0].url || "")
+
+                  return (
+                    <AccordionItem key={savedServer.id} value={savedServer.id}>
+                      <AccordionTrigger className="px-3 py-3">
+                        <div className="grid w-full grid-cols-[auto_1fr_auto] items-center gap-2">
+                          <img
+                            src={favicon}
+                            className="h-6 w-6 rounded-full bg-white shadow-sm"
+                          />
+                          <div>
+                            {savedServer.name}
+                            {/* {!isFromRegistry && (
+                                <Badge variant="secondary" className="ml-2">Custom</Badge>
+                              )} */}
+                          </div>
+                          <Switch
+                            onClick={(e) => e.stopPropagation()}
+                            checked={savedServer.enabled}
+                            onCheckedChange={() => handleToggleServer(savedServer.id, savedServer.name)}
+                          />
+                        </div>
+                      </AccordionTrigger>
+                      <AccordionContent className="px-3">
+                        <div className="grid grid-cols-1 auto-cols-min gap-2">
+                          <p className="text-muted-foreground">
+                            {savedServer.description}
+                          </p>
+                          <Button
+                            variant="ghost"
+                            className="w-fit -translate-x-1.5 text-muted-foreground"
+                            size="sm"
+                            onClick={() => handleRemoveServer(savedServer.id, savedServer.name)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                            Remove Integration
+                          </Button>
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
+                  );
+                })}
+              </Accordion>
             </TabsContent>
             <TabsContent value="custom" className="px-3 flex flex-col gap-6">
               <div className="flex flex-col gap-2">

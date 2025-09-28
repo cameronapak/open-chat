@@ -40,6 +40,7 @@
     "clsx": "^2.1.1",
     "embla-carousel-react": "^8.6.0",
     "framer-motion": "^12.23.22",
+    "jotai": "^2.15.0",
     "lucide-react": "^0.544.0",
     "motion": "^12.23.22",
     "nanoid": "^5.1.5",

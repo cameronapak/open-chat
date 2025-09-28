@@ -1,4 +1,5 @@
 'use client';
+import { type JSX } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import {
   Conversation,
@@ -39,7 +40,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Settings, ExternalLink, Puzzle } from 'lucide-react';
+import { Settings, ExternalLink, Puzzle, Globe } from 'lucide-react';
 import { MCPServerListDialog } from '@/components/mcp-server-list-dialog';
 import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport, type DynamicToolUIPart, type ToolUIPart, type UITool, type UIToolInvocation } from 'ai';
@@ -78,6 +79,9 @@ import {
   AvatarGroup,
   AvatarGroupTooltip,
 } from '@/components/ui/shadcn-io/avatar-group';
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { enableOpenRouterWebSearch } from '@/lib/atoms';
+import { useAtom } from 'jotai';
 
 const MODEL_STORAGE_KEY = 'openchat:selectedModel';
 const formatter = new Intl.NumberFormat("en-US");
@@ -105,7 +109,7 @@ const ChatBotDemo = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [mcpDialogOpen, setMcpDialogOpen] = useState(false);
   const [model, setModel] = useState<string>("");
-  const [webSearch, setWebSearch] = useState(false);
+  const [enableWebSearch, setEnableWebSearch] = useAtom(enableOpenRouterWebSearch);
   const [error, setError] = useState<string | null>(null);
   const [modelMenuOpen, setModelMenuOpen] = useState(false);
 
@@ -124,8 +128,8 @@ const ChatBotDemo = () => {
   // Keep a ref of the latest selected model so the transport can always read it
   const modelRef = useRef<string>(model);
   useEffect(() => {
-    modelRef.current = model + (webSearch ? ':online' : '');
-  }, [model, webSearch]);
+    modelRef.current = model + (enableWebSearch ? ':online' : '');
+  }, [model, enableWebSearch]);
 
   // Persist model choice whenever it changes
   useEffect(() => {
@@ -282,6 +286,33 @@ const ChatBotDemo = () => {
   };
 
   const enabledIntegrationServers = mcpStorage.getEnabledServers();
+
+  const avatars: JSX.Element[] = [];
+
+  if (enableWebSearch) {
+    avatars.push(
+      <Avatar key="open-router-web-search" className="size-6 bg-white border">
+        <div className="flex items-center justify-center h-6 w-6 rounded-full bg-white shadow-sm">
+          <Globe className="h-4 w-4 text-muted-foreground" />
+        </div>
+        <AvatarGroupTooltip>
+          <p>Web Search</p>
+        </AvatarGroupTooltip>
+      </Avatar>
+    )
+  }
+
+  enabledIntegrationServers?.map((server, index) => {
+    avatars.push(
+      <Avatar key={index} className="size-6 bg-white border">
+        <AvatarImage src={getFavicon(server.remotes?.[0].url || "")} />
+        <AvatarFallback>{server.name}</AvatarFallback>
+        <AvatarGroupTooltip>
+          <p>{server.name}</p>
+        </AvatarGroupTooltip>
+      </Avatar>
+    );
+  });
 
   return (
     <>
@@ -534,52 +565,37 @@ const ChatBotDemo = () => {
             </PromptInputBody>
             <PromptInputToolbar>
               <PromptInputTools>
-                {/* <PromptInputActionMenu>
-                  <PromptInputActionMenuTrigger />
-                  <PromptInputActionMenuContent>
-                    <PromptInputActionAddAttachments />
-                  </PromptInputActionMenuContent>
-                </PromptInputActionMenu> */}
-                <PromptInputButton
-                  variant={webSearch ? 'default' : 'ghost'}
-                  onClick={() => setWebSearch(!webSearch)}
-                  disabled={!connected}
-                >
-                  <GlobeIcon size={16} />
-                  <span>Search</span>
-                </PromptInputButton>
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="w-fit px-2"
+                  className={enabledIntegrationServers.length || enableWebSearch ? "w-fit px-2" : ""}
                   onClick={openMcpDialog}
                 >
-                  {enabledIntegrationServers.length > 0
-                    ? (
-                      <AvatarGroup variant="motion" className="h-12 -space-x-3">
-                        {enabledIntegrationServers.map((server, index) => (
-                          <Avatar key={index} className="size-6 bg-white border">
-                            <AvatarImage src={getFavicon(server.remotes?.[0].url || "")} />
-                            <AvatarFallback>{server.name}</AvatarFallback>
-                            <AvatarGroupTooltip>
-                              <p>{server.name}</p>
-                            </AvatarGroupTooltip>
-                          </Avatar>
-                        ))}
-                      </AvatarGroup>
-                    ) : (
-                      <Puzzle className="h-4 w-4 text-muted-foreground" />
-                    )}
+                  {enabledIntegrationServers.length || enableWebSearch ? (
+                    <AvatarGroup variant="motion" className="h-12 -space-x-3">
+                      {avatars}
+                    </AvatarGroup>
+                  ) : (
+                    <Puzzle className="h-4 w-4 text-muted-foreground" />
+                  )}
                   <span className="sr-only">Integrations</span>
                 </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={openSettings}
-                >
-                  <Settings className="h-4 w-4 text-muted-foreground" />
-                  <span className="sr-only">Settings</span>
-                </Button>
+
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={openSettings}
+                    >
+                      <Settings className="h-4 w-4 text-muted-foreground" />
+                      <span className="sr-only">Settings</span>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Settings</p>
+                  </TooltipContent>
+                </Tooltip>
               </PromptInputTools>
               <PromptInputSubmit disabled={(!input && !status) || !connected || !model} status={status || undefined} />
             </PromptInputToolbar>
