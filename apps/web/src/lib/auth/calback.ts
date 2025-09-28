@@ -1,6 +1,6 @@
 // callback.ts
 import { auth } from '@modelcontextprotocol/sdk/client/auth.js'
-import type { BrowserOAuthClientProvider } from './browser-provider.ts' // Adjust path
+import { BrowserOAuthClientProvider } from './browser-provider' // Adjust path
 import type { StoredState } from './types.ts' // Adjust path, ensure definition includes providerOptions
 
 /**
