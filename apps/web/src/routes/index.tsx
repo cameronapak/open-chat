@@ -555,7 +555,7 @@ const ChatBotDemo = () => {
             <ConversationScrollButton />
           </Conversation>
 
-          <PromptInput onSubmit={handleSubmit} className="mt-4" globalDrop multiple>
+          <PromptInput onSubmit={handleSubmit} globalDrop multiple>
             <PromptInputBody>
               <PromptInputAttachments>
                 {(attachment) => <PromptInputAttachment data={attachment} />}
