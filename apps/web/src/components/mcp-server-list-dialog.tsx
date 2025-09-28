@@ -107,9 +107,11 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
   const handleAddCustomServer = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    const { name, url, description } = e.target as HTMLFormElement;
+    const name = e.currentTarget["integration-name"].value;
+    const url = e.currentTarget.url.value;
+    const description = e.currentTarget.description.value;
 
-    if (!name.trim() || !url.value.trim()) {
+    if (!name.trim() || !url.trim()) {
       toast.error('Name and URL are required');
       return;
     }
@@ -121,17 +123,18 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
       const customServer: SavedMCPServer = {
         id: serverId,
         name: name.trim(),
-        description: description.value.trim() || 'Custom MCP server',
+        description: description.trim() || 'Custom MCP server',
         version: '1.0.0',
         remotes: [{
           type: 'streamable-http',
-          url: url.value.trim()
+          url: url.trim()
         }],
         savedAt: new Date().toISOString(),
         enabled: true
       };
 
       addServer(customServer);
+      toast.success("Custom server added successfully")
 
       e.currentTarget.reset();
     } catch (err: any) {
@@ -261,7 +264,7 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
                   required
                   type="text"
                   placeholder="Integration name"
-                  name="name"
+                  name="integration-name"
                 />
                 <Input
                   required
