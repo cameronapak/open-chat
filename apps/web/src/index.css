@@ -133,6 +133,8 @@ body {
 
 @layer base {
   html {
+    /* https://x.com/BHolmesDev/status/1970489474866958642 */
+    overscroll-behavior: none;
     @apply font-sans;
   }
   
