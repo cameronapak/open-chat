@@ -79,7 +79,7 @@ import {
   AvatarGroupTooltip,
 } from '@/components/ui/shadcn-io/avatar-group';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { enableOpenRouterWebSearch, enabledMcpServersAtom } from '@/lib/atoms';
+import { enableOpenRouterWebSearch, enabledMcpServersAtom, mcpServersAtom } from '@/lib/atoms';
 import { useAtom, useAtomValue } from 'jotai';
 import { ModeToggle } from '@/components/mode-toggle';
 
@@ -154,6 +154,9 @@ const ChatBotDemo = () => {
   const [enableWebSearch] = useAtom(enableOpenRouterWebSearch);
   const [error, setError] = useState<string | null>(null);
   const [modelMenuOpen, setModelMenuOpen] = useState(false);
+  // Intentionally imported and unused in order to 
+  // make enabledServers reactive.
+  useAtomValue(mcpServersAtom);
   const enabledServers = useAtomValue(enabledMcpServersAtom);
 
   // Load saved model choice on mount
@@ -240,18 +243,23 @@ const ChatBotDemo = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: () => {
+        prepareSendMessagesRequest: ({ messages, id, body }) => {
           return {
-            // https://openrouter.ai/announcements/introducing-web-search-via-the-api
-            // @TODO - support SSE
-            model: modelRef.current,
-            reasoning: true,
-            mcpServers: enabledServers.map((server) => ({
-              id: server.id,
-              name: server.name,
-              url: getUrlFromServer(server),
-              enabled: server.enabled,
-            })) as MCPServerConfig[],
+            body: {
+              ...body,
+              id,
+              messages,
+              // https://openrouter.ai/announcements/introducing-web-search-via-the-api
+              // @TODO - support SSE
+              model: modelRef.current,
+              reasoning: true,
+              mcpServers: enabledServers.map((server) => ({
+                id: server.id,
+                name: server.name,
+                url: getUrlFromServer(server),
+                enabled: server.enabled,
+              })) as MCPServerConfig[],
+            },
           };
         },
       });
@@ -346,7 +354,6 @@ const ChatBotDemo = () => {
               {connected ? (
                 <PromptInputModelSelect
                   onValueChange={(value) => {
-                    console.log(value)
                     if (value) {
                       setModel(value);
                     }
