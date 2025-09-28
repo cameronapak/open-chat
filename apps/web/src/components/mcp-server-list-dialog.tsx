@@ -172,7 +172,7 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
-      <AnimatedDrawerContent className="grid grid-rows-[auto_1fr_auto] grid-cols-1 max-w-md mx-auto">
+      <AnimatedDrawerContent aria-describedby='integrations' className="grid grid-rows-[auto_1fr_auto] grid-cols-1 max-w-md mx-auto">
         <section className="grid grid-cols-1 p-4">
           <Tabs defaultValue="integrations" className="grid grid-rows-[1fr_auto] gap-4">
             <TabsList className="grid grid-cols-2 w-full">
@@ -191,10 +191,15 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
                 // Fixes: "`DialogContent` requires a `DialogTitle` for 
                 // the component to be accessible for screen reader users."
                 <VisuallyHidden.Root>
-                  <DrawerTitle>Integrations</DrawerTitle>
+                  <DrawerHeader id='integrations' className="flex flex-col items-center gap-2">
+                    <DrawerTitle>Integrations</DrawerTitle>
+                    <DrawerDescription>
+                      Added integrations will appear here.
+                    </DrawerDescription>
+                  </DrawerHeader>
                 </VisuallyHidden.Root>
               ) : (
-                <DrawerHeader className="flex flex-col items-center gap-2">
+                <DrawerHeader id='integrations' className="flex flex-col items-center gap-2">
                   <DrawerTitle>Integrations</DrawerTitle>
                   <DrawerDescription>
                     Added integrations will appear here.
