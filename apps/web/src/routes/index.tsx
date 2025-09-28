@@ -27,6 +27,7 @@ import {
   PromptInputToolbar,
   PromptInputTools,
 } from '@/components/ai-elements/prompt-input';
+import { getFavicon } from "@/lib/utils";
 import { Actions, Action } from '@/components/ai-elements/actions';
 import { Fragment, useState, useEffect, useMemo, useRef } from 'react';
 import { Button } from '@/components/ui/button';
@@ -68,6 +69,15 @@ import {
 import { useOpenRouterModels, type OpenRouterModel } from '@/lib/openrouter.models';
 import { mcpStorage } from '@/lib/mcp-storage';
 import { Badge } from "@/components/ui/badge";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from '@/components/ui/avatar';
+import {
+  AvatarGroup,
+  AvatarGroupTooltip,
+} from '@/components/ui/shadcn-io/avatar-group';
 
 const MODEL_STORAGE_KEY = 'openchat:selectedModel';
 const formatter = new Intl.NumberFormat("en-US");
@@ -541,13 +551,22 @@ const ChatBotDemo = () => {
                 <Button
                   variant="ghost"
                   size="icon"
+                  className="w-fit px-2"
                   onClick={openMcpDialog}
                 >
                   {enabledIntegrationServers.length > 0
                     ? (
-                      <Badge className="h-5 min-w-5 rounded-full px-1 font-mono tabular-nums">
-                        {enabledIntegrationServers.length}
-                      </Badge>
+                      <AvatarGroup variant="motion" className="h-12 -space-x-3">
+                        {enabledIntegrationServers.map((server, index) => (
+                          <Avatar key={index} className="size-6 bg-white border">
+                            <AvatarImage src={getFavicon(server.remotes?.[0].url || "")} />
+                            <AvatarFallback>{server.name}</AvatarFallback>
+                            <AvatarGroupTooltip>
+                              <p>{server.name}</p>
+                            </AvatarGroupTooltip>
+                          </Avatar>
+                        ))}
+                      </AvatarGroup>
                     ) : (
                       <Puzzle className="h-4 w-4 text-muted-foreground" />
                     )}
