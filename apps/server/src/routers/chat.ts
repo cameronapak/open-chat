@@ -51,6 +51,10 @@ const chatRoute = chatRouter.post('/', async (c) => {
       mcpServers?: MCPServerConfig[]
     } = body ?? {};
 
+    console.log({
+      mcpServers
+    })
+
     if (!model) {
       return c.json({ error: 'Missing model' }, 400);
     }
@@ -77,16 +81,13 @@ const chatRoute = chatRouter.post('/', async (c) => {
     for (const mcpServer of mcpServers ?? []) {
       if (!mcpServer.enabled) continue;
 
-      let url: URL | undefined;
-      try {
-        url = new URL(mcpServer.url);
-      } catch (error) {
-        console.error('Invalid MCP server URL:', mcpServer.url);
-        continue;
-      }
+      const url = mcpServer.url;
       if (!url) continue;
+      const remoteMcpUrl = new URL(url);
 
-      const transport = new StreamableHTTPClientTransport(url, { sessionId: randomUUID() });
+      const transport = new StreamableHTTPClientTransport(remoteMcpUrl, { 
+        sessionId: randomUUID(),
+      });
       const client = await createMCPClient({ transport });
       mcpClients.push(client);
     }

@@ -68,7 +68,7 @@ import {
   ToolOutput,
 } from '@/components/ai-elements/tool';
 import { useOpenRouterModels, type OpenRouterModel } from '@/lib/openrouter.models';
-import { useMCPServerStorage, type SavedMCPServer } from '@/lib/mcp-storage';
+import { type SavedMCPServer } from '@/lib/mcp-storage';
 import {
   Avatar,
   AvatarFallback,
@@ -79,8 +79,8 @@ import {
   AvatarGroupTooltip,
 } from '@/components/ui/shadcn-io/avatar-group';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { enableOpenRouterWebSearch } from '@/lib/atoms';
-import { useAtom } from 'jotai';
+import { enableOpenRouterWebSearch, enabledMcpServersAtom } from '@/lib/atoms';
+import { useAtom, useAtomValue } from 'jotai';
 import { ModeToggle } from '@/components/mode-toggle';
 
 const MODEL_STORAGE_KEY = 'openchat:selectedModel';
@@ -94,6 +94,13 @@ interface UIResource {
     text?: string;      // Inline HTML, external URL, or remote-dom script
     blob?: string;      // Base64-encoded HTML, URL, or remote-dom script
   };
+}
+
+interface MCPServerConfig {
+  id: string
+  name: string
+  url: string
+  enabled: boolean
 }
 
 function IntegrationAvatarGroup({
@@ -147,9 +154,7 @@ const ChatBotDemo = () => {
   const [enableWebSearch] = useAtom(enableOpenRouterWebSearch);
   const [error, setError] = useState<string | null>(null);
   const [modelMenuOpen, setModelMenuOpen] = useState(false);
-  const {
-    enabledServers,
-  } = useMCPServerStorage()
+  const enabledServers = useAtomValue(enabledMcpServersAtom);
 
   // Load saved model choice on mount
   useEffect(() => {
@@ -225,6 +230,10 @@ const ChatBotDemo = () => {
 
   const transport = useMemo(
     () => {
+      const getUrlFromServer = (server: SavedMCPServer): string => {
+        return server?.remotes?.find(remote => remote.type === "streamable-http")?.url || "";
+      }
+
       return new DefaultChatTransport({
         api: `${import.meta.env.VITE_SERVER_URL}/api/chat`,
         credentials: 'include',
@@ -237,12 +246,12 @@ const ChatBotDemo = () => {
             // @TODO - support SSE
             model: modelRef.current,
             reasoning: true,
-            mcpServers: enabledServers.map(server => ({
+            mcpServers: enabledServers.map((server) => ({
               id: server.id,
               name: server.name,
-              url: server?.remotes?.find(r => r.type === "streamable-http")?.url,
-              enabled: true
-            })),
+              url: getUrlFromServer(server),
+              enabled: server.enabled,
+            })) as MCPServerConfig[],
           };
         },
       });

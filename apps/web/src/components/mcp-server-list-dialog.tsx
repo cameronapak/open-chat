@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { useMCPServerStorage, type SavedMCPServer } from '@/lib/mcp-storage';
+import { type SavedMCPServer } from '@/lib/mcp-storage';
 import { Plus, Trash2, Puzzle, Globe } from 'lucide-react';
 import {
   Drawer,
@@ -26,7 +26,7 @@ import {
 import { InputWithLabel } from './ui/input';
 import { getFavicon } from "@/lib/utils";
 import { Switch } from './ui/switch';
-import { enableOpenRouterWebSearch } from '@/lib/atoms';
+import { enableOpenRouterWebSearch, mcpServersAtom } from '@/lib/atoms';
 import { useAtom } from 'jotai';
 
 interface MCPServerListDialogProps {
@@ -39,7 +39,7 @@ interface MCPServerListDialogProps {
 
 function IntegrationsAccordionList({ servers, onToggleServer, onRemoveServer }: { servers: SavedMCPServer[], onToggleServer: (serverId: string) => void, onRemoveServer: (serverId: string) => void }) {
   const [enableWebSearch, setEnableWebSearch] = useAtom(enableOpenRouterWebSearch);
-  
+
   const handleRemoveServer = (serverId: string, serverName: string) => {
     const confirmed = confirm(`Do you want to delete ${serverName} integration?`);
     if (confirmed) {
@@ -129,12 +129,7 @@ function IntegrationsAccordionList({ servers, onToggleServer, onRemoveServer }: 
 }
 
 export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogProps) {
-  const {
-    servers: savedServers,
-    addServer,
-    removeServer,
-    toggleServer,
-  } = useMCPServerStorage();
+  const [savedServers, setSavedServers] = useAtom(mcpServersAtom);
 
   const handleAddCustomServer = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -165,7 +160,7 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
         enabled: true
       };
 
-      addServer(customServer);
+      setSavedServers(prev => [...prev, customServer]);
       toast.success("Custom server added successfully")
 
       e.currentTarget.reset();
@@ -201,9 +196,17 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
               )}
 
               <IntegrationsAccordionList
-                servers={savedServers} 
-                onToggleServer={toggleServer} 
-                onRemoveServer={removeServer}
+                servers={savedServers}
+                onToggleServer={(serverId: string) => setSavedServers(prevServers =>
+                  prevServers.map(server =>
+                    server.id === serverId
+                      ? { ...server, enabled: !server.enabled }
+                      : server
+                  )
+                )}
+                onRemoveServer={(serverId: string) => setSavedServers(prevServers =>
+                  prevServers.filter(server => server.id !== serverId)
+                )}
               />
             </TabsContent>
             <TabsContent value="custom" className="px-3 grid grid-cols-1 gap-4">

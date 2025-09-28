@@ -1,10 +1,5 @@
-import { atom, useAtom } from 'jotai';
-import { atomWithStorage } from 'jotai/utils';
-
-const MCP_STORAGE_KEY = 'openchat:savedMCPServers';
-
-// Create a Jotai atom with localStorage persistence
-const mcpServersAtom = atomWithStorage<SavedMCPServer[]>(MCP_STORAGE_KEY, []);
+import { useAtom, useAtomValue } from 'jotai';
+import { mcpServersAtom, enabledMcpServersAtom } from './atoms';
 
 // Define the types for client-side MCP server storage
 // These match the server's Server type exactly
@@ -71,6 +66,7 @@ export interface MCPServerStorage {
  */
 export function useMCPServerStorage(): MCPServerStorage {
   const [servers, setServers] = useAtom(mcpServersAtom);
+  const enabledServers = useAtomValue(enabledMcpServersAtom);
 
   const addServer = (server: MCPServerConfig) => {
     const existingIndex = servers.findIndex(s => s.id === server.id);
@@ -118,8 +114,6 @@ export function useMCPServerStorage(): MCPServerStorage {
       .map(({ savedAt, enabled, ...config }) => config as SavedMCPServer);
   };
 
-  const enabledServers = getEnabledServers();
-
   return {
     servers,
     addServer,
@@ -130,15 +124,3 @@ export function useMCPServerStorage(): MCPServerStorage {
     getEnabledServers,
   };
 }
-
-/**
- * Atom selector for getting enabled servers
- */
-export const enabledServersAtom = atom(
-  get => {
-    const servers = get(mcpServersAtom);
-    return servers
-      .filter(server => server.enabled && server.remotes?.find(r => r.type === "streamable-http"))
-      .map(({ savedAt, enabled, ...config }) => config as SavedMCPServer);
-  }
-);
