@@ -43,11 +43,6 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
   const [servers, setServers] = useState<Server[]>([]);
   const [_loading, setLoading] = useState(false);
   const [_error, setError] = useState<string | null>(null);
-
-  // Custom server form state
-  const [customName, setCustomName] = useState('');
-  const [customUrl, setCustomUrl] = useState('');
-  const [customDescription, setCustomDescription] = useState('');
   const [enableWebSearch, setEnableWebSearch] = useAtom(enableOpenRouterWebSearch);
 
   const {
@@ -109,36 +104,36 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
   //   fetchServers();
   // };
 
-  const handleAddCustomServer = () => {
-    if (!customName.trim() || !customUrl.trim()) {
+  const handleAddCustomServer = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    const { name, url, description } = e.target as HTMLFormElement;
+
+    if (!name.trim() || !url.value.trim()) {
       toast.error('Name and URL are required');
       return;
     }
 
     try {
       // Create a simple ID from the name
-      const serverId = `custom-${customName.toLowerCase().replace(/\s+/g, '-')}`;
+      const serverId = crypto.randomUUID();
 
       const customServer: SavedMCPServer = {
         id: serverId,
-        name: customName.trim(),
-        description: customDescription.trim() || 'Custom MCP server',
+        name: name.trim(),
+        description: description.value.trim() || 'Custom MCP server',
         version: '1.0.0',
         remotes: [{
           type: 'streamable-http',
-          url: customUrl.trim()
+          url: url.value.trim()
         }],
         savedAt: new Date().toISOString(),
         enabled: true
       };
 
       addServer(customServer);
-      toast.info(`Saved: ${customName}`);
 
-      // Clear form
-      setCustomName('');
-      setCustomUrl('');
-      setCustomDescription('');
+      e.currentTarget.reset();
     } catch (err: any) {
       toast.error(err.message || 'Failed to add custom server');
     }
@@ -191,8 +186,8 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
                     <div className="grid grid-cols-1 auto-cols-min gap-2">
                       <p className="text-muted-foreground">
                         Get real-time web search results.
-                        <a 
-                          href="https://openrouter.ai/docs/features/web-search" 
+                        <a
+                          href="https://openrouter.ai/docs/features/web-search"
                           target="_blank"
                           className="ml-1 hover:text-primary underline"
                         >
@@ -258,34 +253,34 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
                   </DrawerDescription>
                 </DrawerHeader>
               </div>
-              <div className="flex flex-col gap-4">
+              <form
+                onSubmit={handleAddCustomServer}
+                className="flex flex-col gap-4"
+              >
                 <Input
+                  required
                   type="text"
                   placeholder="Integration name"
-                  value={customName}
-                  onChange={(e) => setCustomName(e.target.value)}
+                  name="name"
                 />
                 <Input
+                  required
                   type="url"
                   placeholder="https://example.com/mcp"
-                  value={customUrl}
-                  onChange={(e) => setCustomUrl(e.target.value)}
+                  name="url"
                 />
                 <Input
                   type="text"
                   placeholder="Description (optional)"
-                  value={customDescription}
-                  onChange={(e) => setCustomDescription(e.target.value)}
+                  name="description"
                 />
                 <Button
-                  onClick={handleAddCustomServer}
-                  disabled={!customName.trim() || !customUrl.trim()}
                   size="sm"
                 >
                   <Plus className="h-4 w-4 mr-1" />
                   Add
                 </Button>
-              </div>
+              </form>
             </TabsContent>
           </Tabs>
         </section>
