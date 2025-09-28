@@ -1,5 +1,4 @@
-import { useState, useEffect } from 'react';
-import type { Server } from '../../../server/src/lib/mcp-registry/types.zod';
+import { useState, useEffect, useMemo } from 'react';
 
 const MCP_STORAGE_KEY = 'openchat:savedMCPServers';
 
@@ -60,6 +59,7 @@ export interface MCPServerStorage {
   toggleServer: (serverId: string) => void;
   isServerSaved: (serverId: string) => boolean;
   getEnabledServers: () => MCPServerConfig[];
+  enabledServers: MCPServerConfig[];
 }
 
 /**
@@ -138,12 +138,19 @@ export function useMCPServerStorage(): MCPServerStorage {
       .map(({ savedAt, enabled, ...config }) => config);
   };
 
+  const enabledServers = useMemo(() => {
+    return servers
+      .filter(server => server.enabled)
+      .map(({ savedAt, enabled, ...config }) => config);
+  }, [servers]);
+
   return {
     servers,
     addServer,
     removeServer,
     toggleServer,
     isServerSaved,
+    enabledServers,
     getEnabledServers,
   };
 }

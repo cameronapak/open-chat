@@ -68,8 +68,7 @@ import {
   ToolOutput,
 } from '@/components/ai-elements/tool';
 import { useOpenRouterModels, type OpenRouterModel } from '@/lib/openrouter.models';
-import { mcpStorage } from '@/lib/mcp-storage';
-import { Badge } from "@/components/ui/badge";
+import { useMCPServerStorage } from '@/lib/mcp-storage';  
 import {
   Avatar,
   AvatarFallback,
@@ -104,6 +103,44 @@ interface MCPServerConfig {
   enabled: boolean
 }
 
+function IntegrationAvatarGroup() {
+  const { enabledServers } = useMCPServerStorage();
+  const avatars: React.ReactElement[] = [];
+
+    if (enabledServers.length) {
+      avatars.push(
+        <Avatar key="open-router-web-search" className="flex items-center justify-center size-6 bg-white border">
+          <Globe className="h-4 w-4 text-muted-foreground" />
+          <AvatarGroupTooltip>
+            <p>Web Search</p>
+          </AvatarGroupTooltip>
+        </Avatar>
+      )
+    }
+
+    enabledServers?.map((server, index) => {
+      avatars.push(
+        <Avatar key={index} className="size-6 bg-white border">
+          <AvatarImage src={getFavicon(server.remotes?.[0].url || "")} />
+          <AvatarFallback>{server.name}</AvatarFallback>
+          <AvatarGroupTooltip>
+            <p>{server.name}</p>
+          </AvatarGroupTooltip>
+        </Avatar>
+      );
+    });
+
+    if (!avatars.length) {
+      return null;
+    }
+
+    return (
+      <AvatarGroup variant="motion" className="h-12 -space-x-3">
+        {avatars}
+      </AvatarGroup>
+    )
+}
+
 const ChatBotDemo = () => {
   const [connected, setConnected] = useState<boolean>(false);
   const [isOpen, setIsOpen] = useState(false);
@@ -112,6 +149,9 @@ const ChatBotDemo = () => {
   const [enableWebSearch, setEnableWebSearch] = useAtom(enableOpenRouterWebSearch);
   const [error, setError] = useState<string | null>(null);
   const [modelMenuOpen, setModelMenuOpen] = useState(false);
+  const {
+    enabledServers,
+  } = useMCPServerStorage()
 
   // Load saved model choice on mount
   useEffect(() => {
@@ -195,9 +235,6 @@ const ChatBotDemo = () => {
           'Content-Type': 'application/json',
         },
         body: () => {
-          // Get enabled MCP servers from localStorage
-          const enabledServers = mcpStorage.getEnabledServers();
-
           return {
             // https://openrouter.ai/announcements/introducing-web-search-via-the-api
             // @TODO - support SSE
@@ -215,6 +252,8 @@ const ChatBotDemo = () => {
       }),
     [],
   );
+
+  const shouldShowAvatarGroup = Boolean(enabledServers.length || enableWebSearch)
 
   const { messages: rawMessages, sendMessage, status: rawStatus } = useChat({
     transport,
@@ -284,35 +323,6 @@ const ChatBotDemo = () => {
     // Reset the form to clear the textarea without rerendering the parent
     event.currentTarget.reset();
   };
-
-  const enabledIntegrationServers = mcpStorage.getEnabledServers();
-
-  const avatars: JSX.Element[] = [];
-
-  if (enableWebSearch) {
-    avatars.push(
-      <Avatar key="open-router-web-search" className="flex items-center justify-center size-6 bg-white border">
-        <Globe className="h-4 w-4 text-muted-foreground" />
-        <AvatarGroupTooltip>
-          <p>Web Search</p>
-        </AvatarGroupTooltip>
-      </Avatar>
-    )
-  }
-
-  enabledIntegrationServers?.map((server, index) => {
-    avatars.push(
-      <Avatar key={index} className="size-6 bg-white border">
-        <AvatarImage src={getFavicon(server.remotes?.[0].url || "")} />
-        <AvatarFallback>{server.name}</AvatarFallback>
-        <AvatarGroupTooltip>
-          <p>{server.name}</p>
-        </AvatarGroupTooltip>
-      </Avatar>
-    );
-  });
-
-  const shouldShowAvatarGroup = Boolean(enabledIntegrationServers.length || enableWebSearch)
 
   return (
     <>
@@ -572,14 +582,12 @@ const ChatBotDemo = () => {
                   variant="ghost"
                   size="icon"
                   type="button"
-                  className={shouldShowAvatarGroup ? "w-fit px-2" : ""}
+                  className={shouldShowAvatarGroup ? "w-fit px-2 bg-secondary" : ""}
                   onClick={openMcpDialog}
                 >
                   <div>
                     {shouldShowAvatarGroup ? (
-                      <AvatarGroup variant="motion" className="h-12 -space-x-3">
-                        {avatars}
-                      </AvatarGroup>
+                      <IntegrationAvatarGroup />
                     ) : (
                       <Puzzle className="h-4 w-4 text-muted-foreground" />
                     )}
