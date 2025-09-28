@@ -539,7 +539,7 @@ const ChatBotDemo = () => {
               </PromptInputAttachments>
               <PromptInputTextarea
                 className="transition-none"
-                placeholder={!connected ? "Connect OpenRouter first" : undefined}
+                placeholder={!connected ? "Connect OpenRouter first" : "Ask OpenChat..."}
                 disabled={!connected}
               />
             </PromptInputBody>
