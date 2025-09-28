@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { motion, type Transition } from 'motion/react';
-import { Children, type ReactNode } from 'react';
+import { Children } from 'react';
 
 import { cn } from '@/lib/utils';
 import {

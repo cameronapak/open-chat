@@ -312,6 +312,8 @@ const ChatBotDemo = () => {
     );
   });
 
+  const shouldShowAvatarGroup = Boolean(enabledIntegrationServers.length || enableWebSearch)
+
   return (
     <>
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -564,20 +566,26 @@ const ChatBotDemo = () => {
             <PromptInputToolbar>
               <PromptInputTools>
                 <Button
+                  // I am doing this to prevent nesting a button
+                  // inside of another button. AvatarGroup contains
+                  // a button via TooltipTrigger.
+                  asChild={shouldShowAvatarGroup}
                   variant="ghost"
                   size="icon"
                   type="button"
-                  className={enabledIntegrationServers.length || enableWebSearch ? "w-fit px-2" : ""}
+                  className={shouldShowAvatarGroup ? "w-fit px-2" : ""}
                   onClick={openMcpDialog}
                 >
-                  {enabledIntegrationServers.length || enableWebSearch ? (
-                    <AvatarGroup variant="motion" className="h-12 -space-x-3">
-                      {avatars}
-                    </AvatarGroup>
-                  ) : (
-                    <Puzzle className="h-4 w-4 text-muted-foreground" />
-                  )}
-                  <span className="sr-only">Integrations</span>
+                  <div>
+                    {shouldShowAvatarGroup ? (
+                      <AvatarGroup variant="motion" className="h-12 -space-x-3">
+                        {avatars}
+                      </AvatarGroup>
+                    ) : (
+                      <Puzzle className="h-4 w-4 text-muted-foreground" />
+                    )}
+                    <span className="sr-only">Integrations</span>
+                  </div>
                 </Button>
 
                 <Tooltip>
