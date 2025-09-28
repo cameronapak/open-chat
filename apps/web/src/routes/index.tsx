@@ -320,9 +320,9 @@ const ChatBotDemo = () => {
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogContent className="w-full max-w-md">
           <DialogHeader>
-            <DialogTitle>OpenRouter Authentication</DialogTitle>
+            <DialogTitle>Settings</DialogTitle>
             <DialogDescription>
-              Connect your OpenRouter account to use the chat.
+              Configure your OpenRouter account and settings.
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
@@ -341,7 +341,7 @@ const ChatBotDemo = () => {
                   open={modelMenuOpen}
                   onOpenChange={setModelMenuOpen}
                 >
-                  <PromptInputModelSelectTrigger className="w-full border">
+                  <PromptInputModelSelectTrigger className="!border !border-solid border-input w-full">
                     <PromptInputModelSelectValue />
                   </PromptInputModelSelectTrigger>
                   {modelMenuOpen ? (
@@ -373,7 +373,7 @@ const ChatBotDemo = () => {
               ) : (
                 <Button onClick={handleConnect} className="w-full">
                   <ExternalLink className="mr-2 h-4 w-4" />
-                  Connect with OpenRouter
+                  Get Started with OpenRouter
                 </Button>
               )}
               <div className="flex items-center justify-between">
