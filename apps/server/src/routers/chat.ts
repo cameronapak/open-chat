@@ -1,9 +1,9 @@
 import { Hono } from 'hono';
 import { getCookie } from 'hono/cookie';
-import { 
-  streamText, 
+import {
+  streamText,
   type ToolSet,
-  convertToModelMessages, 
+  convertToModelMessages,
   type UIMessage,
   experimental_createMCPClient as createMCPClient,
   type experimental_MCPClient as MCPClient,
@@ -44,7 +44,7 @@ const chatRoute = chatRouter.post('/', async (c) => {
   const mcpClients: MCPClient[] = [];
   try {
     const body = await c.req.json().catch(() => ({}));
-    const { messages, model, reasoning, mcpServers } : {
+    const { messages, model, reasoning, mcpServers }: {
       messages: UIMessage[];
       model: string;
       reasoning: boolean;
@@ -92,7 +92,15 @@ const chatRoute = chatRouter.post('/', async (c) => {
     }
 
     // Discover tools from all MCP clients and merge them (last-write-wins)
-    const toolSets = await Promise.all(mcpClients.map((client) => client.tools())) satisfies ToolSet[];
+    const toolSets = await Promise.all(mcpClients.map(async (client) => {
+      try {
+        const tools = await client.tools();
+        return tools;
+      } catch (error) {
+        console.error('Error fetching tools from MCP client:', error);
+        return {};
+      }
+    })) satisfies ToolSet[];
     const tools = Object.assign({}, ...toolSets) as ToolSet;
 
     const result = streamText({
@@ -101,7 +109,13 @@ const chatRoute = chatRouter.post('/', async (c) => {
       stopWhen: stepCountIs(5),
       tools,
       onFinish: async () => {
-        await Promise.all(mcpClients.map((client) => client.close()));
+        await Promise.all(mcpClients.map(async (client) => {
+          try {
+            await client.close();
+          } catch (error) {
+            console.error('Error closing MCP client:', error);
+          }
+        }));
       },
     });
     return result.toUIMessageStreamResponse({
@@ -111,7 +125,7 @@ const chatRoute = chatRouter.post('/', async (c) => {
     // Ensure MCP clients are closed if an error occurs before streaming starts
     try {
       await Promise.all(mcpClients.map((client) => client.close()));
-    } catch {}
+    } catch { }
     console.error('Chat error:', error);
     return c.json({ error: 'Internal server error' }, 500);
   }
