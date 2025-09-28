@@ -41,7 +41,7 @@ export async function onMcpAuthorization() {
     }
     try {
       storedStateData = JSON.parse(storedStateJSON) as StoredState
-    } catch (e) {
+    } catch {
       throw new Error('Failed to parse stored OAuth state.')
     }
 

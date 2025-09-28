@@ -1,5 +1,4 @@
 'use client';
-import { type JSX } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import {
   Conversation,
@@ -9,14 +8,9 @@ import {
 import { Message, MessageContent } from '@/components/ai-elements/message';
 import {
   PromptInput,
-  PromptInputActionAddAttachments,
-  PromptInputActionMenu,
-  PromptInputActionMenuContent,
-  PromptInputActionMenuTrigger,
   PromptInputAttachment,
   PromptInputAttachments,
   PromptInputBody,
-  PromptInputButton,
   type PromptInputMessage,
   PromptInputModelSelect,
   PromptInputModelSelectContent,
@@ -43,8 +37,8 @@ import {
 import { Settings, ExternalLink, Puzzle, Globe } from 'lucide-react';
 import { MCPServerListDialog } from '@/components/mcp-server-list-dialog';
 import { useChat } from '@ai-sdk/react';
-import { DefaultChatTransport, type DynamicToolUIPart, type ToolUIPart, type UITool, type UIToolInvocation } from 'ai';
-import { CopyIcon, GlobeIcon, RefreshCcwIcon } from 'lucide-react';
+import { DefaultChatTransport, type DynamicToolUIPart } from 'ai';
+import { CopyIcon, RefreshCcwIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { isUIResource, UIResourceRenderer, type UIActionResult, basicComponentLibrary, remoteTextDefinition, remoteButtonDefinition } from '@mcp-ui/client';
 import { Response } from '@/components/ai-elements/response';
@@ -80,7 +74,7 @@ import {
 } from '@/components/ui/shadcn-io/avatar-group';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { enableOpenRouterWebSearch, enabledMcpServersAtom, mcpServersAtom, modelAtom } from '@/lib/atoms';
-import { useAtom, useAtomValue, atom } from 'jotai';
+import { useAtom, useAtomValue } from 'jotai';
 import { ModeToggle } from '@/components/mode-toggle';
 
 const formatter = new Intl.NumberFormat("en-US");
@@ -158,6 +152,26 @@ const ChatBotDemo = () => {
   useAtomValue(mcpServersAtom);
   const enabledServers = useAtomValue(enabledMcpServersAtom);
 
+  // Select first enabled streamable-http MCP server URL
+  const _selectedMcpUrl = useMemo(() => {
+    const withHttp = enabledServers.find(
+      (s) => s.remotes?.some((r) => r.type === 'streamable-http'),
+    );
+    return withHttp?.remotes?.find((r) => r.type === 'streamable-http')?.url || '';
+  }, [enabledServers]);
+
+  // Expose MCP api to other handlers (e.g., UIResourceRenderer actions)
+  const mcpApiRef = useRef<
+    | {
+      state: string;
+      ready: boolean;
+      callTool: (name: string, args?: Record<string, unknown>) => Promise<any>;
+      getPrompt: (name: string, args?: Record<string, string>) => Promise<any>;
+      authenticate: () => void;
+    }
+    | null
+  >(null);
+
   // Keep a ref of the latest selected model so the transport can always read it
   const modelRef = useRef<string>(model);
   useEffect(() => {
@@ -227,12 +241,12 @@ const ChatBotDemo = () => {
 
   const shouldShowAvatarGroup = Boolean(enabledServers.length || enableWebSearch)
 
-  const { 
-    messages: rawMessages, 
-    sendMessage, 
+  const {
+    messages: rawMessages,
+    sendMessage,
     stop,
     status: rawStatus,
-   } = useChat({
+  } = useChat({
     transport,
   });
 
@@ -496,23 +510,47 @@ const ChatBotDemo = () => {
                                 } : undefined}
                                 onUIAction={async (result: UIActionResult) => {
                                   switch (result.type) {
-                                    case 'tool':
-                                      // @TODO - Forward tool call to backend via new message
-                                      toast.info(result.payload.toolName);
+                                    case 'tool': {
+                                      const api = mcpApiRef.current;
+                                      if (!api || api.state !== 'ready') {
+                                        toast('MCP not ready. Authenticate to use tools.');
+                                        return { status: 'handled' };
+                                      }
+                                      try {
+                                        const args = (result as any)?.payload?.args ?? {};
+                                        const name = (result as any)?.payload?.toolName;
+                                        const res = await api.callTool(name, args);
+                                        console.log('MCP tool result:', res);
+                                        toast.success(`Tool ${name} executed`);
+                                      } catch (e: any) {
+                                        toast.error(e?.message || 'Tool call failed');
+                                      }
                                       break;
-                                    case 'prompt':
-                                      // @TODO - implement prompt
-                                      toast.info(result.payload.prompt);
+                                    }
+                                    case 'prompt': {
+                                      const api = mcpApiRef.current;
+                                      if (!api || api.state !== 'ready') {
+                                        toast('MCP not ready. Authenticate to fetch prompts.');
+                                        return { status: 'handled' };
+                                      }
+                                      try {
+                                        const name = (result as any)?.payload?.prompt;
+                                        const args = (result as any)?.payload?.args ?? {};
+                                        const res = await api.getPrompt(name, args);
+                                        console.log('MCP prompt result:', res);
+                                        toast.success(`Prompt ${name} retrieved`);
+                                      } catch (e: any) {
+                                        toast.error(e?.message || 'Get prompt failed');
+                                      }
                                       break;
+                                    }
                                     case 'notify':
-                                      // @TODO - implement notify
                                       toast(result.payload.message);
                                       break;
                                     case 'link':
                                       window.open(result.payload.url, '_blank');
                                       break;
                                     case 'intent':
-                                      // @TODO - implement intent
                                       console.log('Intent:', result.payload.intent, result.payload.params);
                                       toast(`Intent: ${result.payload.intent}`);
                                       break;

@@ -1,5 +1,5 @@
 // browser-provider.ts
-import type { OAuthClientInformation, OAuthMetadata, OAuthTokens, OAuthClientMetadata } from '@modelcontextprotocol/sdk/shared/auth.js'
+import type { OAuthClientInformation, OAuthTokens, OAuthClientMetadata } from '@modelcontextprotocol/sdk/shared/auth.js'
 import type { OAuthClientProvider } from '@modelcontextprotocol/sdk/client/auth.js'
 import { sanitizeUrl } from 'strict-url-sanitise'
 // Assuming StoredState is defined in ./types.js and includes fields for provider options
