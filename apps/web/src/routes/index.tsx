@@ -566,6 +566,7 @@ const ChatBotDemo = () => {
                 <Button
                   variant="ghost"
                   size="icon"
+                  type="button"
                   className={enabledIntegrationServers.length || enableWebSearch ? "w-fit px-2" : ""}
                   onClick={openMcpDialog}
                 >
@@ -584,6 +585,7 @@ const ChatBotDemo = () => {
                     <Button
                       variant="ghost"
                       size="icon"
+                      type="button"
                       onClick={openSettings}
                     >
                       <Settings className="h-4 w-4 text-muted-foreground" />
