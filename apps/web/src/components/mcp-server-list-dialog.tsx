@@ -28,6 +28,7 @@ import { getFavicon } from "@/lib/utils";
 import { Switch } from './ui/switch';
 import { enableOpenRouterWebSearch, mcpServersAtom } from '@/lib/atoms';
 import { useAtom } from 'jotai';
+import { VisuallyHidden } from 'radix-ui';
 
 interface MCPServerListDialogProps {
   open: boolean;
@@ -186,7 +187,13 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
             </TabsList>
 
             <TabsContent value="integrations" className="relative grid grid-cols-1 gap-4">
-              {savedServers.length ? null : (
+              {savedServers.length ? (
+                // Fixes: "`DialogContent` requires a `DialogTitle` for 
+                // the component to be accessible for screen reader users."
+                <VisuallyHidden.Root>
+                  <DrawerTitle>Integrations</DrawerTitle>
+                </VisuallyHidden.Root>
+              ) : (
                 <DrawerHeader className="flex flex-col items-center gap-2">
                   <DrawerTitle>Integrations</DrawerTitle>
                   <DrawerDescription>
