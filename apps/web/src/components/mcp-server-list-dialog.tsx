@@ -60,6 +60,7 @@ function IntegrationsAccordionList({ servers, onToggleServer, onRemoveServer }: 
               Web Search
             </div>
             <Switch
+              className="touch-hitbox"
               onClick={(e) => e.stopPropagation()}
               checked={enableWebSearch}
               onCheckedChange={() => setEnableWebSearch(!enableWebSearch)}
@@ -97,6 +98,7 @@ function IntegrationsAccordionList({ servers, onToggleServer, onRemoveServer }: 
                   {savedServer.name}
                 </h3>
                 <Switch
+                  className="touch-hitbox"
                   onClick={(e) => e.stopPropagation()}
                   checked={savedServer.enabled}
                   onCheckedChange={() => onToggleServer(savedServer.id)}
@@ -188,7 +190,7 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="integrations" className="relative grid grid-cols-1 gap-4 max-h-[300px] overflow-y-auto">
+            <TabsContent value="integrations" className="relative grid grid-cols-1 gap-4">
               {savedServers.length ? null : (
                 <DrawerHeader className="flex flex-col items-center gap-2">
                   <DrawerTitle>Integrations</DrawerTitle>
@@ -204,11 +206,11 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
                 onRemoveServer={removeServer}
               />
             </TabsContent>
-            <TabsContent value="custom" className="px-3 flex flex-col gap-6">
+            <TabsContent value="custom" className="px-3 grid grid-cols-1 gap-4">
               <div className="flex flex-col gap-2">
                 <DrawerHeader>
                   <DrawerTitle>New Integration</DrawerTitle>
-                  <DrawerDescription>
+                  <DrawerDescription className='text-balance'>
                     Add a custom Model Context Protocol server.
                   </DrawerDescription>
                 </DrawerHeader>
