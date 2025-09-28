@@ -1,6 +1,10 @@
-import { useState, useEffect, useMemo } from 'react';
+import { atom, useAtom } from 'jotai';
+import { atomWithStorage } from 'jotai/utils';
 
 const MCP_STORAGE_KEY = 'openchat:savedMCPServers';
+
+// Create a Jotai atom with localStorage persistence
+const mcpServersAtom = atomWithStorage<SavedMCPServer[]>(MCP_STORAGE_KEY, []);
 
 // Define the types for client-side MCP server storage
 // These match the server's Server type exactly
@@ -58,39 +62,15 @@ export interface MCPServerStorage {
   removeServer: (serverId: string) => void;
   toggleServer: (serverId: string) => void;
   isServerSaved: (serverId: string) => boolean;
-  getEnabledServers: () => MCPServerConfig[];
-  enabledServers: MCPServerConfig[];
+  getEnabledServers: () => SavedMCPServer[];
+  enabledServers: SavedMCPServer[];
 }
 
 /**
  * Hook for managing saved MCP servers in localStorage
  */
 export function useMCPServerStorage(): MCPServerStorage {
-  const [servers, setServers] = useState<SavedMCPServer[]>([]);
-
-  // Load saved servers on mount
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem(MCP_STORAGE_KEY);
-      if (stored) {
-        const parsedServers = JSON.parse(stored);
-        setServers(parsedServers);
-      }
-    } catch (error) {
-      console.error('Failed to load saved MCP servers:', error);
-      setServers([]);
-    }
-  }, []);
-
-  // Save servers to localStorage whenever they change
-  const saveServers = (newServers: SavedMCPServer[]) => {
-    try {
-      localStorage.setItem(MCP_STORAGE_KEY, JSON.stringify(newServers));
-      setServers(newServers);
-    } catch (error) {
-      console.error('Failed to save MCP servers:', error);
-    }
-  };
+  const [servers, setServers] = useAtom(mcpServersAtom);
 
   const addServer = (server: MCPServerConfig) => {
     const existingIndex = servers.findIndex(s => s.id === server.id);
@@ -103,46 +83,42 @@ export function useMCPServerStorage(): MCPServerStorage {
         description: servers[existingIndex].description,
         savedAt: servers[existingIndex].savedAt,
       };
-      saveServers(updatedServers);
+      setServers(updatedServers);
     } else {
       // Add new server
       const newServer: SavedMCPServer = {
         ...server,
         savedAt: new Date().toISOString(),
       };
-      saveServers([...servers, newServer]);
+      setServers(prevServers => [...prevServers, newServer]);
     }
   };
 
   const removeServer = (serverId: string) => {
-    const filteredServers = servers.filter(s => s.id !== serverId);
-    saveServers(filteredServers);
+    setServers(prevServers => prevServers.filter(s => s.id !== serverId));
   };
 
   const toggleServer = (serverId: string) => {
-    const updatedServers = servers.map(server =>
-      server.id === serverId
-        ? { ...server, enabled: !server.enabled }
-        : server
+    setServers(prevServers =>
+      prevServers.map(server =>
+        server.id === serverId
+          ? { ...server, enabled: !server.enabled }
+          : server
+      )
     );
-    saveServers(updatedServers);
   };
 
   const isServerSaved = (serverId: string): boolean => {
     return servers.some(s => s.id === serverId);
   };
 
-  const getEnabledServers = (): MCPServerConfig[] => {
+  const getEnabledServers = (): SavedMCPServer[] => {
     return servers
-      .filter(server => server.enabled)
-      .map(({ savedAt, enabled, ...config }) => config);
+      .filter(server => server.enabled && server.remotes?.find(r => r.type === "streamable-http"))
+      .map(({ savedAt, enabled, ...config }) => config as SavedMCPServer);
   };
 
-  const enabledServers = useMemo(() => {
-    return servers
-      .filter(server => server.enabled)
-      .map(({ savedAt, enabled, ...config }) => config);
-  }, [servers]);
+  const enabledServers = getEnabledServers();
 
   return {
     servers,
@@ -156,50 +132,13 @@ export function useMCPServerStorage(): MCPServerStorage {
 }
 
 /**
- * Utility functions for MCP server storage
+ * Atom selector for getting enabled servers
  */
-export const mcpStorage = {
-  /**
-   * Get all saved servers from localStorage
-   */
-  getSavedServers(): SavedMCPServer[] {
-    try {
-      const stored = localStorage.getItem(MCP_STORAGE_KEY);
-      return stored ? JSON.parse(stored) : [];
-    } catch {
-      return [];
-    }
-  },
-
-  /**
-   * Save servers to localStorage
-   */
-  saveServers(servers: SavedMCPServer[]): void {
-    try {
-      localStorage.setItem(MCP_STORAGE_KEY, JSON.stringify(servers));
-    } catch (error) {
-      console.error('Failed to save MCP servers:', error);
-    }
-  },
-
-  /**
-   * Get only enabled servers
-   */
-  getEnabledServers(): MCPServerConfig[] {
-    const servers = this.getSavedServers();
+export const enabledServersAtom = atom(
+  get => {
+    const servers = get(mcpServersAtom);
     return servers
       .filter(server => server.enabled && server.remotes?.find(r => r.type === "streamable-http"))
-      .map(({ savedAt, enabled, ...config }) => config);
-  },
-
-  /**
-   * Clear all saved servers
-   */
-  clearAllServers(): void {
-    try {
-      localStorage.removeItem(MCP_STORAGE_KEY);
-    } catch (error) {
-      console.error('Failed to clear MCP servers:', error);
-    }
-  },
-};
+      .map(({ savedAt, enabled, ...config }) => config as SavedMCPServer);
+  }
+);

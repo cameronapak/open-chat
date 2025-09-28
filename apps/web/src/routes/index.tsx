@@ -68,7 +68,7 @@ import {
   ToolOutput,
 } from '@/components/ai-elements/tool';
 import { useOpenRouterModels, type OpenRouterModel } from '@/lib/openrouter.models';
-import { useMCPServerStorage } from '@/lib/mcp-storage';  
+import { useMCPServerStorage, type SavedMCPServer } from '@/lib/mcp-storage';
 import {
   Avatar,
   AvatarFallback,
@@ -96,49 +96,47 @@ interface UIResource {
   };
 }
 
-interface MCPServerConfig {
-  id: string
-  name: string
-  url: string
-  enabled: boolean
-}
-
-function IntegrationAvatarGroup() {
-  const { enabledServers } = useMCPServerStorage();
+function IntegrationAvatarGroup({
+  enabledServers,
+  webSearchEnabled,
+}: {
+  enabledServers: SavedMCPServer[];
+  webSearchEnabled: boolean;
+}) {
   const avatars: React.ReactElement[] = [];
 
-    if (enabledServers.length) {
-      avatars.push(
-        <Avatar key="open-router-web-search" className="flex items-center justify-center size-6 bg-white border">
-          <Globe className="h-4 w-4 text-muted-foreground" />
-          <AvatarGroupTooltip>
-            <p>Web Search</p>
-          </AvatarGroupTooltip>
-        </Avatar>
-      )
-    }
-
-    enabledServers?.map((server, index) => {
-      avatars.push(
-        <Avatar key={index} className="size-6 bg-white border">
-          <AvatarImage src={getFavicon(server.remotes?.[0].url || "")} />
-          <AvatarFallback>{server.name}</AvatarFallback>
-          <AvatarGroupTooltip>
-            <p>{server.name}</p>
-          </AvatarGroupTooltip>
-        </Avatar>
-      );
-    });
-
-    if (!avatars.length) {
-      return null;
-    }
-
-    return (
-      <AvatarGroup variant="motion" className="h-12 -space-x-3">
-        {avatars}
-      </AvatarGroup>
+  if (webSearchEnabled) {
+    avatars.push(
+      <Avatar key="open-router-web-search" className="flex items-center justify-center size-6 bg-white border">
+        <Globe className="h-4 w-4 text-muted-foreground" />
+        <AvatarGroupTooltip>
+          <p>Web Search</p>
+        </AvatarGroupTooltip>
+      </Avatar>
     )
+  }
+
+  enabledServers?.map((server, index) => {
+    avatars.push(
+      <Avatar key={index} className="size-6 bg-white border">
+        <AvatarImage src={getFavicon(server.remotes?.[0].url || "")} />
+        <AvatarFallback>{server.name}</AvatarFallback>
+        <AvatarGroupTooltip>
+          <p>{server.name}</p>
+        </AvatarGroupTooltip>
+      </Avatar>
+    );
+  });
+
+  if (!avatars.length) {
+    return null;
+  }
+
+  return (
+    <AvatarGroup variant="motion" className="h-12 -space-x-3">
+      {avatars}
+    </AvatarGroup>
+  )
 }
 
 const ChatBotDemo = () => {
@@ -146,7 +144,7 @@ const ChatBotDemo = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [mcpDialogOpen, setMcpDialogOpen] = useState(false);
   const [model, setModel] = useState<string>("");
-  const [enableWebSearch, setEnableWebSearch] = useAtom(enableOpenRouterWebSearch);
+  const [enableWebSearch] = useAtom(enableOpenRouterWebSearch);
   const [error, setError] = useState<string | null>(null);
   const [modelMenuOpen, setModelMenuOpen] = useState(false);
   const {
@@ -226,8 +224,8 @@ const ChatBotDemo = () => {
   }, []);
 
   const transport = useMemo(
-    () =>
-      new DefaultChatTransport({
+    () => {
+      return new DefaultChatTransport({
         api: `${import.meta.env.VITE_SERVER_URL}/api/chat`,
         credentials: 'include',
         headers: {
@@ -247,7 +245,8 @@ const ChatBotDemo = () => {
             })),
           };
         },
-      }),
+      });
+    },
     [enabledServers],
   );
 
@@ -585,7 +584,10 @@ const ChatBotDemo = () => {
                 >
                   <div>
                     {shouldShowAvatarGroup ? (
-                      <IntegrationAvatarGroup />
+                      <IntegrationAvatarGroup
+                        enabledServers={enabledServers}
+                        webSearchEnabled={enableWebSearch}
+                      />
                     ) : (
                       <Puzzle className="h-4 w-4 text-muted-foreground" />
                     )}
