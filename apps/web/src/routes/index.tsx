@@ -79,11 +79,10 @@ import {
   AvatarGroupTooltip,
 } from '@/components/ui/shadcn-io/avatar-group';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { enableOpenRouterWebSearch, enabledMcpServersAtom, mcpServersAtom } from '@/lib/atoms';
-import { useAtom, useAtomValue } from 'jotai';
+import { enableOpenRouterWebSearch, enabledMcpServersAtom, mcpServersAtom, modelAtom } from '@/lib/atoms';
+import { useAtom, useAtomValue, atom } from 'jotai';
 import { ModeToggle } from '@/components/mode-toggle';
 
-const MODEL_STORAGE_KEY = 'openchat:selectedModel';
 const formatter = new Intl.NumberFormat("en-US");
 
 interface UIResource {
@@ -150,7 +149,7 @@ const ChatBotDemo = () => {
   const [connected, setConnected] = useState<boolean>(false);
   const [isOpen, setIsOpen] = useState(false);
   const [mcpDialogOpen, setMcpDialogOpen] = useState(false);
-  const [model, setModel] = useState<string>("");
+  const [model, setModel] = useAtom(modelAtom);
   const [enableWebSearch] = useAtom(enableOpenRouterWebSearch);
   const [error, setError] = useState<string | null>(null);
   const [modelMenuOpen, setModelMenuOpen] = useState(false);
@@ -159,34 +158,11 @@ const ChatBotDemo = () => {
   useAtomValue(mcpServersAtom);
   const enabledServers = useAtomValue(enabledMcpServersAtom);
 
-  // Load saved model choice on mount
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem(MODEL_STORAGE_KEY);
-      if (stored) {
-        setModel(stored);
-      }
-    } catch {
-      // ignore storage errors
-    }
-  }, []);
-
   // Keep a ref of the latest selected model so the transport can always read it
   const modelRef = useRef<string>(model);
   useEffect(() => {
     modelRef.current = model + (enableWebSearch ? ':online' : '');
   }, [model, enableWebSearch]);
-
-  // Persist model choice whenever it changes
-  useEffect(() => {
-    try {
-      if (model) {
-        localStorage.setItem(MODEL_STORAGE_KEY, model);
-      }
-    } catch {
-      // ignore storage errors
-    }
-  }, [model]);
 
   // Fetch available models via TanStack Query + localStorage TTL cache
   const { data: modelList, isLoading: modelsLoading, isError: modelsError } = useOpenRouterModels();
@@ -194,24 +170,6 @@ const ChatBotDemo = () => {
     () => (modelList || []).sort((a, b) => a.name.localeCompare(b.name)),
     [modelList],
   );
-
-  const selectedModel = useMemo<OpenRouterModel | undefined>(() => modelOptions.find(modelOption => modelOption.id === model as string), [modelOptions, model])
-
-  // If current model is not in the available list, fall back to a sensible default
-  useEffect(() => {
-    if (!modelOptions.length) return;
-
-    try {
-      const stored = localStorage.getItem(MODEL_STORAGE_KEY);
-      if (stored && modelOptions.find((m) => m.id === stored)) {
-        setModel(stored);
-      } else {
-        setModel('openai/gpt-4o');
-      }
-    } catch {
-      setModel('openai/gpt-4o');
-    }
-  }, [modelOptions]);
 
   // On load, check server connection status
   useEffect(() => {
@@ -353,11 +311,7 @@ const ChatBotDemo = () => {
             <div className="space-y-4">
               {connected ? (
                 <PromptInputModelSelect
-                  onValueChange={(value) => {
-                    if (value) {
-                      setModel(value);
-                    }
-                  }}
+                  onValueChange={setModel}
                   value={model}
                   disabled={!connected || modelsLoading || modelsError}
                   open={modelMenuOpen}
@@ -369,9 +323,9 @@ const ChatBotDemo = () => {
                   {modelMenuOpen ? (
                     <PromptInputModelSelectContent>
                       {modelOptions.map((m) => (
-                        m.id === selectedModel?.id ? (
-                          <PromptInputModelSelectItem key={model || "openai/gpt-4o"} value={model || "openai/gpt-4o"}>
-                            {selectedModel?.name || "openai/gpt-4o"}
+                        m.id === model ? (
+                          <PromptInputModelSelectItem key={m.id} value={m.id}>
+                            {m.name}
                           </PromptInputModelSelectItem>
                         ) : (
                           <PromptInputModelSelectItem key={m.id} value={m.id}>
@@ -386,8 +340,8 @@ const ChatBotDemo = () => {
                     </PromptInputModelSelectContent>
                   ) : (
                     <PromptInputModelSelectContent>
-                      <PromptInputModelSelectItem key={model || "openai/gpt-4o"} value={model || "openai/gpt-4o"}>
-                        {selectedModel?.name || "openai/gpt-4o"}
+                      <PromptInputModelSelectItem key={model} value={model}>
+                        {modelOptions.find((m) => m.id === model)?.name}
                       </PromptInputModelSelectItem>
                     </PromptInputModelSelectContent>
                   )}

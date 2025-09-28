@@ -59,3 +59,6 @@ export const mcpServersAtom = atomWithStorage<SavedMCPServer[]>(MCP_STORAGE_KEY,
 export const enabledMcpServersAtom = atom<SavedMCPServer[]>(
   (get) => get(mcpServersAtom).filter(server => server.enabled && server.remotes?.find(r => r.type === "streamable-http"))
 );
+
+const MODEL_STORAGE_KEY = 'openchat:selectedModel';
+export const modelAtom = atomWithStorage<string>(MODEL_STORAGE_KEY, "openai/gpt-5");
