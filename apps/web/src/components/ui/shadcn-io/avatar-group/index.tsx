@@ -35,7 +35,7 @@ function AvatarMotionContainer({
 }: AvatarMotionProps) {
   return (
     <TooltipPrimitive.Root>
-      <TooltipTrigger>
+      <TooltipTrigger asChild>
         <motion.div
           data-slot="avatar-container"
           className="relative"

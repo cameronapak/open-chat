@@ -566,10 +566,6 @@ const ChatBotDemo = () => {
             <PromptInputToolbar>
               <PromptInputTools>
                 <Button
-                  // I am doing this to prevent nesting a button
-                  // inside of another button. AvatarGroup contains
-                  // a button via TooltipTrigger.
-                  asChild={shouldShowAvatarGroup}
                   variant="ghost"
                   size="icon"
                   type="button"
