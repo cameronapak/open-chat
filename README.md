@@ -6,7 +6,7 @@ Not locked down to any given LLM provider.
 
 Sign into your OpenRouter account via Oauth, secured through encryption.
 
-Easily import into your existing apps.
+Easily import into your existing apps. (Coming soon.)
 
 For contributors: see [AGENTS.md](AGENTS.md)
 
@@ -18,6 +18,7 @@ For contributors: see [AGENTS.md](AGENTS.md)
 - **[shadcn/ui](https://ui.shadcn.com/)** - Reusable UI components
 - **[ai-sdk](https://ai-sdk.dev/)** - AI Toolkit for TypeScript
 - **[ai-elements](https://ai-sdk.dev/elements/overview)** - AI Chatbot elements
+- **use-mcp** hook (fork) — "A lightweight React hook for connecting to Model Context Protocol (MCP) servers. Simplifies authentication and tool calling for AI systems implementing the MCP standard."
 - **[Hono](https://hono.dev)** - Lightweight, performant server framework
 - **[Node.js](https://nodejs.org/en)** - JavaScript runtime environment
 - **[Bun](https://bun.sh)** - JavaScript package Manager
