@@ -75,6 +75,7 @@ export function useMcp(options: UseMcpOptions): UseMcpResult {
   const [error, setError] = useState<string | undefined>(undefined)
   const [log, setLog] = useState<UseMcpResult['log']>([])
   const [authUrl, setAuthUrl] = useState<string | undefined>(undefined)
+  const [broadcastChannel, setBroadcastChannel] = useState<BroadcastChannel | null>(null)
 
   const clientRef = useRef<Client | null>(null)
   // Transport ref can hold either type now
@@ -760,33 +761,37 @@ export function useMcp(options: UseMcpOptions): UseMcpResult {
   ) // Depends on state for error message and stable addLog
 
   // ===== Effects =====
+// Effect for handling auth callback messages from popup (Stable dependencies)
+useEffect(() => {
+  if (!broadcastChannel) return
 
-  // Effect for handling auth callback messages from popup (Stable dependencies)
-  useEffect(() => {
-    const messageHandler = (event: MessageEvent) => {
-      if (event.origin !== window.location.origin) return
-      if (event.data?.type === 'mcp_auth_callback') {
-        addLog('info', 'Received auth callback message.', event.data)
-        if (authTimeoutRef.current) clearTimeout(authTimeoutRef.current)
+  const messageHandler = (event: MessageEvent) => {
+    if (event.origin !== window.location.origin) return
+    if (event.data?.type === 'mcp_auth_callback') {
+      addLog('info', 'Received auth callback message.', event.data)
+      if (authTimeoutRef.current) clearTimeout(authTimeoutRef.current)
 
-        if (event.data.success) {
-          addLog('info', 'Authentication successful via popup. Reconnecting client...')
-          connectingRef.current = false
-          connect() // Call stable connect
-        } else {
-          failConnection(`Authentication failed in callback: ${event.data.error || 'Unknown reason.'}`) // Call stable failConnection
-        }
+      if (event.data.success) {
+        addLog('info', 'Authentication successful via popup. Reconnecting client...')
+        connectingRef.current = false
+        connect() // Call stable connect
+      } else {
+        failConnection(`Authentication failed in callback: ${event.data.error || 'Unknown reason.'}`) // Call stable failConnection
       }
     }
-    window.addEventListener('message', messageHandler)
-    addLog('debug', 'Auth callback message listener added.')
-    return () => {
-      window.removeEventListener('message', messageHandler)
-      addLog('debug', 'Auth callback message listener removed.')
-      if (authTimeoutRef.current) clearTimeout(authTimeoutRef.current)
-    }
-    // Dependencies are stable callbacks
-  }, [addLog, failConnection, connect])
+  }
+  window.addEventListener('message', messageHandler)
+
+  broadcastChannel.addEventListener('message', messageHandler)
+  addLog('debug', 'Auth callback message listener added.')
+  return () => {
+    window.removeEventListener('message', messageHandler)
+    broadcastChannel.removeEventListener('message', messageHandler)
+    addLog('debug', 'Auth callback message listener removed.')
+    if (authTimeoutRef.current) clearTimeout(authTimeoutRef.current)
+  }
+  // Dependencies are stable callbacks
+}, [broadcastChannel, addLog, failConnection, connect])
 
   // Initial Connection (depends on config and stable callbacks)
   useEffect(() => {
@@ -806,6 +811,7 @@ export function useMcp(options: UseMcpOptions): UseMcpResult {
         onPopupWindow,
       })
       addLog('debug', 'BrowserOAuthClientProvider initialized/updated on mount/option change.')
+      setBroadcastChannel(new BroadcastChannel(`mcp-auth-${url}`))
     }
     connect() // Call stable connect
     return () => {
