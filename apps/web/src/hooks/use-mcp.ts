@@ -27,6 +27,7 @@ import { sanitizeUrl } from 'strict-url-sanitise'
 import { BrowserOAuthClientProvider } from '@/lib/auth/browser-provider'
 import type { UseMcpOptions, UseMcpResult } from './use-mcp.types'
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js'
+import type { RequestOptions } from '@modelcontextprotocol/sdk/types.js'
 
 const DEFAULT_RECONNECT_DELAY = 3000
 const DEFAULT_RETRY_DELAY = 5000
@@ -526,14 +527,14 @@ export function useMcp(options: UseMcpOptions): UseMcpResult {
 
   // callTool is stable (depends on stable addLog, failConnection, connect, and URL)
   const callTool = useCallback(
-    async (name: string, args?: Record<string, unknown>) => {
+    async (name: string, args?: Record<string, unknown>, options?: RequestOptions) => {
       // Use stateRef for check, state for throwing error message
       if (stateRef.current !== 'ready' || !clientRef.current) {
         throw new Error(`MCP client is not ready (current state: ${state}). Cannot call tool "${name}".`)
       }
       addLog('info', `Calling tool: ${name}`, args)
       try {
-        const result = await clientRef.current.request({ method: 'tools/call', params: { name, arguments: args } }, CallToolResultSchema)
+        const result = await clientRef.current.request({ method: 'tools/call', params: { name, arguments: args } }, CallToolResultSchema, options)
         addLog('info', `Tool "${name}" call successful:`, result)
         return result
       } catch (err) {
@@ -761,37 +762,37 @@ export function useMcp(options: UseMcpOptions): UseMcpResult {
   ) // Depends on state for error message and stable addLog
 
   // ===== Effects =====
-// Effect for handling auth callback messages from popup (Stable dependencies)
-useEffect(() => {
-  if (!broadcastChannel) return
+  // Effect for handling auth callback messages from popup (Stable dependencies)
+  useEffect(() => {
+    if (!broadcastChannel) return
 
-  const messageHandler = (event: MessageEvent) => {
-    if (event.origin !== window.location.origin) return
-    if (event.data?.type === 'mcp_auth_callback') {
-      addLog('info', 'Received auth callback message.', event.data)
-      if (authTimeoutRef.current) clearTimeout(authTimeoutRef.current)
+    const messageHandler = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin) return
+      if (event.data?.type === 'mcp_auth_callback') {
+        addLog('info', 'Received auth callback message.', event.data)
+        if (authTimeoutRef.current) clearTimeout(authTimeoutRef.current)
 
-      if (event.data.success) {
-        addLog('info', 'Authentication successful via popup. Reconnecting client...')
-        connectingRef.current = false
-        connect() // Call stable connect
-      } else {
-        failConnection(`Authentication failed in callback: ${event.data.error || 'Unknown reason.'}`) // Call stable failConnection
+        if (event.data.success) {
+          addLog('info', 'Authentication successful via popup. Reconnecting client...')
+          connectingRef.current = false
+          connect() // Call stable connect
+        } else {
+          failConnection(`Authentication failed in callback: ${event.data.error || 'Unknown reason.'}`) // Call stable failConnection
+        }
       }
     }
-  }
-  window.addEventListener('message', messageHandler)
+    window.addEventListener('message', messageHandler)
 
-  broadcastChannel.addEventListener('message', messageHandler)
-  addLog('debug', 'Auth callback message listener added.')
-  return () => {
-    window.removeEventListener('message', messageHandler)
-    broadcastChannel.removeEventListener('message', messageHandler)
-    addLog('debug', 'Auth callback message listener removed.')
-    if (authTimeoutRef.current) clearTimeout(authTimeoutRef.current)
-  }
-  // Dependencies are stable callbacks
-}, [broadcastChannel, addLog, failConnection, connect])
+    broadcastChannel.addEventListener('message', messageHandler)
+    addLog('debug', 'Auth callback message listener added.')
+    return () => {
+      window.removeEventListener('message', messageHandler)
+      broadcastChannel.removeEventListener('message', messageHandler)
+      addLog('debug', 'Auth callback message listener removed.')
+      if (authTimeoutRef.current) clearTimeout(authTimeoutRef.current)
+    }
+    // Dependencies are stable callbacks
+  }, [broadcastChannel, addLog, failConnection, connect])
 
   // Initial Connection (depends on config and stable callbacks)
   useEffect(() => {

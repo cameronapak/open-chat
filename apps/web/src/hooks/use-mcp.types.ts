@@ -1,4 +1,4 @@
-import type { Tool, Resource, ResourceTemplate, Prompt } from '@modelcontextprotocol/sdk/types.js'
+import type { Tool, Resource, ResourceTemplate, Prompt, RequestOptions } from '@modelcontextprotocol/sdk/types.js'
 import { BrowserOAuthClientProvider } from '@/lib/auth/browser-provider'
 
 export type UseMcpOptions = {
