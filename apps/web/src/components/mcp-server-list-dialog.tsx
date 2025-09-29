@@ -26,7 +26,6 @@ import {
 import { InputWithLabel } from './ui/input';
 import { getFavicon } from "@/lib/utils";
 import { Switch } from './ui/switch';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 import { enableOpenRouterWebSearch, mcpServersAtom, mcpServerDetailsAtom } from '@/lib/atoms';
 import { useAtom } from 'jotai';
 import { VisuallyHidden } from 'radix-ui';
@@ -63,18 +62,11 @@ function IntegrationsAccordionList({ servers, onToggleServer, onRemoveServer }: 
     <Accordion type="single" collapsible className="w-full">
       <AccordionItem value="open-router-online">
         <AccordionTrigger
-          className="p-0 pr-3 items-center"
+          className="p-3 items-center"
           asChild
         >
           <div
-            onClick={e => {
-              // Doing this approach makes it where the accordion only
-              // opens when the arrow icon button is clicked, not this
-              // entire row. 
-              e.stopPropagation()
-              setEnableWebSearch(prev => !prev)
-            }}
-            className="p-3 grid w-full grid-cols-[auto_1fr_auto] items-center gap-2"
+            className="grid w-full grid-cols-[auto_1fr_auto] items-center gap-2"
           >
             <div className="flex items-center justify-center h-6 w-6 rounded-full bg-white shadow-sm">
               <Globe className="h-4 w-4 text-muted-foreground" />
@@ -112,18 +104,11 @@ function IntegrationsAccordionList({ servers, onToggleServer, onRemoveServer }: 
         return (
           <AccordionItem key={savedServer.id} value={savedServer.id}>
             <AccordionTrigger
-              className="p-0 pr-3 items-center"
+              className="p-3 items-center"
               asChild
             >
               <div
-                className="p-3 grid w-full grid-cols-[auto_1fr_auto] items-center gap-2"
-                onClick={e => {
-                  // Doing this approach makes it where the accordion only
-                  // opens when the arrow icon button is clicked, not this
-                  // entire row. 
-                  e.stopPropagation()
-                  onToggleServer(savedServer.id)
-                }}
+                className="grid w-full grid-cols-[auto_1fr_auto] items-center gap-2"
               >
                 <img
                   src={favicon}
