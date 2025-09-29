@@ -149,7 +149,7 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
     threadId,
     initialMessages = [],
     placeholder = 'Ask OpenChat...',
-    className = 'max-w-md mx-auto p-6 relative size-full h-dvh',
+    className = 'max-w-md mx-auto w-full p-6 relative max-h-dvh',
     height = '100%',
     tools = { enabled: true },
     mcpRegistryUrl,
@@ -484,7 +484,7 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
       />
 
       <div className={className} style={{ height }}>
-        <div className="p-6 flex flex-col h-full">
+        <div className="flex flex-col h-full">
           <Conversation className="h-full">
             <ConversationContent>
               {!connected && !isOpen && requireAuth && (
