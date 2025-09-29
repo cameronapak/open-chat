@@ -40,7 +40,19 @@ interface MCPServerListDialogProps {
 // // Backend API base URL
 // const API_BASE_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3000';
 
-function IntegrationsAccordionList({ servers, onToggleServer, onRemoveServer }: { servers: SavedMCPServer[], onToggleServer: (serverId: string) => void, onRemoveServer: (serverId: string) => void }) {
+function IntegrationsAccordionList(
+  {
+    servers,
+    onToggleServer,
+    onRemoveServer,
+    testingServerIds,
+  }: {
+    servers: SavedMCPServer[],
+    onToggleServer: (serverId: string) => void,
+    onRemoveServer: (serverId: string) => void,
+    testingServerIds?: string[],
+  }
+) {
   const [enableWebSearch, setEnableWebSearch] = useAtom(enableOpenRouterWebSearch);
 
   const handleRemoveServer = (serverId: string, serverName: string) => {
@@ -112,9 +124,11 @@ function IntegrationsAccordionList({ servers, onToggleServer, onRemoveServer }: 
                 onClick={e => {
                   // Doing this approach makes it where the accordion only
                   // opens when the arrow icon button is clicked, not this
-                  // entire row. 
-                  e.stopPropagation()
-                  onToggleServer(savedServer.id)
+                  // entire row.
+                  e.stopPropagation();
+                  // Prevent toggling only for the server currently being tested
+                  if (testingServerIds?.includes(savedServer.id)) return;
+                  onToggleServer(savedServer.id);
                 }}
               >
                 <img
@@ -128,6 +142,7 @@ function IntegrationsAccordionList({ servers, onToggleServer, onRemoveServer }: 
                   className="touch-hitbox"
                   onClick={(e) => e.stopPropagation()}
                   checked={savedServer.enabled}
+                  disabled={testingServerIds?.includes(savedServer.id) ?? false}
                   onCheckedChange={() => onToggleServer(savedServer.id)}
                 />
               </div>
@@ -204,6 +219,9 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
   // Testing flow state
   const [testing, setTesting] = useState(false);
   const [pendingServer, setPendingServer] = useState<SavedMCPServer | null>(null);
+
+  // Optimistic enable testing: track multiple servers being tested concurrently
+  const [pendingToggleServers, setPendingToggleServers] = useState<Record<string, SavedMCPServer>>({});
   const formRef = useRef<HTMLFormElement | null>(null);
 
   const handleAddCustomServer = (e: React.FormEvent<HTMLFormElement>) => {
@@ -243,6 +261,30 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
     } catch (err: any) {
       toast.error(err.message || 'Failed to add custom server');
     }
+  };
+
+  // Handler for toggling an existing saved server (optimistic enable + revert on fail)
+  const handleToggleExistingServer = (serverId: string) => {
+    const target = savedServers.find(s => s.id === serverId);
+    if (!target) return;
+
+    // Ignore duplicate toggles for a server already under test
+    if (pendingToggleServers[serverId]) return;
+
+    if (target.enabled) {
+      // Disabling is immediate
+      setSavedServers(prev =>
+        prev.map(s => (s.id === serverId ? { ...s, enabled: false } : s)),
+      );
+      return;
+    }
+
+    // Optimistically enable, then test and revert if it fails
+    setSavedServers(prev =>
+      prev.map(s => (s.id === serverId ? { ...s, enabled: true } : s)),
+    );
+    setPendingToggleServers(prev => ({ ...prev, [serverId]: target }));
+    toast.info('Connecting to server (OAuth popup may open)...');
   };
 
   const pendingUrl = pendingServer?.remotes?.find(r => r.type === 'streamable-http' || r.type === 'http+sse')?.url || '';
@@ -286,16 +328,13 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
 
               <IntegrationsAccordionList
                 servers={savedServers}
-                onToggleServer={(serverId: string) => setSavedServers(prevServers =>
-                  prevServers.map(server =>
-                    server.id === serverId
-                      ? { ...server, enabled: !server.enabled }
-                      : server
+                onToggleServer={handleToggleExistingServer}
+                onRemoveServer={(serverId: string) =>
+                  setSavedServers(prevServers =>
+                    prevServers.filter(server => server.id !== serverId)
                   )
-                )}
-                onRemoveServer={(serverId: string) => setSavedServers(prevServers =>
-                  prevServers.filter(server => server.id !== serverId)
-                )}
+                }
+                testingServerIds={Object.keys(pendingToggleServers)}
               />
             </TabsContent>
             <TabsContent value="custom" className="px-3 grid grid-cols-1 gap-4">
@@ -375,7 +414,39 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
             }}
           />
         ) : null}
-      </AnimatedDrawerContent>
+
+        {/* Render a tester per server being optimistically enabled */}
+        {Object.values(pendingToggleServers).map((srv) => {
+          const srvUrl = srv.remotes?.find(r => r.type === 'streamable-http' || r.type === 'http+sse')?.url || '';
+          return (
+            <McpConnectionTester
+              key={srv.id}
+              url={srvUrl}
+              onReady={() => {
+                // Already optimistically enabled; confirm success and remove from pending
+                toast.success(`Connected to ${srv.name}`);
+                setPendingToggleServers(prev => {
+                  const next = { ...prev };
+                  delete next[srv.id];
+                  return next;
+                });
+              }}
+              onFailed={(err) => {
+                // Revert optimistic enable for this server only
+                setSavedServers(prev =>
+                  prev.map(s => (s.id === srv.id ? { ...s, enabled: false } : s)),
+                );
+                toast.error(err || `Failed to connect to ${srv.name}. Reverting.`);
+                setPendingToggleServers(prev => {
+                  const next = { ...prev };
+                  delete next[srv.id];
+                  return next;
+                });
+              }}
+            />
+          );
+        })}
+       </AnimatedDrawerContent>
     </Drawer>
   );
 }
