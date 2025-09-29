@@ -8,58 +8,179 @@ Sign into your OpenRouter account via Oauth, secured through encryption.
 
 Easily import into your existing apps (Coming soon).
 
-I'd love to have an API where someone could drop OpenChat into their app like this...
+## OpenChatComponent - Drop-in AI Chat
+
+The OpenChatComponent is a fully-featured, reusable chat component that can be easily integrated into any React application.
+
+### Installation
+
+```bash
+# Coming soon: npm package
+# For now, copy the component from apps/web/src/components/open-chat-component.tsx
+```
+
+### Basic Usage
 
 ```tsx
-{/* Work in Progress - TBD */}
-function Chat() {
-  return (
-    <OpenChatComponent
-      openRouterModel="openai/gpt-4o"
-      api="https://your-backend.com/chat"
-      placeholder="Ask OpenChat..."
-      tools={{
-        enabled: true,
-        mcpServers: [{ 
-          url: "https://your-mcp-server.com/sse",
-          name: "Search Web"
-        }]
-      }}
-      className="w-full h-96"
-      onNewMessage={(msg) => console.log("New message:", msg)}
-    />
-  )
-}
+import { OpenChatComponent } from '@/components/open-chat-component';
 
-{/* Work in Progress - TBD */}
-function HighlyCustomizedChat() {
+function App() {
   return (
     <OpenChatComponent
       openRouterModel="openai/gpt-4o"
-      api="https://your-backend.com/chat"
-      placeholder="Ask OpenChat..."
-      tools={{
-        enabled: true,
-        mcpServers: [{ 
-          url: "https://your-mcp-server.com/sse",
-          name: "Search Web"
-        }]
-      }}
-      mcpRegistryUrl="https://registry.modelcontextprotocol.io"
-      threadId="unique-thread-id"
-      systemPrompt="You are a helpful assistant."
-      userProfile={{
-        name: "Cam",
-        chatPreferences: JSON.stringify({ theme: "dark" }),
-        avatarUrl: "https://example.com/avatar.png",
-      }}
-      initialMessages={[{ id: "1", role: "user", content: [{ type: "text", text: "Hello!" }] }]}
-      className="w-full h-96"
-      onNewMessage={(msg) => console.log("New message:", msg)}
+      api="http://localhost:3000/api/chat"
+      placeholder="Ask me anything..."
+      className="w-full h-screen"
     />
-  )
+  );
 }
 ```
+
+### With Authentication Required
+
+```tsx
+import { OpenChatComponent } from '@/components/open-chat-component';
+
+function SecureChat() {
+  return (
+    <OpenChatComponent
+      openRouterModel="openai/gpt-4o"
+      api="http://localhost:3000/api/chat"
+      requireAuth={true}  // Forces user to connect OpenRouter account
+      placeholder="Ask OpenChat..."
+      className="w-full h-96"
+      onError={(error) => console.error("Chat error:", error)}
+    />
+  );
+}
+```
+
+### With MCP Tools Integration
+
+```tsx
+import { OpenChatComponent } from '@/components/open-chat-component';
+
+function ChatWithTools() {
+  return (
+    <OpenChatComponent
+      openRouterModel="anthropic/claude-3-opus"
+      api="http://localhost:3000/api/chat"
+      tools={{
+        enabled: true,
+        mcpServers: []  // User can add servers via the UI dialog
+      }}
+      mcpRegistryUrl="https://registry.modelcontextprotocol.io"
+      className="w-full h-screen"
+      onNewMessage={(msg) => console.log("New message:", msg)}
+    />
+  );
+}
+```
+
+### Fully Customized Example
+
+```tsx
+import { OpenChatComponent } from '@/components/open-chat-component';
+import type { UIMessage } from '@ai-sdk/react';
+
+function AdvancedChat() {
+  const initialMessages: UIMessage[] = [
+    {
+      id: "1",
+      role: "assistant",
+      content: [{ type: "text", text: "Hello! How can I help you today?" }]
+    }
+  ];
+
+  return (
+    <OpenChatComponent
+      // Model configuration
+      openRouterModel="openai/gpt-4o"
+      allowedModels={[  // Restrict model selection
+        "openai/gpt-4o",
+        "anthropic/claude-3-opus",
+        "google/gemini-pro"
+      ]}
+      
+      // API configuration
+      api="http://localhost:3000/api/chat"
+      requireAuth={true}
+      
+      // MCP Tools
+      tools={{
+        enabled: true,
+        mcpServers: []
+      }}
+      mcpRegistryUrl="https://registry.modelcontextprotocol.io"
+      
+      // Chat configuration
+      threadId="unique-thread-123"
+      systemPrompt="You are a helpful AI assistant specialized in coding."
+      initialMessages={initialMessages}
+      placeholder="Ask about coding..."
+      
+      // User profile
+      userProfile={{
+        name: "Developer",
+        chatPreferences: JSON.stringify({
+          preferredLanguage: "TypeScript",
+          codeStyle: "functional"
+        }),
+        avatarUrl: "https://example.com/avatar.png",
+      }}
+      
+      // UI customization
+      className="w-full h-screen max-w-4xl mx-auto"
+      height="100vh"
+      theme="dark"
+      
+      // Callbacks
+      onNewMessage={(msg) => {
+        console.log("New message:", msg);
+        // Save to database, analytics, etc.
+      }}
+      onSend={(text) => {
+        console.log("User sent:", text);
+      }}
+      onError={(error) => {
+        console.error("Error:", error);
+        // Handle errors appropriately
+      }}
+      
+      // Custom message rendering (optional)
+      renderMessage={(message, part, index) => {
+        // Return null to use default rendering
+        // Or return custom JSX for specific message types
+        if (part.type === 'custom-type') {
+          return <div key={index}>Custom rendering for {part.type}</div>;
+        }
+        return null;
+      }}
+    >
+      {/* Optional footer content */}
+      <div className="p-2 text-center text-sm text-muted-foreground">
+        Powered by OpenRouter
+      </div>
+    </OpenChatComponent>
+  );
+}
+```
+
+### Component Props
+
+See the full TypeScript interface in [`apps/web/src/types/open-chat-component.ts`](apps/web/src/types/open-chat-component.ts) for detailed prop documentation.
+
+Key props include:
+- `openRouterModel` - Initial AI model to use
+- `allowedModels` - Restrict available models for selection
+- `api` - Backend API endpoint for chat
+- `requireAuth` - Force authentication before chatting
+- `tools` - MCP server configuration
+- `systemPrompt` - System instructions for the AI
+- `threadId` - Unique thread identifier
+- `onNewMessage` - Callback for new messages
+- `renderMessage` - Custom message rendering
+- `theme` - Light/dark theme support
 
 ## Features
 

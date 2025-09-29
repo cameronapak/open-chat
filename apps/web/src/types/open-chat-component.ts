@@ -127,4 +127,20 @@ export interface OpenChatComponentProps {
    * Supports 'light' | 'dark' for shadcn/ui compatibility.
    */
   theme?: 'light' | 'dark';
+  /**
+   * If true, the component will require the user to connect their OpenRouter account before chatting.
+   * (default: false)
+   */
+  requireAuth?: boolean;
+  /**
+   * An array of allowed model IDs. If provided, the model selection dropdown will only show these models.
+   * Example: ['openai/gpt-4o', 'anthropic/claude-3-opus'].
+   */
+  allowedModels?: string[];
+  /**
+   * Custom render function for individual message parts.
+   * If provided, this function will be called for each message part. If it returns a ReactNode,
+   * that will be rendered. If it returns null, the default rendering will be used.
+   */
+  renderMessage?: (message: UIMessage, part: any, index: number) => React.ReactNode | null;
 }
