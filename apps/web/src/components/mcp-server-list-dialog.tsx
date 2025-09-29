@@ -125,7 +125,7 @@ function IntegrationsAccordionList(
               asChild
             >
               <div
-                className="p-3 grid w-full grid-cols-[auto_1fr_auto_auto] items-center gap-2"
+                className="p-3 grid w-full grid-cols-[auto_1fr_auto] items-center gap-2"
                 onClick={e => {
                   // Doing this approach makes it where the accordion only
                   // opens when the arrow icon button is clicked, not this
@@ -140,7 +140,7 @@ function IntegrationsAccordionList(
                   src={favicon}
                   className="h-6 w-6 rounded-full bg-white shadow-sm"
                 />
-                <div className="flex items-center gap-3">
+                <div className="flex items-center w-full gap-3">
                   <h3>
                     {savedServer.name}
                   </h3>
