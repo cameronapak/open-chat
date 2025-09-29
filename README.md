@@ -1,4 +1,4 @@
-# Open Chat
+# OpenChat
 
 A truly open AI chatbot.
 
@@ -6,9 +6,60 @@ Not locked down to any given LLM provider.
 
 Sign into your OpenRouter account via Oauth, secured through encryption.
 
-Easily import into your existing apps. (Coming soon.)
+Easily import into your existing apps (Coming soon).
 
-For contributors: see [AGENTS.md](AGENTS.md)
+I'd love to have an API where someone could drop OpenChat into their app like this...
+
+```tsx
+{/* Work in Progress - TBD */}
+function Chat() {
+  return (
+    <OpenChatComponent
+      openRouterModel="openai/gpt-4o"
+      api="https://your-backend.com/chat"
+      placeholder="Ask OpenChat..."
+      tools={{
+        enabled: true,
+        mcpServers: [{ 
+          url: "https://your-mcp-server.com/sse",
+          name: "Search Web"
+        }]
+      }}
+      className="w-full h-96"
+      onNewMessage={(msg) => console.log("New message:", msg)}
+    />
+  )
+}
+
+{/* Work in Progress - TBD */}
+function HighlyCustomizedChat() {
+  return (
+    <OpenChatComponent
+      openRouterModel="openai/gpt-4o"
+      api="https://your-backend.com/chat"
+      placeholder="Ask OpenChat..."
+      tools={{
+        enabled: true,
+        mcpServers: [{ 
+          url: "https://your-mcp-server.com/sse",
+          name: "Search Web"
+        }]
+      }}
+      mcpRegistryUrl="https://registry.modelcontextprotocol.io"
+      threadId="unique-thread-id"
+      systemPrompt="You are a helpful assistant."
+      userProfile={{
+        name: "Cam",
+        chatPreferences: JSON.stringify({ theme: "dark" }),
+        avatarUrl: "https://example.com/avatar.png",
+      }}
+      initialMessages={[{ id: "1", role: "user", content: [{ type: "text", text: "Hello!" }] }]}
+      className="w-full h-96"
+      onNewMessage={(msg) => console.log("New message:", msg)}
+    />
+  )
+}
+```
 
 ## Features
 
@@ -89,3 +140,7 @@ Here are some top-tier MCP registries I've been keeping my eyes on:
 - [Smithery](https://smithery.ai/)
 - [Pica](https://www.picaos.com/)
 - [Rube](https://rube.app/)
+
+## Contributing
+
+For contributors: see [AGENTS.md](AGENTS.md)
