@@ -2,7 +2,7 @@ import type { Tool, Resource, ResourceTemplate, Prompt } from '@modelcontextprot
 import { BrowserOAuthClientProvider } from '@/lib/auth/browser-provider'
 
 export type UseMcpOptions = {
-  /** The /sse URL of your remote MCP server */
+  /** The base URL of your remote MCP server (HTTP and/or SSE supported) */
   url: string
   /** OAuth client name for registration (if dynamic registration is used) */
   clientName?: string
@@ -27,8 +27,6 @@ export type UseMcpOptions = {
   autoRetry?: boolean | number
   /** Auto reconnect if an established connection is lost, with delay in ms (default: 3000) */
   autoReconnect?: boolean | number
-  /** Popup window features string (dimensions and behavior) for OAuth */
-  popupFeatures?: string
   /** Transport type preference: 'auto' (HTTP with SSE fallback), 'http' (HTTP only), 'sse' (SSE only) */
   transportType?: 'auto' | 'http' | 'sse'
   /** Prevent automatic authentication popup on initial connection (default: false) */
@@ -113,18 +111,18 @@ export type UseMcpResult = {
   getPrompt: (
     name: string,
     args?: Record<string, string>,
-  ) => Promise<{ messages: Array<{ role: 'user' | 'assistant'; content: { type: string; text?: string;[key: string]: any } }> }>
+  ) => Promise<{ messages: any[] }>
   /** Manually attempts to reconnect if the state is 'failed'. */
   retry: () => void
   /** Disconnects the client from the MCP server. */
-  disconnect: () => void
+  disconnect: (quiet?: boolean) => Promise<void>
   /**
    * Manually triggers the authentication process. Useful if the initial attempt failed
    * due to a blocked popup, allowing the user to initiate it via a button click.
    * @returns A promise that resolves with the authorization URL opened (or intended to be opened),
    *          or undefined if auth cannot be started.
    */
-  authenticate: () => void
+  authenticate: () => Promise<void>
   /** Clears all stored authentication data (tokens, client info, etc.) for this server URL from localStorage. */
   clearStorage: () => void
   /** The OAuth client provider used for authentication */
