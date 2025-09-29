@@ -26,6 +26,7 @@ import {
 import { InputWithLabel } from './ui/input';
 import { getFavicon } from "@/lib/utils";
 import { Switch } from './ui/switch';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 import { enableOpenRouterWebSearch, mcpServersAtom } from '@/lib/atoms';
 import { useAtom } from 'jotai';
 import { VisuallyHidden } from 'radix-ui';
@@ -46,11 +47,13 @@ function IntegrationsAccordionList(
     onToggleServer,
     onRemoveServer,
     testingServerIds,
+    connectedServerIds,
   }: {
     servers: SavedMCPServer[],
     onToggleServer: (serverId: string) => void,
     onRemoveServer: (serverId: string) => void,
     testingServerIds?: string[],
+    connectedServerIds?: string[],
   }
 ) {
   const [enableWebSearch, setEnableWebSearch] = useAtom(enableOpenRouterWebSearch);
@@ -66,7 +69,7 @@ function IntegrationsAccordionList(
   return (
     <Accordion type="single" collapsible className="w-full">
       <AccordionItem value="open-router-online">
-        <AccordionTrigger 
+        <AccordionTrigger
           className="p-0 pr-3 items-center"
           asChild
         >
@@ -112,6 +115,8 @@ function IntegrationsAccordionList(
 
       {servers.map((savedServer) => {
         const favicon = getFavicon(savedServer.remotes?.[0].url || "")
+        const isConnected = connectedServerIds?.includes(savedServer.id);
+        const isTesting = testingServerIds?.includes(savedServer.id);
 
         return (
           <AccordionItem key={savedServer.id} value={savedServer.id}>
@@ -120,14 +125,14 @@ function IntegrationsAccordionList(
               asChild
             >
               <div
-                className="p-3 grid w-full grid-cols-[auto_1fr_auto] items-center gap-2"
+                className="p-3 grid w-full grid-cols-[auto_1fr_auto_auto] items-center gap-2"
                 onClick={e => {
                   // Doing this approach makes it where the accordion only
                   // opens when the arrow icon button is clicked, not this
                   // entire row.
                   e.stopPropagation();
                   // Prevent toggling only for the server currently being tested
-                  if (testingServerIds?.includes(savedServer.id)) return;
+                  if (isTesting) return;
                   onToggleServer(savedServer.id);
                 }}
               >
@@ -135,14 +140,28 @@ function IntegrationsAccordionList(
                   src={favicon}
                   className="h-6 w-6 rounded-full bg-white shadow-sm"
                 />
-                <h3>
-                  {savedServer.name}
-                </h3>
+                <div className="flex items-center gap-3">
+                  <h3>
+                    {savedServer.name}
+                  </h3>
+                  {isConnected && (
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className="touch-hitbox h-2 w-2 rounded-full bg-green-500"></div>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Connected</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  )}
+                </div>
                 <Switch
                   className="touch-hitbox"
                   onClick={(e) => e.stopPropagation()}
                   checked={savedServer.enabled}
-                  disabled={testingServerIds?.includes(savedServer.id) ?? false}
+                  disabled={isTesting ?? false}
                   onCheckedChange={() => onToggleServer(savedServer.id)}
                 />
               </div>
@@ -222,6 +241,8 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
 
   // Optimistic enable testing: track multiple servers being tested concurrently
   const [pendingToggleServers, setPendingToggleServers] = useState<Record<string, SavedMCPServer>>({});
+  // Track connected servers
+  const [connectedServers, setConnectedServers] = useState<Record<string, boolean>>({});
   const formRef = useRef<HTMLFormElement | null>(null);
 
   const handleAddCustomServer = (e: React.FormEvent<HTMLFormElement>) => {
@@ -276,6 +297,12 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
       setSavedServers(prev =>
         prev.map(s => (s.id === serverId ? { ...s, enabled: false } : s)),
       );
+      // Remove from connected servers when disabled
+      setConnectedServers(prev => {
+        const next = { ...prev };
+        delete next[serverId];
+        return next;
+      });
       return;
     }
 
@@ -284,7 +311,12 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
       prev.map(s => (s.id === serverId ? { ...s, enabled: true } : s)),
     );
     setPendingToggleServers(prev => ({ ...prev, [serverId]: target }));
-    toast.info('Connecting to server (OAuth popup may open)...');
+    // Remove from connected servers while testing
+    setConnectedServers(prev => {
+      const next = { ...prev };
+      delete next[serverId];
+      return next;
+    });
   };
 
   const pendingUrl = pendingServer?.remotes?.find(r => r.type === 'streamable-http' || r.type === 'http+sse')?.url || '';
@@ -335,6 +367,7 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
                   )
                 }
                 testingServerIds={Object.keys(pendingToggleServers)}
+                connectedServerIds={Object.keys(connectedServers)}
               />
             </TabsContent>
             <TabsContent value="custom" className="px-3 grid grid-cols-1 gap-4">
@@ -424,20 +457,26 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
               url={srvUrl}
               onReady={() => {
                 // Already optimistically enabled; confirm success and remove from pending
-                toast.success(`Connected to ${srv.name}`);
                 setPendingToggleServers(prev => {
                   const next = { ...prev };
                   delete next[srv.id];
                   return next;
                 });
+                // Mark server as connected
+                setConnectedServers(prev => ({ ...prev, [srv.id]: true }));
               }}
               onFailed={(err) => {
                 // Revert optimistic enable for this server only
                 setSavedServers(prev =>
                   prev.map(s => (s.id === srv.id ? { ...s, enabled: false } : s)),
                 );
-                toast.error(err || `Failed to connect to ${srv.name}. Reverting.`);
                 setPendingToggleServers(prev => {
+                  const next = { ...prev };
+                  delete next[srv.id];
+                  return next;
+                });
+                // Remove from connected servers if it was previously connected
+                setConnectedServers(prev => {
                   const next = { ...prev };
                   delete next[srv.id];
                   return next;
@@ -446,7 +485,7 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
             />
           );
         })}
-       </AnimatedDrawerContent>
+      </AnimatedDrawerContent>
     </Drawer>
   );
 }
