@@ -32,6 +32,7 @@ import { useAtom } from 'jotai';
 import { VisuallyHidden } from 'radix-ui';
 import { useEffect, useRef, useState } from 'react';
 import { useMcp } from '@/hooks/use-mcp';
+import { mcpServerDetailsAtom } from '@/lib/atoms';
 
 interface MCPServerListDialogProps {
   open: boolean;
@@ -193,15 +194,17 @@ function IntegrationsAccordionList(
  * Lightweight tester that mounts useMcp against a URL and reports status up.
  */
 function McpConnectionTester({
+  serverId,
   url,
   onReady,
   onFailed,
 }: {
+  serverId: string;
   url: string;
-  onReady: (info?: { name?: string; version?: string } | null) => void;
+  onReady: (details?: { serverInfo?: any; tools?: any[]; resources?: any[]; prompts?: any[] } | null) => void;
   onFailed: (error?: string) => void;
 }) {
-  const { state, error, disconnect, serverInfo } = useMcp({
+  const { state, error, disconnect, serverInfo, tools, resources, prompts } = useMcp({
     url,
     clientName: 'OpenChat',
     clientUri: typeof window !== 'undefined' ? window.location.origin : '',
@@ -216,7 +219,13 @@ function McpConnectionTester({
   useEffect(() => {
     if (!url) return;
     if (state === 'ready') {
-      onReady(serverInfo ?? null);
+      // Provide serverInfo + lists back to parent so it can persist them
+      onReady({
+        serverInfo,
+        tools,
+        resources,
+        prompts,
+      });
       // Quiet disconnect to avoid UI flicker
       disconnect(true);
     } else if (state === 'failed') {
@@ -224,13 +233,14 @@ function McpConnectionTester({
       disconnect(true);
     }
     // For 'authenticating' / 'pending_auth' we just wait; popup flow will resolve.
-  }, [state, error, url, onReady, onFailed, disconnect]);
+  }, [state, error, url, onReady, onFailed, disconnect, serverInfo, tools, resources, prompts]);
 
   return null;
 }
 
 export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogProps) {
   const [savedServers, setSavedServers] = useAtom(mcpServersAtom);
+  const [, setMcpServerDetails] = useAtom(mcpServerDetailsAtom);
 
   // Controlled Tabs so we can switch to "integrations" after success
   const [tab, setTab] = useState<'integrations' | 'custom'>('integrations');
@@ -430,16 +440,31 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
         {/* Hidden tester mounts when testing starts */}
         {testing && pendingServer ? (
           <McpConnectionTester
+            serverId={pendingServer.id}
             url={pendingUrl}
-            onReady={() => {
+            onReady={(details) => {
               // Save now that connection is ready
               setSavedServers(prev => [...prev, pendingServer]);
+              // Persist details (tools/resources/prompts/serverInfo) if available
+              if (details) {
+                setMcpServerDetails(prev => ({
+                  ...prev,
+                  [pendingServer.id]: {
+                    serverInfo: details.serverInfo ?? null,
+                    tools: details.tools ?? [],
+                    resources: details.resources ?? [],
+                    prompts: details.prompts ?? [],
+                    lastSeen: new Date().toISOString(),
+                  },
+                }));
+              }
               formRef.current?.reset?.();
               setTab('integrations');
               setTesting(false);
               setPendingServer(null);
             }}
             onFailed={(err) => {
+              toast.error(err || 'Failed to connect to server');
               setTesting(false);
               setPendingServer(null);
             }}
@@ -452,16 +477,27 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
           return (
             <McpConnectionTester
               key={srv.id}
+              serverId={srv.id}
               url={srvUrl}
-              onReady={(info) => {
+              onReady={(details) => {
                 // Already optimistically enabled; confirm success and remove from pending
                 setPendingToggleServers(prev => {
                   const next = { ...prev };
                   delete next[srv.id];
                   return next;
                 });
-                // Mark server as connected and store info if present
-                setConnectedServers(prev => ({ ...prev, [srv.id]: info ?? true }));
+                // Persist details and mark connected
+                setMcpServerDetails(prev => ({
+                  ...prev,
+                  [srv.id]: {
+                    serverInfo: details?.serverInfo ?? null,
+                    tools: details?.tools ?? [],
+                    resources: details?.resources ?? [],
+                    prompts: details?.prompts ?? [],
+                    lastSeen: new Date().toISOString(),
+                  },
+                }));
+                setConnectedServers(prev => ({ ...prev, [srv.id]: details ? (details.serverInfo ?? true) : true }));
               }}
               onFailed={(err) => {
                 // Revert optimistic enable for this server only
@@ -475,6 +511,11 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
                 });
                 // Remove connected info for this server
                 setConnectedServers(prev => {
+                  const next = { ...prev };
+                  delete next[srv.id];
+                  return next;
+                });
+                setMcpServerDetails(prev => {
                   const next = { ...prev };
                   delete next[srv.id];
                   return next;
