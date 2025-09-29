@@ -1,6 +1,6 @@
 import * as React from "react"
 import { Drawer as DrawerPrimitive } from "vaul"
-import { motion } from "framer-motion"
+import { motion } from "motion/react"
 import useMeasure from "react-use-measure"
 
 import { cn } from "@/lib/utils"
