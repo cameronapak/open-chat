@@ -51,10 +51,6 @@ const chatRoute = chatRouter.post('/', async (c) => {
       mcpServers?: MCPServerConfig[]
     } = body ?? {};
 
-    console.log({
-      mcpServers
-    })
-
     if (!model) {
       return c.json({ error: 'Missing model' }, 400);
     }

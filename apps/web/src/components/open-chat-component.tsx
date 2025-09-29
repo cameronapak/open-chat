@@ -44,7 +44,7 @@ import { MCPServerListDialog } from '@/components/mcp-server-list-dialog';
 import { useOpenRouterModels, type OpenRouterModel } from '@/lib/openrouter.models';
 import { type SavedMCPServer } from '@/lib/mcp-storage';
 import { getFavicon } from '@/lib/utils';
-import { enableOpenRouterWebSearch, enabledMcpServersAtom, mcpServersAtom, modelAtom } from '@/lib/atoms';
+import { enableOpenRouterWebSearch, enabledMcpServersAtom, modelAtom } from '@/lib/atoms';
 import { useAtom, useAtomValue } from 'jotai';
 import { ModeToggle } from '@/components/mode-toggle';
 import { type OpenChatComponentProps } from '../types/open-chat-component';
@@ -152,8 +152,8 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
     className = 'max-w-md mx-auto w-full p-6 relative max-h-dvh',
     height = '100%',
     tools = { enabled: true },
-    mcpRegistryUrl,
-    userProfile,
+    // mcpRegistryUrl,
+    // userProfile,
     onNewMessage,
     onError,
     onSend,
@@ -171,10 +171,14 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
   const [enableWebSearch] = useAtom(enableOpenRouterWebSearch);
   const [error, setError] = useState<string | null>(null);
   const [modelMenuOpen, setModelMenuOpen] = useState(false);
-  
-  // MCP servers state
-  useAtomValue(mcpServersAtom); // Make reactive
   const enabledServers = useAtomValue(enabledMcpServersAtom);
+
+  // Keep latest enabled servers in a ref to avoid stale closures during send
+  const enabledServersRef = useRef<SavedMCPServer[]>(enabledServers);
+  useEffect(() => {
+    enabledServersRef.current = enabledServers;
+    console.log('[OpenChat] enabledServers updated:', enabledServersRef.current);
+  }, [enabledServers]);
 
   // Set initial model if provided
   useEffect(() => {
@@ -229,25 +233,34 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
       api,
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
-      prepareSendMessagesRequest: ({ messages, id, body }) => ({
-        body: {
-          ...body,
-          id,
-          messages,
-          model: modelRef.current,
-          reasoning: true,
-          systemPrompt,
-          threadId,
-          mcpServers: enabledServers.map(server => ({
-            id: server.id,
-            name: server.name,
-            url: getUrlFromServer(server),
-            enabled: server.enabled,
-          })) as MCPServerConfig[],
-        },
-      }),
+      prepareSendMessagesRequest: ({ messages, id, body }) => {
+        // Use ref to avoid stale values if send happens before React re-memoizes transport
+        const currentEnabled = enabledServersRef.current || [];
+        console.log('Enabled servers being sent to backend (ref):', currentEnabled);
+
+        const mcpServersData = currentEnabled.map((server: SavedMCPServer) => ({
+          id: server.id,
+          name: server.name,
+          url: getUrlFromServer(server),
+          enabled: server.enabled,
+        }));
+        console.log('Mapped MCP servers data:', mcpServersData);
+
+        return {
+          body: {
+            ...body,
+            id,
+            messages,
+            model: modelRef.current,
+            reasoning: true,
+            systemPrompt,
+            threadId,
+            mcpServers: mcpServersData,
+          },
+        };
+      },
     });
-  }, [api, systemPrompt, threadId, enabledServers]);
+  }, [api, systemPrompt, threadId]);
 
   // Chat hook
   const {
@@ -340,7 +353,7 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
 
   const openSettings = () => setIsOpen(true);
   const openMcpDialog = () => setMcpDialogOpen(true);
-  
+
   const shouldShowAvatarGroup = Boolean(enabledServers.length || enableWebSearch);
 
   // Render custom message if provided
@@ -362,7 +375,7 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
             </Message>
             {message.role === 'assistant' && index === rawMessages.length - 1 && (
               <Actions className="mt-2">
-                <Action onClick={() => {}} label="Retry">
+                <Action onClick={() => { }} label="Retry">
                   <RefreshCcwIcon className="size-3" />
                 </Action>
                 <Action
@@ -375,19 +388,19 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
             )}
           </Fragment>
         );
-      
+
       case 'reasoning':
         return (
           <Reasoning
             key={`${message.id}-${index}`}
             className="w-full"
-            isStreaming={status === 'streaming' && index === message.parts.length - 1 && message.id === messages.at(-1)?.id}
+            isStreaming={status === 'streaming' && index === message.parts.length - 1 && message.id === rawMessages.at(-1)?.id}
           >
             <ReasoningTrigger />
             <ReasoningContent>{part.text}</ReasoningContent>
           </Reasoning>
         );
-      
+
       case 'dynamic-tool':
         const toolPart = part as DynamicToolUIPart;
         return (
@@ -399,7 +412,7 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
             </ToolContent>
           </Tool>
         );
-      
+
       default:
         return null;
     }
@@ -494,7 +507,7 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
                   </MessageContent>
                 </Message>
               )}
-              
+
               {rawMessages.map((message) => (
                 <div key={message.id}>
                   {message.role === 'assistant' && message.parts.filter((part: any) => part.type === 'source-url').length > 0 && (
@@ -517,13 +530,13 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
                       ))}
                     </Sources>
                   )}
-                  
-                  {message.parts.map((part: any, i: number) => 
+
+                  {message.parts.map((part: any, i: number) =>
                     renderMessageContent(message, part, i)
                   )}
                 </div>
               ))}
-              
+
               {status === 'submitted' && <Loader />}
             </ConversationContent>
             <ConversationScrollButton />

@@ -57,7 +57,11 @@ const MCP_STORAGE_KEY = 'openchat:savedMCPServers';
 // Create a Jotai atom with localStorage persistence
 export const mcpServersAtom = atomWithStorage<SavedMCPServer[]>(MCP_STORAGE_KEY, []);
 export const enabledMcpServersAtom = atom<SavedMCPServer[]>(
-  (get) => get(mcpServersAtom).filter(server => server.enabled && server.remotes?.find(r => r.type === "streamable-http"))
+  (get) => {
+    const servers = get(mcpServersAtom);
+    const enabledServers = servers.filter(server => server.enabled);
+    return enabledServers.filter(server => server.remotes?.find(r => r.type === "streamable-http" || r.type === "sse"))
+  }
 );
 
 const MODEL_STORAGE_KEY = 'openchat:selectedModel';
