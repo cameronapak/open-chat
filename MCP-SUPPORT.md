@@ -3,13 +3,13 @@
 Most likely MCP's will be called "Connectors" on the client-side.
 
 - [x] Enable remote `streamable-http` type MCP's
-- [ ] Enable remote `sse` type MCP's
+- [x] Enable remote `sse` type MCP's
 - Locally machine-run MCP packages are not supported at this time
 - [x] I can enable an MCP to be used in chat
 - [x] I can remove an MCP from my list of MCP's
-- [ ] I can OAuth into an MCP
+- [x] I can OAuth into an MCP
 - [ ] I can add an API Key to an MCP
-- [ ] When I click row of MCP server, I want to be able to just open it. Then, if I click the arrow, I wanna see more detais. 
+- [x] When I click row of MCP server, I want to be able to just open it. Then, if I click the arrow, I wanna see more detais. 
 
 ## MCP Registry
 
@@ -27,7 +27,7 @@ Most likely MCP's will be called "Connectors" on the client-side.
 
 ## Prompts
 
-- [ ] I can receive [prompts](https://modelcontextprotocol.io/specification/2025-06-18/server/prompts) from an MCP
+- [x] I can receive [prompts](https://modelcontextprotocol.io/specification/2025-06-18/server/prompts) from an MCP
 - [ ] In the web client, I can use prompts from MCP's
 
 ## Web Client
@@ -35,5 +35,5 @@ Most likely MCP's will be called "Connectors" on the client-side.
 Too many tools connected at the same time makes it very hard for the LLM to know which one to choose. 
 
 - [x] For every chat, I must manually toggle which Connectors to use. 
-- [ ] I can tell a connector to always be used in chat
-- [ ] Given I save/install an MCP on the client, I must validate the server connection before actually saving it.
+- [x] I can tell a connector to always be used in chat
+- [x] Given I save/install an MCP on the client, I must validate the server connection before actually saving it.
