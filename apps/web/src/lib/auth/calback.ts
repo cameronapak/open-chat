@@ -45,19 +45,27 @@ export async function onMcpAuthorization() {
       throw new Error('Failed to parse stored OAuth state.')
     }
 
-    // Ensure we have a BroadcastChannel for communication
-    broadcastChannel = new BroadcastChannel(`mcp-auth-${storedStateData.providerOptions.serverUrl}`)
-    // Validate expiry
-    if (!storedStateData.expiry || storedStateData.expiry < Date.now()) {
-      localStorage.removeItem(stateKey) // Clean up expired state
-      throw new Error('OAuth state has expired. Please try initiating authentication again.')
-    }
-
     // Ensure provider options are present
     if (!storedStateData.providerOptions) {
       throw new Error('Stored state is missing required provider options.')
     }
     const { serverUrl, ...providerOptions } = storedStateData.providerOptions
+    if (!serverUrl) {
+      throw new Error('Stored state is missing required providerOptions.serverUrl.')
+    }
+    let parsedUrl: URL
+    try {
+      parsedUrl = new URL(serverUrl)
+    } catch {
+      throw new Error('Invalid providerOptions.serverUrl.')
+    }
+    // Ensure we have a BroadcastChannel for communication
+    broadcastChannel = new BroadcastChannel(`mcp-auth-${parsedUrl.host}`)
+    // Validate expiry
+    if (!storedStateData.expiry || storedStateData.expiry < Date.now()) {
+      localStorage.removeItem(stateKey) // Clean up expired state
+      throw new Error('OAuth state has expired. Please try initiating authentication again.')
+    }
 
     // --- Instantiate Provider ---
     console.log(`${logPrefix} Re-instantiating provider for server: ${serverUrl}`)

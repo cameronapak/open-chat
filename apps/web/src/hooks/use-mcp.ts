@@ -88,6 +88,7 @@ export function useMcp(options: UseMcpOptions): UseMcpResult {
   const isMountedRef = useRef<boolean>(true)
   const connectAttemptRef = useRef<number>(0)
   const authTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const isClosingRef = useRef(false)
 
   // --- Refs for values used in callbacks ---
   const stateRef = useRef(state)
@@ -120,6 +121,7 @@ export function useMcp(options: UseMcpOptions): UseMcpResult {
   const disconnect = useCallback(
     async (quiet = false) => {
       if (!quiet) addLog('info', 'Disconnecting...')
+      addLog('debug', 'Disconnect called, quiet:', quiet, 'connecting:', connectingRef.current)
       connectingRef.current = false
       if (authTimeoutRef.current) clearTimeout(authTimeoutRef.current)
       authTimeoutRef.current = null
@@ -143,11 +145,14 @@ export function useMcp(options: UseMcpOptions): UseMcpResult {
       }
 
       if (transport) {
+        isClosingRef.current = true
         try {
           await transport.close()
           if (!quiet) addLog('debug', 'Transport closed')
         } catch (err) {
           if (!quiet) addLog('warn', 'Error closing transport:', err)
+        } finally {
+          isClosingRef.current = false
         }
       }
     },
@@ -192,7 +197,8 @@ export function useMcp(options: UseMcpOptions): UseMcpResult {
     successfulTransportRef.current = null // Reset successful transport type
     setState('discovering')
     addLog('info', `Connecting attempt #${connectAttemptRef.current} to ${url}...`)
-
+    addLog('debug', 'Connect called, connectingRef set to true')
+    
     // Initialize provider/client if needed (idempotent)
     // Ensure provider/client are initialized (idempotent check)
     if (!authProviderRef.current) {
@@ -258,7 +264,13 @@ export function useMcp(options: UseMcpOptions): UseMcpResult {
 
         if (transportType === 'http') {
           addLog('debug', 'Creating StreamableHTTPClientTransport...')
-          transportInstance = new StreamableHTTPClientTransport(targetUrl, commonOptions)
+          transportInstance = new StreamableHTTPClientTransport(targetUrl, {
+            ...commonOptions,
+            requestInit: {
+              ...commonOptions.requestInit,
+              method: 'POST',
+            },
+          })
           addLog('debug', 'StreamableHTTPClientTransport created successfully')
         } else {
           // sse
@@ -285,7 +297,7 @@ export function useMcp(options: UseMcpOptions): UseMcpResult {
         clientRef.current?.handleMessage?.(message) // Forward to current client
       }
       transportInstance.onerror = (err: Error) => {
-        // Transport errors usually mean connection is lost/failed definitively for this transport
+        // Use stable addLog
         addLog('warn', `Transport error event (${transportType.toUpperCase()}):`, err)
         addLog('debug', `Error details:`, {
           message: err.message,
@@ -293,6 +305,10 @@ export function useMcp(options: UseMcpOptions): UseMcpResult {
           name: err.name,
           cause: err.cause,
         })
+        if (err.name === 'AbortError' && isClosingRef.current) {
+          addLog('debug', 'Ignoring AbortError during transport close')
+          return
+        }
         // Use stable failConnection
         failConnection(`Transport error (${transportType.toUpperCase()}): ${err.message}`, err)
         // Should we return 'failed' here? failConnection sets state, maybe that's enough.
