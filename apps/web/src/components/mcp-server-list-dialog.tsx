@@ -27,12 +27,12 @@ import { InputWithLabel } from './ui/input';
 import { getFavicon } from "@/lib/utils";
 import { Switch } from './ui/switch';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
-import { enableOpenRouterWebSearch, mcpServersAtom } from '@/lib/atoms';
+import { enableOpenRouterWebSearch, mcpServersAtom, mcpServerDetailsAtom } from '@/lib/atoms';
 import { useAtom } from 'jotai';
 import { VisuallyHidden } from 'radix-ui';
 import { useEffect, useRef, useState } from 'react';
 import { useMcp } from '@/hooks/use-mcp';
-import { mcpServerDetailsAtom } from '@/lib/atoms';
+import MCPServerDetails from './mcp-server-details';
 
 interface MCPServerListDialogProps {
   open: boolean;
@@ -42,21 +42,13 @@ interface MCPServerListDialogProps {
 // // Backend API base URL
 // const API_BASE_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3000';
 
-function IntegrationsAccordionList(
-  {
-    servers,
-    onToggleServer,
-    onRemoveServer,
-    testingServerIds,
-    connectedServerIds,
-  }: {
-    servers: SavedMCPServer[],
-    onToggleServer: (serverId: string) => void,
-    onRemoveServer: (serverId: string) => void,
-    testingServerIds?: string[],
-    connectedServerIds?: string[],
-  }
-) {
+function IntegrationsAccordionList({ servers, onToggleServer, onRemoveServer }: {
+  servers: SavedMCPServer[],
+  onToggleServer: (serverId: string) => void,
+  onRemoveServer: (serverId: string) => void,
+  testingServerIds?: string[],
+  connectedServerIds?: string[],
+}) {
   const [enableWebSearch, setEnableWebSearch] = useAtom(enableOpenRouterWebSearch);
 
   const handleRemoveServer = (serverId: string, serverName: string) => {
@@ -116,8 +108,6 @@ function IntegrationsAccordionList(
 
       {servers.map((savedServer) => {
         const favicon = getFavicon(savedServer.remotes?.[0].url || "")
-        const isConnected = connectedServerIds?.includes(savedServer.id);
-        const isTesting = testingServerIds?.includes(savedServer.id);
 
         return (
           <AccordionItem key={savedServer.id} value={savedServer.id}>
@@ -130,39 +120,22 @@ function IntegrationsAccordionList(
                 onClick={e => {
                   // Doing this approach makes it where the accordion only
                   // opens when the arrow icon button is clicked, not this
-                  // entire row.
-                  e.stopPropagation();
-                  // Prevent toggling only for the server currently being tested
-                  if (isTesting) return;
-                  onToggleServer(savedServer.id);
+                  // entire row. 
+                  e.stopPropagation()
+                  onToggleServer(savedServer.id)
                 }}
               >
                 <img
                   src={favicon}
                   className="h-6 w-6 rounded-full bg-white shadow-sm"
                 />
-                <div className="flex items-center w-full gap-3">
-                  <h3>
-                    {savedServer.name}
-                  </h3>
-                  {isConnected && (
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <div className="touch-hitbox h-2 w-2 rounded-full bg-green-500"></div>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Connected</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  )}
-                </div>
+                <h3>
+                  {savedServer.name}
+                </h3>
                 <Switch
                   className="touch-hitbox"
                   onClick={(e) => e.stopPropagation()}
                   checked={savedServer.enabled}
-                  disabled={isTesting ?? false}
                   onCheckedChange={() => onToggleServer(savedServer.id)}
                 />
               </div>
@@ -181,6 +154,18 @@ function IntegrationsAccordionList(
                   <Trash2 className="h-4 w-4" />
                   Remove Integration
                 </Button>
+
+                {/* Details: lazy-load tools/prompts/resources using React Suspense + use() */}
+                <details className="mt-2">
+                  <summary className="cursor-pointer font-medium">Available items</summary>
+                  <div className="mt-2">
+                    {/* MCPServerDetails is a client component that uses Suspense/use() to fetch and persist details */}
+                    <MCPServerDetails
+                      url={savedServer.remotes?.find(r => r.type === 'streamable-http' || r.type === 'http+sse')?.url || ''}
+                      serverId={savedServer.id}
+                    />
+                  </div>
+                </details>
               </div>
             </AccordionContent>
           </AccordionItem>
@@ -194,17 +179,15 @@ function IntegrationsAccordionList(
  * Lightweight tester that mounts useMcp against a URL and reports status up.
  */
 function McpConnectionTester({
-  serverId,
   url,
   onReady,
   onFailed,
 }: {
-  serverId: string;
   url: string;
-  onReady: (details?: { serverInfo?: any; tools?: any[]; resources?: any[]; prompts?: any[] } | null) => void;
+  onReady: (details: { tools?: any[]; resources?: any[]; prompts?: any[]; resourceTemplates?: any[]; serverInfo?: { name?: string; version?: string } }) => void;
   onFailed: (error?: string) => void;
 }) {
-  const { state, error, disconnect, serverInfo, tools, resources, prompts } = useMcp({
+  const { state, error, disconnect, tools, resources, prompts, resourceTemplates, serverInfo } = useMcp({
     url,
     clientName: 'OpenChat',
     clientUri: typeof window !== 'undefined' ? window.location.origin : '',
@@ -219,12 +202,13 @@ function McpConnectionTester({
   useEffect(() => {
     if (!url) return;
     if (state === 'ready') {
-      // Provide serverInfo + lists back to parent so it can persist them
+      // Provide structured details to the parent
       onReady({
-        serverInfo,
         tools,
         resources,
         prompts,
+        resourceTemplates,
+        serverInfo,
       });
       // Quiet disconnect to avoid UI flicker
       disconnect(true);
@@ -233,14 +217,16 @@ function McpConnectionTester({
       disconnect(true);
     }
     // For 'authenticating' / 'pending_auth' we just wait; popup flow will resolve.
-  }, [state, error, url, onReady, onFailed, disconnect, serverInfo, tools, resources, prompts]);
+  }, [state, error, url, onReady, onFailed, disconnect, tools, resources, prompts, resourceTemplates, serverInfo]);
 
   return null;
 }
 
 export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogProps) {
   const [savedServers, setSavedServers] = useAtom(mcpServersAtom);
-  const [, setMcpServerDetails] = useAtom(mcpServerDetailsAtom);
+  const [, setMcpDetails] = useAtom(mcpServerDetailsAtom);
+
+   // (previously had DOM-bridge lazy-loading state; replaced with React Suspense component)
 
   // Controlled Tabs so we can switch to "integrations" after success
   const [tab, setTab] = useState<'integrations' | 'custom'>('integrations');
@@ -437,27 +423,16 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
           </DrawerClose>
         </DrawerFooter>
 
+        {/* details fetching is now handled by MCPServerDetails via Suspense/use() */}
+
         {/* Hidden tester mounts when testing starts */}
         {testing && pendingServer ? (
           <McpConnectionTester
-            serverId={pendingServer.id}
             url={pendingUrl}
-            onReady={(details) => {
+            onReady={() => {
               // Save now that connection is ready
               setSavedServers(prev => [...prev, pendingServer]);
-              // Persist details (tools/resources/prompts/serverInfo) if available
-              if (details) {
-                setMcpServerDetails(prev => ({
-                  ...prev,
-                  [pendingServer.id]: {
-                    serverInfo: details.serverInfo ?? null,
-                    tools: details.tools ?? [],
-                    resources: details.resources ?? [],
-                    prompts: details.prompts ?? [],
-                    lastSeen: new Date().toISOString(),
-                  },
-                }));
-              }
+              toast.success('Custom server added and connected');
               formRef.current?.reset?.();
               setTab('integrations');
               setTesting(false);
@@ -470,60 +445,6 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
             }}
           />
         ) : null}
-
-        {/* Render a tester per server being optimistically enabled */}
-        {Object.values(pendingToggleServers).map((srv) => {
-          const srvUrl = srv.remotes?.find(r => r.type === 'streamable-http' || r.type === 'http+sse')?.url || '';
-          return (
-            <McpConnectionTester
-              key={srv.id}
-              serverId={srv.id}
-              url={srvUrl}
-              onReady={(details) => {
-                // Already optimistically enabled; confirm success and remove from pending
-                setPendingToggleServers(prev => {
-                  const next = { ...prev };
-                  delete next[srv.id];
-                  return next;
-                });
-                // Persist details and mark connected
-                setMcpServerDetails(prev => ({
-                  ...prev,
-                  [srv.id]: {
-                    serverInfo: details?.serverInfo ?? null,
-                    tools: details?.tools ?? [],
-                    resources: details?.resources ?? [],
-                    prompts: details?.prompts ?? [],
-                    lastSeen: new Date().toISOString(),
-                  },
-                }));
-                setConnectedServers(prev => ({ ...prev, [srv.id]: details ? (details.serverInfo ?? true) : true }));
-              }}
-              onFailed={(err) => {
-                // Revert optimistic enable for this server only
-                setSavedServers(prev =>
-                  prev.map(s => (s.id === srv.id ? { ...s, enabled: false } : s)),
-                );
-                setPendingToggleServers(prev => {
-                  const next = { ...prev };
-                  delete next[srv.id];
-                  return next;
-                });
-                // Remove connected info for this server
-                setConnectedServers(prev => {
-                  const next = { ...prev };
-                  delete next[srv.id];
-                  return next;
-                });
-                setMcpServerDetails(prev => {
-                  const next = { ...prev };
-                  delete next[srv.id];
-                  return next;
-                });
-              }}
-            />
-          );
-        })}
       </AnimatedDrawerContent>
     </Drawer>
   );
