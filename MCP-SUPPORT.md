@@ -6,9 +6,10 @@ Most likely MCP's will be called "Connectors" on the client-side.
 - [ ] Enable remote `sse` type MCP's
 - Locally machine-run MCP packages are not supported at this time
 - [x] I can enable an MCP to be used in chat
-- [ ] I can remove an MCP from my list of MCP's
+- [x] I can remove an MCP from my list of MCP's
 - [ ] I can OAuth into an MCP
 - [ ] I can add an API Key to an MCP
+- [ ] When I click row of MCP server, I want to be able to just open it. Then, if I click the arrow, I wanna see more detais. 
 
 ## MCP Registry
 
