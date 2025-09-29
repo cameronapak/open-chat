@@ -226,7 +226,7 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
   // Transport configuration
   const transport = useMemo(() => {
     const getUrlFromServer = (server: SavedMCPServer): string => {
-      return server?.remotes?.find(remote => remote.type === "streamable-http")?.url || "";
+      return server?.remotes?.find(remote => remote.type === "streamable-http" || remote.type === "http+sse")?.url || "";
     };
 
     return new DefaultChatTransport({

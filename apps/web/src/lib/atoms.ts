@@ -60,7 +60,7 @@ export const enabledMcpServersAtom = atom<SavedMCPServer[]>(
   (get) => {
     const servers = get(mcpServersAtom);
     const enabledServers = servers.filter(server => server.enabled);
-    return enabledServers.filter(server => server.remotes?.find(r => r.type === "streamable-http" || r.type === "sse"))
+    return enabledServers.filter(server => server.remotes?.find(r => r.type === "streamable-http" || r.type === "http+sse"))
   }
 );
 

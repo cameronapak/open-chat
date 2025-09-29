@@ -13,6 +13,7 @@ import {
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import { decrypt } from '@/lib/crypto';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
+import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
 import { randomUUID } from 'node:crypto';
 
 interface MCPServerConfig {
@@ -73,7 +74,7 @@ const chatRoute = chatRouter.post('/', async (c) => {
     const openrouter = createOpenRouter({ apiKey });
 
     // @TODO - Block client-supplied MCP URLs (SSRF risk). We’re instantiating StreamableHTTPClientTransport directly from the mcpServers payload, so any caller can coerce the server into reaching arbitrary/internal endpoints (e.g. AWS metadata, DB admin panels). That’s a textbook SSRF vector and must be plugged before shipping. Please load/allowlist MCP endpoints from trusted server-side config (or at least reject anything that isn’t explicitly whitelisted) and ignore/strip user-provided URLs.
-    // Initialize MCP clients (POC-fast; accepts client-supplied URLs)
+    // Initialize MCP clients (POC-fast; accepts client-supplied URLs). Try streamable-http first, then fall back to http+sse.
     for (const mcpServer of mcpServers ?? []) {
       if (!mcpServer.enabled) continue;
 
@@ -81,11 +82,63 @@ const chatRoute = chatRouter.post('/', async (c) => {
       if (!url) continue;
       const remoteMcpUrl = new URL(url);
 
-      const transport = new StreamableHTTPClientTransport(remoteMcpUrl, { 
-        sessionId: randomUUID(),
-      });
-      const client = await createMCPClient({ transport });
-      mcpClients.push(client);
+      // Enforce HTTPS except for localhost/127.0.0.1
+      const isLocal =
+        remoteMcpUrl.hostname === 'localhost' || remoteMcpUrl.hostname === '127.0.0.1';
+      if (remoteMcpUrl.protocol !== 'https:' && !isLocal) {
+        console.warn('[MCP] Skipping non-HTTPS URL (only https or localhost allowed):', url);
+        continue;
+      }
+
+      const commonHeaders: Record<string, string> = {
+        Accept: 'application/json, text/event-stream',
+        'MCP-Protocol-Version': '2025-06-18',
+      };
+
+      // Try Streamable HTTP first
+      let connected = false;
+      try {
+        const transport = new StreamableHTTPClientTransport(remoteMcpUrl, {
+          sessionId: randomUUID(),
+          requestInit: { headers: commonHeaders },
+        });
+        const client = await createMCPClient({ transport });
+
+        // Probe connectivity so we can decide whether to fall back
+        await client.tools();
+        console.log('[MCP] Connected via streamable-http:', url);
+        mcpClients.push(client);
+        connected = true;
+      } catch (err: any) {
+        const msg = String(err?.message ?? err);
+        const shouldFallback =
+          msg.includes('404') ||
+          msg.includes('Not Found') ||
+          msg.includes('405') ||
+          msg.includes('Method Not Allowed');
+        if (!shouldFallback) {
+          console.warn('[MCP] streamable-http connect failed, attempting SSE fallback anyway:', msg);
+        } else {
+          console.info('[MCP] streamable-http not supported, trying http+sse:', url);
+        }
+      }
+
+      if (connected) continue;
+
+      // Fallback to legacy http+sse
+      try {
+        const sseTransport = new SSEClientTransport(remoteMcpUrl, {
+          requestInit: { headers: { ...commonHeaders, Accept: 'text/event-stream' } },
+        });
+        const sseClient = await createMCPClient({ transport: sseTransport });
+
+        // Probe connectivity
+        await sseClient.tools();
+        console.log('[MCP] Connected via http+sse:', url);
+        mcpClients.push(sseClient);
+      } catch (sseErr) {
+        console.error('[MCP] Failed to connect via both streamable-http and http+sse:', url, sseErr);
+      }
     }
 
     // Discover tools from all MCP clients and merge them (last-write-wins)

@@ -245,7 +245,7 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
     }
   };
 
-  const pendingUrl = pendingServer?.remotes?.find(r => r.type === 'streamable-http')?.url || '';
+  const pendingUrl = pendingServer?.remotes?.find(r => r.type === 'streamable-http' || r.type === 'http+sse')?.url || '';
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
