@@ -80,7 +80,44 @@ function AnimatedDrawerContent({
 }: React.ComponentProps<typeof DrawerPrimitive.Content> & {
   defaultHeight?: number;
 }) {
-  const [ref, bounds] = useMeasure({ offsetSize: true });
+  const [ref, bounds] = useMeasure({
+    offsetSize: true,
+    scroll: true,
+    debounce: 100,
+  });
+
+  const [targetHeight, setTargetHeight] = React.useState<number>(defaultHeight);
+
+  // Track last stable height and a debounce timer so we only animate once measurements stabilize.
+  const lastHeightRef = React.useRef<number | null>(null);
+  const stabilityTimerRef = React.useRef<number | null>(null);
+
+  React.useEffect(() => {
+    const natural = bounds.height || defaultHeight;
+    const viewportMax = Math.floor((typeof window !== "undefined" ? window.innerHeight : 800) * 0.95);
+    const clamped = Math.max(0, Math.min(natural, viewportMax));
+
+    // If same as last stable height, apply immediately; otherwise wait briefly for stability
+    if (lastHeightRef.current === clamped) {
+      setTargetHeight(clamped);
+    } else {
+      if (stabilityTimerRef.current) {
+        clearTimeout(stabilityTimerRef.current);
+      }
+      stabilityTimerRef.current = window.setTimeout(() => {
+        setTargetHeight(clamped);
+        lastHeightRef.current = clamped;
+        stabilityTimerRef.current = null;
+      }, 80); // 80ms stability window to avoid nested child animations affecting the drawer
+    }
+    // Validation logs
+    return () => {
+      if (stabilityTimerRef.current) {
+        clearTimeout(stabilityTimerRef.current);
+        stabilityTimerRef.current = null;
+      }
+    };
+  }, [bounds.height, defaultHeight]);
 
   return (
     <DrawerPortal data-slot="drawer-portal">
@@ -99,13 +136,13 @@ function AnimatedDrawerContent({
       >
         <div className="bg-muted mx-auto mt-4 hidden h-2 w-[100px] shrink-0 rounded-full group-data-[vaul-drawer-direction=bottom]/drawer-content:block" />
         <motion.div
-          animate={{
-            height: bounds.height || defaultHeight,
-          }}
+          initial={{ height: 0 }}
+          animate={{ height: `${targetHeight}px` }}
           transition={{ type: "spring", bounce: 0.25, duration: 0.65 }}
-          className="overflow-hidden will-change-transform"
+          className="w-full overflow-hidden will-change-transform"
         >
-          <div ref={ref}>
+          {/* Measured natural content; this element is scrollable when clipped */}
+          <div ref={ref} className="max-h-[95vh] overflow-y-auto">
             {children}
           </div>
         </motion.div>

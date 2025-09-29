@@ -305,8 +305,8 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
       <AnimatedDrawerContent aria-describedby='integrations' className="grid grid-rows-[auto_1fr_auto] grid-cols-1 max-w-md mx-auto">
-        <section className="grid grid-cols-1 p-4">
-          <Tabs value={tab} onValueChange={(v) => setTab(v as 'integrations' | 'custom')} className="grid grid-rows-[1fr_auto] gap-4">
+        <section className="h-full overflow-hidden grid grid-cols-1 p-4">
+          <Tabs value={tab} onValueChange={(v) => setTab(v as 'integrations' | 'custom')} className="h-full overflow-hidden grid grid-rows-[1fr_auto] gap-4">
             <TabsList className="grid grid-cols-2 w-full">
               <TabsTrigger value="integrations">
                 <Puzzle className="h-4 w-4 mr-1 text-muted-foreground" />
@@ -318,7 +318,7 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="integrations" className="relative grid grid-cols-1 gap-4">
+            <TabsContent value="integrations" className="relative h-full overflow-hidden grid grid-cols-1 gap-4">
               {savedServers.length ? (
                 // Fixes: "`DialogContent` requires a `DialogTitle` for
                 // the component to be accessible for screen reader users."
@@ -351,7 +351,7 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
                 connectedServerIds={Object.keys(connectedServers)}
               />
             </TabsContent>
-            <TabsContent value="custom" className="px-3 grid grid-cols-1 gap-4">
+            <TabsContent value="custom" className="h-full overflow-hidden px-3 grid grid-cols-1 gap-4">
               <div className="flex flex-col gap-2">
                 <DrawerHeader>
                   <DrawerTitle>New Integration</DrawerTitle>
