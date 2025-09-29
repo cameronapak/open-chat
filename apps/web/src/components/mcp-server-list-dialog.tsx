@@ -198,10 +198,10 @@ function McpConnectionTester({
   onFailed,
 }: {
   url: string;
-  onReady: () => void;
+  onReady: (info?: { name?: string; version?: string } | null) => void;
   onFailed: (error?: string) => void;
 }) {
-  const { state, error, disconnect } = useMcp({
+  const { state, error, disconnect, serverInfo } = useMcp({
     url,
     clientName: 'OpenChat',
     clientUri: typeof window !== 'undefined' ? window.location.origin : '',
@@ -216,7 +216,7 @@ function McpConnectionTester({
   useEffect(() => {
     if (!url) return;
     if (state === 'ready') {
-      onReady();
+      onReady(serverInfo ?? null);
       // Quiet disconnect to avoid UI flicker
       disconnect(true);
     } else if (state === 'failed') {
@@ -241,8 +241,8 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
 
   // Optimistic enable testing: track multiple servers being tested concurrently
   const [pendingToggleServers, setPendingToggleServers] = useState<Record<string, SavedMCPServer>>({});
-  // Track connected servers
-  const [connectedServers, setConnectedServers] = useState<Record<string, boolean>>({});
+  // Track connected servers info: store serverInfo when available
+  const [connectedServers, setConnectedServers] = useState<Record<string, { name?: string; version?: string } | true>>({});
   const formRef = useRef<HTMLFormElement | null>(null);
 
   const handleAddCustomServer = (e: React.FormEvent<HTMLFormElement>) => {
@@ -434,14 +434,12 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
             onReady={() => {
               // Save now that connection is ready
               setSavedServers(prev => [...prev, pendingServer]);
-              toast.success('Custom server added and connected');
               formRef.current?.reset?.();
               setTab('integrations');
               setTesting(false);
               setPendingServer(null);
             }}
             onFailed={(err) => {
-              toast.error(err || 'Failed to connect to server');
               setTesting(false);
               setPendingServer(null);
             }}
@@ -455,15 +453,15 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
             <McpConnectionTester
               key={srv.id}
               url={srvUrl}
-              onReady={() => {
+              onReady={(info) => {
                 // Already optimistically enabled; confirm success and remove from pending
                 setPendingToggleServers(prev => {
                   const next = { ...prev };
                   delete next[srv.id];
                   return next;
                 });
-                // Mark server as connected
-                setConnectedServers(prev => ({ ...prev, [srv.id]: true }));
+                // Mark server as connected and store info if present
+                setConnectedServers(prev => ({ ...prev, [srv.id]: info ?? true }));
               }}
               onFailed={(err) => {
                 // Revert optimistic enable for this server only
@@ -475,7 +473,7 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
                   delete next[srv.id];
                   return next;
                 });
-                // Remove from connected servers if it was previously connected
+                // Remove connected info for this server
                 setConnectedServers(prev => {
                   const next = { ...prev };
                   delete next[srv.id];
