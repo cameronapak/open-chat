@@ -33,7 +33,7 @@ interface ToolsConfig {
  * Usage example:
  * ```tsx
  * <OpenChatComponent
- *   openRouterModel="openai/gpt-4o"
+ *   openRouterModel="openai/gpt-5"
  *   initialMessages={messages}
  *   tools={{ enabled: true, mcpServers: [...] }}
  * />
@@ -43,7 +43,7 @@ export interface OpenChatComponentProps {
   // AI/Backend Configuration
   /**
    * OpenRouter model ID to use for the chat (default: project default model).
-   * Example: 'openai/gpt-4o' or 'anthropic/claude-3.5-sonnet'.
+   * Example: 'openai/gpt-5' or 'anthropic/claude-3.5-sonnet'.
    */
   openRouterModel?: string;
   /**
@@ -134,7 +134,7 @@ export interface OpenChatComponentProps {
   requireAuth?: boolean;
   /**
    * An array of allowed model IDs. If provided, the model selection dropdown will only show these models.
-   * Example: ['openai/gpt-4o', 'anthropic/claude-3-opus'].
+   * Example: ['openai/gpt-5', 'anthropic/claude-3-opus'].
    */
   allowedModels?: string[];
   /**

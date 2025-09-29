@@ -4,7 +4,7 @@ A truly open AI chatbot.
 
 Not locked down to any given LLM provider. 
 
-Sign into your OpenRouter account via Oauth, secured through encryption.
+Sign into your OpenRouter account via OAuth, secured through encryption.
 
 Easily import into your existing apps (Coming soon).
 
@@ -27,7 +27,7 @@ import { OpenChatComponent } from '@/components/open-chat-component';
 function App() {
   return (
     <OpenChatComponent
-      openRouterModel="openai/gpt-4o"
+      openRouterModel="openai/gpt-5"
       api="http://localhost:3000/api/chat"
       placeholder="Ask me anything..."
       className="w-full h-screen"
@@ -44,7 +44,7 @@ import { OpenChatComponent } from '@/components/open-chat-component';
 function SecureChat() {
   return (
     <OpenChatComponent
-      openRouterModel="openai/gpt-4o"
+      openRouterModel="openai/gpt-5"
       api="http://localhost:3000/api/chat"
       requireAuth={true}  // Forces user to connect OpenRouter account
       placeholder="Ask OpenChat..."
@@ -95,9 +95,9 @@ function AdvancedChat() {
   return (
     <OpenChatComponent
       // Model configuration
-      openRouterModel="openai/gpt-4o"
+      openRouterModel="openai/gpt-5"
       allowedModels={[  // Restrict model selection
-        "openai/gpt-4o",
+        "openai/gpt-5",
         "anthropic/claude-3-opus",
         "google/gemini-pro"
       ]}

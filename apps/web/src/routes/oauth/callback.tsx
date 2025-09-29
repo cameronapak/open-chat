@@ -1,12 +1,24 @@
 'use client';
 
 import { createFileRoute } from '@tanstack/react-router';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { onMcpAuthorization } from '@/lib/auth/calback';
 
 const OAuthCallback = () => {
+  const calledRef = useRef(false);
+
   useEffect(() => {
-    onMcpAuthorization();
+    if (calledRef.current) return;
+    calledRef.current = true;
+    void onMcpAuthorization()
+      .catch((err) => {
+        console.error('OAuth callback failed', err);
+      })
+      .finally(() => {
+        if (typeof window !== 'undefined' && window.opener) {
+          try { window.close(); } catch {}
+        }
+      });
   }, []);
 
   return (

@@ -22,7 +22,7 @@ Most likely MCP's will be called "Connectors" on the client-side.
 ## Custom MCP's
 
 - [x] I can manually add a remote `streamable-http` type MCP
-- [ ] I can manually add an remote `sse` type MCP
+- [ ] I can manually add a remote `sse` type MCP
 - [ ] I can add an API Key to my custom MCP (otherwise, if auth'd it'll kick to OAuth)
 
 ## Prompts

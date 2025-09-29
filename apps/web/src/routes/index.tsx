@@ -6,7 +6,7 @@ const ChatBotDemo = () => {
   return (
     <section className="grid grid-cols-1 h-dvh">
       <OpenChatComponent
-        openRouterModel="openai/gpt-4o"
+        openRouterModel="openai/gpt-5"
         api={import.meta.env.VITE_SERVER_URL + '/api/chat'}
         requireAuth={true}
         placeholder="Ask OpenChat..."
