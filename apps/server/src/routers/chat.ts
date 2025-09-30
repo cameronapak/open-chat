@@ -21,6 +21,8 @@ interface MCPServerConfig {
   name: string
   url: string
   enabled: boolean
+  // Optional OAuth access token forwarded from the browser (POC)
+  accessToken?: string
 }
 
 // Taken from use-mcp Repo
@@ -39,6 +41,37 @@ const systemPrompt = {
 } as ModelMessage;
 
 export const chatRouter = new Hono();
+
+// Helpers
+const canonicalizeUrl = (u: string): string => {
+  try {
+    const parsed = new URL(u);
+    let pathname = parsed.pathname || '';
+    if (pathname !== '/' && pathname.endsWith('/')) pathname = pathname.slice(0, -1);
+    return `${parsed.protocol}//${parsed.host}${pathname}${parsed.search || ''}`;
+  } catch {
+    return u;
+  }
+};
+const isAuthError = (err: unknown): boolean => {
+  const msg = String((err as any)?.message ?? err ?? '');
+  const status =
+    (err as any)?.status ??
+    (err as any)?.response?.status ??
+    (/\b(401|403)\b/.exec(msg)?.[1] ? Number(/\b(401|403)\b/.exec(msg)?.[1]) : undefined);
+  return status === 401 || status === 403 || /\b(401|403)\b/.test(msg);
+};
+const errorCode = (err: unknown): number | undefined => {
+  return (err as any)?.status ?? (err as any)?.response?.status;
+};
+const safeOrigin = (u: string): string => {
+  try {
+    const { origin } = new URL(u);
+    return origin;
+  } catch {
+    return u;
+  }
+};
 
 // Handle POST /api/chat
 const chatRoute = chatRouter.post('/', async (c) => {
@@ -78,9 +111,17 @@ const chatRoute = chatRouter.post('/', async (c) => {
     for (const mcpServer of mcpServers ?? []) {
       if (!mcpServer.enabled) continue;
 
-      const url = mcpServer.url;
+      const providedUrl = mcpServer.url;
+      const url = canonicalizeUrl(providedUrl);
       if (!url) continue;
       const remoteMcpUrl = new URL(url);
+
+      // Log canonicalization (no secrets)
+      if (url !== providedUrl) {
+        console.log('[MCP] Canonicalized MCP URL:', url, 'from:', providedUrl);
+      } else {
+        console.log('[MCP] Using MCP URL:', url);
+      }
 
       // Enforce HTTPS except for localhost/127.0.0.1
       const isLocal =
@@ -94,47 +135,124 @@ const chatRoute = chatRouter.post('/', async (c) => {
         Accept: 'application/json, text/event-stream',
         'MCP-Protocol-Version': '2025-06-18',
       };
+      // Per-server Authorization header if accessToken is provided (do not log secrets)
+      const hasAccessToken = Boolean(mcpServer.accessToken);
+      const httpHeaders: Record<string, string> = { ...commonHeaders };
+      if (hasAccessToken) {
+        httpHeaders.Authorization = `Bearer ${mcpServer.accessToken!}`;
+      }
+      const sseHeaders: Record<string, string> = {
+        ...commonHeaders,
+        Accept: 'text/event-stream',
+      };
+      if (hasAccessToken) {
+        sseHeaders.Authorization = `Bearer ${mcpServer.accessToken!}`;
+      }
 
       // Try Streamable HTTP first
       let connected = false;
+      let shouldFallback = false;
       try {
+        // Do not include sessionId on initialization; some servers reject it with HTTP 400 ("Initialization requests must not include a sessionId")
         const transport = new StreamableHTTPClientTransport(remoteMcpUrl, {
-          sessionId: randomUUID(),
-          requestInit: { headers: commonHeaders },
+          requestInit: { headers: httpHeaders },
         });
         const client = await createMCPClient({ transport });
 
         // Probe connectivity so we can decide whether to fall back
-        await client.tools();
-        console.log('[MCP] Connected via streamable-http:', url);
+        try {
+          const previewTools = await client.tools();
+          const toolCount = Object.keys(previewTools ?? {}).length;
+          console.log(
+            '[MCP] Connected via streamable-http:',
+            url,
+            'auth:',
+            hasAccessToken ? 'bearer' : 'none',
+            'tools:',
+            toolCount,
+          );
+          if (toolCount === 0) {
+            console.warn('[MCP] streamable-http returned zero tools during probe for', safeOrigin(url));
+          }
+        } catch (previewErr: any) {
+          if (isAuthError(previewErr)) {
+            console.error(
+              '[MCP] streamable-http auth error (tools probe) for',
+              safeOrigin(url),
+              'status:',
+              errorCode(previewErr) ?? 'unknown',
+              '- Verify Authorization: Bearer token validity and scopes.'
+            );
+          } else {
+            console.error('[MCP] streamable-http tools() probe failed for', safeOrigin(url), previewErr?.message ?? previewErr);
+          }
+          throw previewErr;
+        }
         mcpClients.push(client);
         connected = true;
       } catch (err: any) {
         const msg = String(err?.message ?? err);
-        const shouldFallback =
+        const codeMatch = msg.match(/\b(\d{3})\b/);
+        const httpCode = codeMatch ? Number(codeMatch[1]) : undefined;
+        const initSessionIdHint = msg.includes('Initialization requests must not include a sessionId');
+        if (initSessionIdHint) {
+          console.warn(
+            '[MCP] streamable-http rejected sessionId during init for',
+            safeOrigin(url),
+            'HTTP',
+            httpCode ?? '400',
+            '- sessionId removed; please retry the request.'
+          );
+        }
+        shouldFallback =
           msg.includes('404') ||
           msg.includes('Not Found') ||
           msg.includes('405') ||
           msg.includes('Method Not Allowed');
         if (!shouldFallback) {
-          console.warn('[MCP] streamable-http connect failed, attempting SSE fallback anyway:', msg);
+          console.warn('[MCP] streamable-http connect failed; skipping SSE fallback:', msg);
         } else {
           console.info('[MCP] streamable-http not supported, trying http+sse:', url);
         }
       }
 
       if (connected) continue;
+      if (!shouldFallback) continue;
 
       // Fallback to legacy http+sse
       try {
-        const sseTransport = new SSEClientTransport(remoteMcpUrl, {
-          requestInit: { headers: { ...commonHeaders, Accept: 'text/event-stream' } },
-        });
+        const sseTransport = new SSEClientTransport(remoteMcpUrl, { requestInit: { headers: sseHeaders } });
         const sseClient = await createMCPClient({ transport: sseTransport });
 
         // Probe connectivity
-        await sseClient.tools();
-        console.log('[MCP] Connected via http+sse:', url);
+        try {
+          const previewTools = await sseClient.tools();
+          const toolCount = Object.keys(previewTools ?? {}).length;
+          console.log(
+            '[MCP] Connected via http+sse:',
+            url,
+            'auth:',
+            hasAccessToken ? 'bearer' : 'none',
+            'tools:',
+            toolCount,
+          );
+          if (toolCount === 0) {
+            console.warn('[MCP] http+sse returned zero tools during probe for', safeOrigin(url));
+          }
+        } catch (previewErr: any) {
+          if (isAuthError(previewErr)) {
+            console.error(
+              '[MCP] http+sse auth error (tools probe) for',
+              safeOrigin(url),
+              'status:',
+              errorCode(previewErr) ?? 'unknown',
+              '- Verify Authorization: Bearer token validity and scopes.'
+            );
+          } else {
+            console.error('[MCP] http+sse tools() probe failed for', safeOrigin(url), previewErr?.message ?? previewErr);
+          }
+          throw previewErr;
+        }
         mcpClients.push(sseClient);
       } catch (sseErr) {
         console.error('[MCP] Failed to connect via both streamable-http and http+sse:', url, sseErr);
@@ -145,9 +263,18 @@ const chatRoute = chatRouter.post('/', async (c) => {
     const toolSets = await Promise.all(mcpClients.map(async (client) => {
       try {
         const tools = await client.tools();
+        const toolKeys = Object.keys(tools ?? {});
+        console.log('[MCP] tools fetched:', toolKeys.length);
+        if (toolKeys.length === 0) {
+          console.warn('[MCP] No tools reported by server; downstream calls may be unavailable.');
+        }
         return tools;
       } catch (error) {
-        console.error('Error fetching tools from MCP client:', error);
+        if (isAuthError(error)) {
+          console.error('Error fetching tools from MCP client (auth):', errorCode(error) ?? '401/403');
+        } else {
+          console.error('Error fetching tools from MCP client:', error instanceof Error ? error.message : error);
+        }
         return {};
       }
     })) satisfies ToolSet[];

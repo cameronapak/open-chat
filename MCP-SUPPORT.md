@@ -24,6 +24,7 @@ Most likely MCP's will be called "Connectors" on the client-side.
 - [x] I can manually add a remote `streamable-http` type MCP
 - [ ] I can manually add a remote `sse` type MCP
 - [ ] I can add an API Key to my custom MCP (otherwise, if auth'd it'll kick to OAuth)
+- [x] When I have OAuth'd into a custom MCP, then the server gets the bearer token so that it can auth the MCP...
 
 ## Prompts
 
