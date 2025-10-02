@@ -78,6 +78,7 @@ import {
 import { ThemeProvider } from '@/components/theme-provider';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { sanitizeUrl } from 'strict-url-sanitise';
+import { loadApiKey } from '@/lib/keystore';
 
 const formatter = new Intl.NumberFormat("en-US");
 
@@ -224,8 +225,36 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
     [modelList, allowedModels]
   );
 
+  // Canonicalize URL: remove trailing slash (except bare '/'), drop hash, keep search
+  function canonicalizeUrl(u: string | null | undefined): string | null {
+    if (!u) return null;
+    try {
+      const parsed = new URL(u);
+      let pathname = parsed.pathname || '';
+      if (pathname !== '/' && pathname.endsWith('/')) {
+        pathname = pathname.slice(0, -1);
+      }
+      return `${parsed.protocol}//${parsed.host}${pathname}${parsed.search || ''}`;
+    } catch {
+      return null;
+    }
+  }
   // Transport configuration
   const transport = useMemo(() => {
+    // Canonicalize URL: remove trailing slash (except bare '/'), drop hash, keep search
+    function canonicalizeUrl(u: string | null | undefined): string | null {
+      if (!u) return null;
+      try {
+        const parsed = new URL(u);
+        let pathname = parsed.pathname || '';
+        if (pathname !== '/' && pathname.endsWith('/')) {
+          pathname = pathname.slice(0, -1);
+        }
+        return `${parsed.protocol}//${parsed.host}${pathname}${parsed.search || ''}`;
+      } catch {
+        return null;
+      }
+    }
     const getUrlFromServer = (server: SavedMCPServer): string => {
       const raw = server?.remotes?.find(remote => remote.type === "streamable-http" || remote.type === "http+sse")?.url || "";
       const canonical = canonicalizeUrl(raw);
@@ -238,20 +267,6 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
         return parsed.protocol === 'https:' || parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1';
       } catch {
         return false;
-      }
-    };
-    // Canonicalize URL: remove trailing slash (except bare '/'), drop hash, keep search
-    const canonicalizeUrl = (u: string | null | undefined): string | null => {
-      if (!u) return null;
-      try {
-        const parsed = new URL(u);
-        let pathname = parsed.pathname || '';
-        if (pathname !== '/' && pathname.endsWith('/')) {
-          pathname = pathname.slice(0, -1);
-        }
-        return `${parsed.protocol}//${parsed.host}${pathname}${parsed.search || ''}`;
-      } catch {
-        return null;
       }
     };
     // Mirrors hashString in BrowserOAuthClientProvider
@@ -299,30 +314,47 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
       api,
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
-      prepareSendMessagesRequest: ({ messages, id, body }) => {
+      prepareSendMessagesRequest: async ({ messages, id, body }) => {
         // Use ref to avoid stale values if send happens before React re-memoizes transport
         const currentEnabled = enabledServersRef.current || [];
         console.log('Enabled servers being sent to backend (ref):', currentEnabled);
 
-        const mcpServersData = currentEnabled.map((server: SavedMCPServer) => {
-          const url = getUrlFromServer(server);
-          const accessToken = url ? readAccessToken(url) : undefined;
-          const base = {
-            id: server.id,
-            name: server.name,
-            url,
-            enabled: server.enabled,
-          } as Record<string, any>;
-          if (accessToken) {
-            base.accessToken = accessToken; // POC: include for backend Authorization header
-          }
-          return base;
-        });
-        // Redact tokens in logs
-        console.log('Mapped MCP servers data:', mcpServersData.map(({ accessToken, ...rest }) => ({
-          ...rest,
-          accessToken: accessToken ? 'present' : 'none',
-        })));
+        const mcpServersData = await Promise.all(
+          currentEnabled.map(async (server: SavedMCPServer) => {
+            const url = getUrlFromServer(server);
+            const accessToken = url ? readAccessToken(url) : undefined;
+            let apiKey: string | undefined = undefined;
+            if (server.authPreference === 'api-key' && url) {
+              try {
+                apiKey = await loadApiKey(url);
+              } catch {
+                apiKey = undefined;
+              }
+            }
+            const base = {
+              id: server.id,
+              name: server.name,
+              url,
+              enabled: server.enabled,
+            } as Record<string, any>;
+            if (accessToken) {
+              base.accessToken = accessToken; // include for backend Authorization header
+            }
+            if (server.authPreference) base.authPreference = server.authPreference;
+            if (server.headerScheme) base.headerScheme = server.headerScheme;
+            if (apiKey) base.apiKey = apiKey;
+            return base;
+          })
+        );
+        // Redact in logs
+        console.log(
+          'Mapped MCP servers data:',
+          mcpServersData.map(({ accessToken, apiKey, ...rest }) => ({
+            ...rest,
+            accessToken: accessToken ? 'present' : 'none',
+            apiKey: apiKey ? 'present' : 'none',
+          }))
+        );
 
         return {
           body: {
@@ -470,6 +502,7 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
       case 'reasoning':
         return (
           <Reasoning
+            defaultOpen={false}
             key={`${message.id}-${index}`}
             className="w-full"
             isStreaming={status === 'streaming' && index === message.parts.length - 1 && message.id === rawMessages.at(-1)?.id}
