@@ -32,6 +32,9 @@ import { VisuallyHidden } from 'radix-ui';
 import { useEffect, useRef, useState } from 'react';
 import { useMcp } from '@/hooks/use-mcp';
 import MCPServerDetails from './mcp-server-details';
+import { saveApiKey, getApiKeyPresenceLabel } from "@/lib/keystore";
+import type { HeaderScheme } from "@/lib/keystore";
+import type { HeaderScheme as StorageHeaderScheme } from '@/lib/mcp-storage';
 
 interface MCPServerListDialogProps {
   open: boolean;
@@ -225,6 +228,11 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
   // Track connected servers info: store serverInfo when available
   const [connectedServers, setConnectedServers] = useState<Record<string, { name?: string; version?: string } | true>>({});
   const formRef = useRef<HTMLFormElement | null>(null);
+  // Auth UI state for "Custom" form
+  const [authPreference, setAuthPreference] = useState<'oauth' | 'api-key'>('oauth');
+  const [apiKeyInput, setApiKeyInput] = useState<string>('');
+  const [headerScheme, setHeaderScheme] = useState<HeaderScheme>('authorization-bearer');
+  const [sessionOnly, setSessionOnly] = useState<boolean>(false);
 
   const handleAddCustomServer = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -251,7 +259,11 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
           url: url.trim()
         }],
         savedAt: new Date().toISOString(),
-        enabled: true
+        enabled: true,
+        // Client-only auth metadata (no secrets here)
+        authPreference,
+        headerScheme: headerScheme as StorageHeaderScheme,
+        hasStoredKey: authPreference === 'api-key' && !!apiKeyInput.trim(),
       };
 
       // Start connection test via useMcp
@@ -391,6 +403,70 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
                   placeholder="What does this integration do?"
                   name="description"
                 />
+                {/* Auth configuration */}
+                <div className="grid grid-cols-1 gap-3">
+                  <label className="text-sm font-medium">Auth method</label>
+                  <div className="flex items-center gap-3">
+                    <label className="flex items-center gap-2 text-sm">
+                      <input
+                        type="radio"
+                        name="auth-method"
+                        value="oauth"
+                        checked={authPreference === 'oauth'}
+                        onChange={() => setAuthPreference('oauth')}
+                      />
+                      OAuth
+                    </label>
+                    <label className="flex items-center gap-2 text-sm">
+                      <input
+                        type="radio"
+                        name="auth-method"
+                        value="api-key"
+                        checked={authPreference === 'api-key'}
+                        onChange={() => setAuthPreference('api-key')}
+                      />
+                      API key
+                    </label>
+                  </div>
+                </div>
+                {authPreference === 'api-key' && (
+                  <div className="grid grid-cols-1 gap-3">
+                    <InputWithLabel
+                      id="api-key"
+                      autoComplete="off"
+                      label="API key"
+                      type="password"
+                      placeholder="Enter API key"
+                      name="api-key"
+                      value={apiKeyInput}
+                      onChange={(e: any) => setApiKeyInput(e.target.value)}
+                    />
+                    <div className="grid grid-cols-1 gap-2">
+                      <label className="text-sm font-medium" htmlFor="header-scheme">Header scheme</label>
+                      <select
+                        id="header-scheme"
+                        className="border rounded px-2 py-1 text-sm"
+                        value={headerScheme}
+                        onChange={(e) => setHeaderScheme(e.target.value as HeaderScheme)}
+                      >
+                        <option value="authorization-bearer">Authorization: Bearer</option>
+                        <option value="x-api-key">X-API-Key</option>
+                      </select>
+                    </div>
+                    <label className="flex items-center gap-2 text-sm">
+                      <input
+                        type="checkbox"
+                        name="session-only"
+                        checked={sessionOnly}
+                        onChange={(e) => setSessionOnly(e.target.checked)}
+                      />
+                      Session-only (don’t persist)
+                    </label>
+                    <p className="text-xs text-muted-foreground">
+                      API keys are encrypted at rest with Web Crypto (AES-GCM) when persisted. Avoid untrusted scripts (XSS).
+                    </p>
+                  </div>
+                )}
                 <Button
                   size="sm"
                   disabled={testing}
@@ -414,11 +490,29 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
         {testing && pendingServer ? (
           <McpConnectionTester
             url={pendingUrl}
-            onReady={() => {
-              // Save now that connection is ready
-              setSavedServers(prev => [...prev, pendingServer]);
+            onReady={async () => {
+              // Save API key (if configured) now that connection is ready
+              try {
+                if (pendingUrl && authPreference === 'api-key' && apiKeyInput.trim()) {
+                  await saveApiKey(pendingUrl, apiKeyInput.trim(), !sessionOnly);
+                }
+              } catch {
+                // swallow; user can retry saving key later
+              }
+              // Save server with hasStoredKey indicator (session or stored)
+              const keyPresence = pendingUrl ? getApiKeyPresenceLabel(pendingUrl) : 'none';
+              const withKeyFlag: SavedMCPServer = {
+                ...pendingServer,
+                hasStoredKey: keyPresence !== 'none',
+              };
+              setSavedServers(prev => [...prev, withKeyFlag]);
               toast.success('Custom server added and connected');
               formRef.current?.reset?.();
+              // Reset auth UI state (keep sensible defaults)
+              setAuthPreference('oauth');
+              setApiKeyInput('');
+              setHeaderScheme('authorization-bearer');
+              setSessionOnly(false);
               setTab('integrations');
               setTesting(false);
               setPendingServer(null);
