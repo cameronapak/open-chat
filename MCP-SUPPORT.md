@@ -24,7 +24,6 @@ Most likely MCP's will be called "Connectors" on the client-side.
 - [x] I can manually add a remote `streamable-http` type MCP
 - [ ] I can manually add a remote `sse` type MCP
 - [ ] I can add an API Key to my custom MCP (otherwise, if auth'd it'll kick to OAuth)
-- [x] When I have OAuth'd into a custom MCP, then the server gets the bearer token so that it can auth the MCP...
 
 ## Prompts
 
@@ -38,3 +37,54 @@ Too many tools connected at the same time makes it very hard for the LLM to know
 - [x] For every chat, I must manually toggle which Connectors to use. 
 - [x] I can tell a connector to always be used in chat
 - [x] Given I save/install an MCP on the client, I must validate the server connection before actually saving it.
+
+## Client-side API Key Auth (POC)
+
+Status
+- [x] User can enter an API key when adding a custom MCP in the “Add Integration” dialog
+- [x] Keys can be saved “Session-only” (kept in-memory) or “Persisted” (encrypted at rest)
+- [x] Server receives API key per-request and attaches the proper header
+- [x] Supports two header schemes: “Authorization: Bearer” and “X-API-Key” (default is Bearer)
+- [x] OAuth continues to work; OAuth is preferred unless the user selects “API key”
+
+Where to use it
+- UI: MCP add dialog at [`apps/web/src/components/mcp-server-list-dialog.tsx`](apps/web/src/components/mcp-server-list-dialog.tsx)
+  - Fields:
+    - Auth method: OAuth | API key
+    - If API key:
+      - API key (password field)
+      - Header scheme: Authorization: Bearer | X-API-Key
+      - Session-only checkbox (don’t persist)
+  - On successful connection test, the server is saved and the API key is stored accordingly.
+
+How keys are stored (web client)
+- Encryption: AES-GCM using Web Crypto.
+- AES key material (JWK) is stored in IndexedDB; API key ciphertext + IV stored in localStorage under a canonical URL hash.
+- Session-only keys are never written to disk; they live in-memory for the tab.
+- Implementation: [`apps/web/src/lib/keystore.ts`](apps/web/src/lib/keystore.ts)
+
+What gets sent to the server
+- Client includes per-enabled server:
+  - OAuth accessToken (if present)
+  - Or API key + headerScheme (when user selected API key)
+  - authPreference hint (oauth | api-key)
+- Server attaches headers for every request to the MCP server:
+  - If OAuth: Authorization: Bearer <access_token>
+  - If API key:
+    - Authorization: Bearer <api_key> (default), or
+    - X-API-Key: <api_key> (when selected)
+- Server never persists or logs secrets.
+- Implementation (client payload): [`apps/web/src/components/open-chat-component.tsx`](apps/web/src/components/open-chat-component.tsx)
+- Implementation (server headers): [`apps/server/src/routers/chat.ts`](apps/server/src/routers/chat.ts)
+
+Security notes (per MCP Authorization 2025-06-18)
+- Always send credentials over HTTPS (localhost allowed for dev).
+- Keys are encrypted at rest on the client, but XSS can still exfiltrate; keep CSP tight and avoid untrusted scripts.
+- For OAuth tokens, the MCP spec mandates Authorization: Bearer headers on every HTTP request.
+- For API-keys, some MCP servers expect X-API-Key; we support that header scheme as well.
+- We do not pass through tokens to any upstream APIs; tokens are only used to authenticate to the selected MCP server.
+
+Future enhancements
+- Per-server editing UI to view/remove/update stored API key after creation
+- WWW-Authenticate parsing and protected resource metadata discovery to guide OAuth setup
+- Server-side allowlist for MCP URLs to avoid SSRF in production
