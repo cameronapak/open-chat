@@ -43,9 +43,19 @@ export interface MCPServerConfig {
   }>;
 }
 
+// Client-side auth metadata (no secrets stored here)
+export type HeaderScheme = 'authorization-bearer' | 'x-api-key';
+
 export interface SavedMCPServer extends MCPServerConfig {
   savedAt: string;
   enabled?: boolean;
+  // Client-only preferences/indicators:
+  // Preferred auth for this server in the client UI/workflow
+  authPreference?: 'oauth' | 'api-key';
+  // Header scheme to use when sending API keys (if authPreference='api-key')
+  headerScheme?: HeaderScheme;
+  // Indicator that an API key exists for this server (session or encrypted at rest)
+  hasStoredKey?: boolean;
 }
 
 export interface MCPServerStorage {

@@ -23,6 +23,12 @@ interface MCPServerConfig {
   enabled: boolean
   // Optional OAuth access token forwarded from the browser (POC)
   accessToken?: string
+  // Optional API key forwarded from the browser (client encrypts at rest)
+  apiKey?: string
+  // Preferred header scheme when using API key
+  headerScheme?: 'authorization-bearer' | 'x-api-key'
+  // Client preference for auth method
+  authPreference?: 'oauth' | 'api-key'
 }
 
 // Taken from use-mcp Repo
@@ -135,18 +141,46 @@ const chatRoute = chatRouter.post('/', async (c) => {
         Accept: 'application/json, text/event-stream',
         'MCP-Protocol-Version': '2025-06-18',
       };
-      // Per-server Authorization header if accessToken is provided (do not log secrets)
-      const hasAccessToken = Boolean(mcpServer.accessToken);
+      // Choose auth based on preference and available creds (do not log secrets)
       const httpHeaders: Record<string, string> = { ...commonHeaders };
-      if (hasAccessToken) {
-        httpHeaders.Authorization = `Bearer ${mcpServer.accessToken!}`;
-      }
       const sseHeaders: Record<string, string> = {
         ...commonHeaders,
         Accept: 'text/event-stream',
       };
-      if (hasAccessToken) {
+      const hasAccessToken = Boolean(mcpServer.accessToken);
+      const hasApiKey = Boolean(mcpServer.apiKey);
+      const pref = mcpServer.authPreference ?? (hasAccessToken ? 'oauth' : (hasApiKey ? 'api-key' : undefined));
+      let authLabel: 'bearer' | 'x-api-key' | 'none' = 'none';
+      if (pref === 'oauth' && hasAccessToken) {
+        httpHeaders.Authorization = `Bearer ${mcpServer.accessToken!}`;
         sseHeaders.Authorization = `Bearer ${mcpServer.accessToken!}`;
+        authLabel = 'bearer';
+      } else if (pref === 'api-key' && hasApiKey) {
+        if (mcpServer.headerScheme === 'x-api-key') {
+          httpHeaders['X-API-Key'] = mcpServer.apiKey!;
+          sseHeaders['X-API-Key'] = mcpServer.apiKey!;
+          authLabel = 'x-api-key';
+        } else {
+          httpHeaders.Authorization = `Bearer ${mcpServer.apiKey!}`;
+          sseHeaders.Authorization = `Bearer ${mcpServer.apiKey!}`;
+          authLabel = 'bearer';
+        }
+      } else if (hasAccessToken) {
+        // Fallback: prefer OAuth when available
+        httpHeaders.Authorization = `Bearer ${mcpServer.accessToken!}`;
+        sseHeaders.Authorization = `Bearer ${mcpServer.accessToken!}`;
+        authLabel = 'bearer';
+      } else if (hasApiKey) {
+        // Fallback: use API key with chosen scheme (default bearer)
+        if (mcpServer.headerScheme === 'x-api-key') {
+          httpHeaders['X-API-Key'] = mcpServer.apiKey!;
+          sseHeaders['X-API-Key'] = mcpServer.apiKey!;
+          authLabel = 'x-api-key';
+        } else {
+          httpHeaders.Authorization = `Bearer ${mcpServer.apiKey!}`;
+          sseHeaders.Authorization = `Bearer ${mcpServer.apiKey!}`;
+          authLabel = 'bearer';
+        }
       }
 
       // Try Streamable HTTP first
@@ -167,7 +201,7 @@ const chatRoute = chatRouter.post('/', async (c) => {
             '[MCP] Connected via streamable-http:',
             url,
             'auth:',
-            hasAccessToken ? 'bearer' : 'none',
+            authLabel,
             'tools:',
             toolCount,
           );
@@ -232,7 +266,7 @@ const chatRoute = chatRouter.post('/', async (c) => {
             '[MCP] Connected via http+sse:',
             url,
             'auth:',
-            hasAccessToken ? 'bearer' : 'none',
+            authLabel,
             'tools:',
             toolCount,
           );
