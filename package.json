@@ -15,7 +15,9 @@
     "dev:web": "bun run --filter web dev",
     "dev:server": "bun run --filter server dev"
   },
-  "dependencies": {},
+  "dependencies": {
+    "mcp-registry-spec-sdk": "^0.1.1"
+  },
   "devDependencies": {
     "@types/react-syntax-highlighter": "^15.5.13",
     "oxlint": "^1.12.0"

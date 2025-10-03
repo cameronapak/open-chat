@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
 import { zValidator } from '@hono/zod-validator';
-import { MCPRegistryClient } from '../lib/mcp-registry';
+import { MCPRegistryClient } from 'mcp-registry-spec-sdk';
 
 const registryApp = new Hono();
 const mcpRegistry = new MCPRegistryClient();
@@ -56,7 +56,7 @@ registryApp.get('/servers', zValidator('query', z.object({
     // Filter to only remote servers as the frontend expects
     const remoteServers = response.servers.filter(server =>
       server.remotes && server.remotes.length > 0
-      && server.remotes.find(r => r.type === "streamable-http" || r.type === "http+sse")
+      && server.remotes.find(r => r.transportType === "streamable-http" || r.transportType === "http+sse")
     )
 
     // Add caching headers for serverless deployment
@@ -76,7 +76,7 @@ registryApp.get('/servers', zValidator('query', z.object({
 registryApp.get('/servers/:id', async (c) => {
   try {
     const { id } = c.req.param();
-    const server = await mcpRegistry.server.getServer(id);
+    const server = await mcpRegistry.server.getServerByName(id);
 
     // Add caching headers for serverless deployment
     c.header('Cache-Control', 'public, max-age=3600, stale-while-revalidate=300'); // 1 hour cache
