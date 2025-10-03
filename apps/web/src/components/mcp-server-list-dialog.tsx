@@ -33,9 +33,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useMcp } from '@/hooks/use-mcp';
 import MCPServerDetails from './mcp-server-details';
 import { saveApiKey, getApiKeyPresenceLabel } from "@/lib/keystore";
-import type { HeaderScheme } from "@/lib/keystore";
 import type { HeaderScheme as StorageHeaderScheme } from '@/lib/mcp-storage';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Checkbox } from './ui/checkbox';
 
 interface MCPServerListDialogProps {
@@ -229,7 +227,6 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
   const formRef = useRef<HTMLFormElement | null>(null);
   // Auth inputs for "Custom" form
   const [apiKeyInput, setApiKeyInput] = useState<string>('');
-  const [headerScheme, setHeaderScheme] = useState<HeaderScheme>('authorization-bearer');
   const [sessionOnly, setSessionOnly] = useState<boolean>(false);
 
   const handleAddCustomServer = (e: React.FormEvent<HTMLFormElement>) => {
@@ -247,6 +244,9 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
     try {
       const serverId = crypto.randomUUID();
 
+      const computedHeaderScheme: StorageHeaderScheme =
+        apiKeyInput.trim() ? 'x-api-key' : 'authorization-bearer';
+
       const customServer: SavedMCPServer = {
         id: serverId,
         name: name.trim(),
@@ -259,7 +259,7 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
         savedAt: new Date().toISOString(),
         enabled: true,
         // Client-only auth metadata (no secrets here)
-        headerScheme: headerScheme as StorageHeaderScheme,
+        headerScheme: computedHeaderScheme,
         hasStoredKey: !!apiKeyInput.trim(),
       };
 
@@ -312,7 +312,12 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
   const pendingUrl = pendingServer?.remotes?.find(r => r.type === 'streamable-http' || r.type === 'http+sse')?.url || '';
 
   return (
-    <Drawer open={open} onOpenChange={onOpenChange}>
+    <Drawer open={open} onOpenChange={(isOpen: boolean) => {
+      if (!isOpen) {
+        setTab('integrations');
+      }
+      onOpenChange(isOpen);
+    }}>
       <AnimatedDrawerContent aria-describedby='integrations' className="grid grid-rows-[auto_1fr_auto] grid-cols-1 max-w-md mx-auto">
         <section className="h-full overflow-hidden grid grid-cols-1 p-4">
           <Tabs value={tab} onValueChange={(v) => setTab(v as 'integrations' | 'custom')} className="h-full overflow-hidden grid grid-rows-[1fr_auto] gap-4">
@@ -413,20 +418,8 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
                     onChange={(e: any) => setApiKeyInput(e.target.value)}
                   />
                   <p className="text-xs text-muted-foreground">
-                    If provided, API key authentication will be used. Leave empty to automatically detect OAuth requirements.
+                    If provided, API key authentication will be used with X-API-Key. Leave empty to use OAuth (Authorization: Bearer) if requested by the server.
                   </p>
-                  <div className="grid grid-cols-1 gap-2">
-                    <label className="text-sm font-medium">Header scheme</label>
-                    <Select value={headerScheme} onValueChange={(v) => setHeaderScheme(v as HeaderScheme)}>
-                      <SelectTrigger className="w-full">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="authorization-bearer">Authorization: Bearer</SelectItem>
-                        <SelectItem value="x-api-key">X-API-Key</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
                   <div className="flex items-center gap-2 text-sm">
                     <Checkbox
                       id="session-only"
@@ -482,7 +475,6 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
               formRef.current?.reset?.();
               // Reset auth UI state (keep sensible defaults)
               setApiKeyInput('');
-              setHeaderScheme('authorization-bearer');
               setSessionOnly(false);
               setTab('integrations');
               setTesting(false);
