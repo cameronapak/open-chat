@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
 import { zValidator } from '@hono/zod-validator';
-import { MCPRegistryClient } from 'mcp-registry-spec-sdk';
+import { MCPRegistryClient, type ListServersOptions } from 'mcp-registry-spec-sdk';
 
 const registryApp = new Hono();
 const mcpRegistry = new MCPRegistryClient();
@@ -42,12 +42,12 @@ registryApp.get('/servers', zValidator('query', z.object({
 })), async (c) => {
   try {
     const query = c.req.valid('query');
-    const options: any = {};
+    const options: ListServersOptions = {};
 
     if (query.cursor) options.cursor = query.cursor;
     if (query.limit) options.limit = query.limit;
     if (query.search) options.search = query.search;
-    if (query.updated_since) options.updated_since = query.updated_since;
+    if (query.updated_since) options.updatedSince = query.updated_since;
     if (query.version) options.version = query.version;
 
     const response = await mcpRegistry.server.listServers(options);

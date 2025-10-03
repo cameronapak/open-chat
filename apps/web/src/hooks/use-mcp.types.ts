@@ -1,5 +1,5 @@
 import type { Tool, Resource, ResourceTemplate, Prompt } from '@modelcontextprotocol/sdk/types.js'
-import { BrowserOAuthClientProvider } from '@/lib/auth/browser-provider'
+import type { BrowserOAuthClientProvider } from '@/lib/auth/browser-provider'
 
 export type UseMcpOptions = {
   /** The base URL of your remote MCP server (HTTP and/or SSE supported) */

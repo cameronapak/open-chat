@@ -19,30 +19,39 @@ type MCPDetails = {
 }
 
 async function fetchMcpDetails(url: string): Promise<MCPDetails> {
-  // Minimal standalone connection flow modeled after useMcp internals.
+  // Minimal standalone connection flow modeled after useMcp internals.  
   const sanitized = sanitizeUrl(url)
+  if (!/^https?:/i.test(sanitized) || sanitized === 'about:blank') {
+    throw new Error('Invalid MCP server URL (must be http(s)).')
+  }
   const targetUrl = new URL(sanitized)
-  const authProvider = new BrowserOAuthClientProvider(url, {
+  const authProvider = new BrowserOAuthClientProvider(sanitized, {
     storageKeyPrefix: 'mcp:auth',
     clientName: 'OpenChat',
     clientUri: typeof window !== 'undefined' ? window.location.origin : '',
-    callbackUrl: typeof window !== 'undefined' ? new URL('/oauth/callback', window.location.origin).toString() : '/oauth/callback',
+    callbackUrl: typeof window !== 'undefined'
+      ? new URL('/oauth/callback', window.location.origin).toString()
+      : '/oauth/callback',
     preventAutoAuth: false,
   })
 
   const client = new Client({ name: 'openchat-client', version: '0.1.0' }, { capabilities: {} })
 
-  // Try HTTP transport first
-  let transport: any
+  // Prefer HTTP; fallback to SSE on connect errors (404/405/CORS)
+  let transportKind: 'http' | 'sse' = 'http'
+  let transport:
+    | StreamableHTTPClientTransport
+    | SSEClientTransport
   try {
     transport = new StreamableHTTPClientTransport(targetUrl, {
       authProvider,
       requestInit: {
+        method: 'POST',
         headers: { Accept: 'application/json, text/event-stream' },
       },
     })
-  } catch (err) {
-    // Fallback to SSE if streamable-http not available
+  } catch {
+    transportKind = 'sse'
     transport = new SSEClientTransport(targetUrl, {
       authProvider,
       requestInit: { headers: { Accept: 'application/json, text/event-stream' } },
@@ -83,11 +92,52 @@ async function fetchMcpDetails(url: string): Promise<MCPDetails> {
     }
 
     return details
-  } catch (err) {
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e)
+    const isLikelyHttpIssue =
+      transportKind === 'http' &&
+      (msg.includes('404') ||
+        msg.includes('405') ||
+        msg === 'Failed to fetch' ||
+        msg === 'NetworkError when attempting to fetch resource.' ||
+        msg === 'Load failed')
+    if (!isLikelyHttpIssue) throw e
+    // HTTP failed in a way that suggests server/route/CORS → fallback to SSE
+    try { await transport.close() } catch { }
+    transportKind = 'sse'
+    transport = new SSEClientTransport(targetUrl, {
+      authProvider,
+      requestInit: { headers: { Accept: 'application/json, text/event-stream' } },
+    })
+    transport.onmessage = (message) => {
+      try {
+        /* @ts-ignore */
+        client.handleMessage?.(message)
+      } catch {
+        // ignore
+      }
+    }
+    await client.connect(transport)
+
+    const toolsResp = await client.request({ method: 'tools/list' }, ListToolsResultSchema).catch(() => ({ tools: [] }))
+    const resourcesResp = await client.request({ method: 'resources/list' }, ListResourcesResultSchema).catch(() => ({ resources: [], resourceTemplates: [] }))
+    const promptsResp = await client.request({ method: 'prompts/list' }, ListPromptsResultSchema).catch(() => ({ prompts: [] }))
+
+    const details: MCPDetails = {
+      tools: Array.isArray(toolsResp.tools) ? toolsResp.tools : [],
+      resources: Array.isArray(resourcesResp.resources) ? resourcesResp.resources : [],
+      resourceTemplates: Array.isArray(resourcesResp.resourceTemplates) ? resourcesResp.resourceTemplates : [],
+      prompts: Array.isArray(promptsResp.prompts) ? promptsResp.prompts : [],
+      serverInfo: (client as any).serverInfo ? (client as any).serverInfo : undefined,
+    }
+
     try {
       await transport.close()
-    } catch {}
-    throw err
+    } catch (e) {
+      // ignore
+    }
+
+    return details
   }
 }
 
