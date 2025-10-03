@@ -140,7 +140,6 @@ function AnimatedDrawerContent({
         <motion.div
           initial={{ height: 0 }}
           animate={{ height: `${targetHeight}px` }}
-          transition={{ type: "spring", bounce: 0.25, duration: 0.65 }}
           className="w-full overflow-hidden will-change-transform"
         >
           {/* Measured natural content; this element is scrollable when clipped */}
