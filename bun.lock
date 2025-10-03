@@ -3,9 +3,6 @@
   "workspaces": {
     "": {
       "name": "open-chat",
-      "dependencies": {
-        "mcp-registry-spec-sdk": "^0.1.1",
-      },
       "devDependencies": {
         "@types/react-syntax-highlighter": "^15.5.13",
         "oxlint": "^1.12.0",
@@ -23,6 +20,7 @@
         "arktype": "^2.1.22",
         "dotenv": "^17.2.1",
         "hono": "^4.8.2",
+        "mcp-registry-spec-sdk": "^0.1.1",
         "zod": "^4.1.11",
       },
       "devDependencies": {
