@@ -142,7 +142,8 @@ function AnimatedDrawerContent({
           animate={{ height: `${targetHeight}px` }}
           transition={{
             type: "spring",
-            bounce: 0.1
+            visualDuration: 0.65,
+            bounce: 0.4
           }}
           className="w-full overflow-hidden will-change-transform"
         >
