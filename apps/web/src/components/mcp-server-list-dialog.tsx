@@ -5,8 +5,7 @@ import { Plus, Trash2, Puzzle, Globe } from 'lucide-react';
 import {
   Drawer,
   DrawerClose,
-  DrawerContent,
-  // AnimatedDrawerContent, // Temporarily removing this because animations were ugly
+  AnimatedDrawerContent,
   DrawerDescription,
   DrawerFooter,
   DrawerHeader,
@@ -317,7 +316,7 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent aria-describedby='integrations' className="grid grid-rows-[auto_1fr_auto] grid-cols-1 max-w-md mx-auto">
+      <AnimatedDrawerContent aria-describedby='integrations' className="grid grid-rows-[auto_1fr_auto] grid-cols-1 max-w-md mx-auto">
         <section className="h-full overflow-hidden grid grid-cols-1 p-4">
           <Tabs value={tab} onValueChange={(v) => setTab(v as 'integrations' | 'custom')} className="h-full overflow-hidden grid grid-rows-[1fr_auto] gap-4">
             <TabsList className="grid grid-cols-2 w-full">
@@ -525,7 +524,7 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
             }}
           />
         ) : null}
-      </DrawerContent>
+      </AnimatedDrawerContent>
     </Drawer>
   );
 }
