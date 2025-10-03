@@ -324,7 +324,7 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
             const url = getUrlFromServer(server);
             const accessToken = url ? readAccessToken(url) : undefined;
             let apiKey: string | undefined = undefined;
-            if (server.authPreference === 'api-key' && url) {
+            if (url) {
               try {
                 apiKey = await loadApiKey(url);
               } catch {
@@ -340,7 +340,6 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
             if (accessToken) {
               base.accessToken = accessToken; // include for backend Authorization header
             }
-            if (server.authPreference) base.authPreference = server.authPreference;
             if (server.headerScheme) base.headerScheme = server.headerScheme;
             if (apiKey) base.apiKey = apiKey;
             return base;

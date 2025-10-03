@@ -8,7 +8,7 @@ Most likely MCP's will be called "Connectors" on the client-side.
 - [x] I can enable an MCP to be used in chat
 - [x] I can remove an MCP from my list of MCP's
 - [x] I can OAuth into an MCP
-- [ ] I can add an API Key to an MCP
+- [x] I can add an API Key to an MCP
 - [x] When I click row of MCP server, I want to be able to just open it. Then, if I click the arrow, I wanna see more detais. 
 
 ## MCP Registry
@@ -45,17 +45,19 @@ Status
 - [x] Keys can be saved “Session-only” (kept in-memory) or “Persisted” (encrypted at rest)
 - [x] Server receives API key per-request and attaches the proper header
 - [x] Supports two header schemes: “Authorization: Bearer” and “X-API-Key” (default is Bearer)
-- [x] OAuth continues to work; OAuth is preferred unless the user selects “API key”
+- [x] OAuth continues to work; OAuth is preferred when available. If an API key is provided and no OAuth token is present, the API key is used. If neither is required, the server connects unauthenticated.
 
 Where to use it
-- UI: MCP add dialog at [`apps/web/src/components/mcp-server-list-dialog.tsx`](apps/web/src/components/mcp-server-list-dialog.tsx)
+- UI: MCP add dialog at [`mcp-server-list-dialog.tsx`](apps/web/src/components/mcp-server-list-dialog.tsx:1)
   - Fields:
-    - Auth method: OAuth | API key
-    - If API key:
-      - API key (password field)
-      - Header scheme: Authorization: Bearer | X-API-Key
-      - Session-only checkbox (don’t persist)
-  - On successful connection test, the server is saved and the API key is stored accordingly.
+    - API Key (optional)
+    - Header scheme: Authorization: Bearer | X-API-Key
+    - Session-only checkbox (don’t persist)
+  - Behavior:
+    - If API key is provided, it will be saved (session-only or encrypted at rest) and used.
+    - If API key is not provided and the server requires auth, OAuth will be auto-triggered.
+    - If neither is required, the server connects without auth.
+  - On successful connection test, the server is saved and the API key presence flag is computed.
 
 How keys are stored (web client)
 - Encryption: AES-GCM using Web Crypto.
@@ -66,15 +68,14 @@ How keys are stored (web client)
 What gets sent to the server
 - Client includes per-enabled server:
   - OAuth accessToken (if present)
-  - Or API key + headerScheme (when user selected API key)
-  - authPreference hint (oauth | api-key)
+  - API key + headerScheme (if stored and available)
 - Server attaches headers for every request to the MCP server:
   - If OAuth: Authorization: Bearer <access_token>
   - If API key:
     - Authorization: Bearer <api_key> (default), or
     - X-API-Key: <api_key> (when selected)
 - Server never persists or logs secrets.
-- Implementation (client payload): [`apps/web/src/components/open-chat-component.tsx`](apps/web/src/components/open-chat-component.tsx)
+- Implementation (client payload): [`open-chat-component.tsx`](apps/web/src/components/open-chat-component.tsx:322)
 - Implementation (server headers): [`apps/server/src/routers/chat.ts`](apps/server/src/routers/chat.ts)
 
 Security notes (per MCP Authorization 2025-06-18)

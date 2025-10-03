@@ -35,14 +35,13 @@ import MCPServerDetails from './mcp-server-details';
 import { saveApiKey, getApiKeyPresenceLabel } from "@/lib/keystore";
 import type { HeaderScheme } from "@/lib/keystore";
 import type { HeaderScheme as StorageHeaderScheme } from '@/lib/mcp-storage';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { Checkbox } from './ui/checkbox';
 
 interface MCPServerListDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
-
-// // Backend API base URL
-// const API_BASE_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3000';
 
 function IntegrationsAccordionList({ servers, onToggleServer, onRemoveServer }: {
   servers: SavedMCPServer[],
@@ -228,8 +227,7 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
   // Track connected servers info: store serverInfo when available
   const [connectedServers, setConnectedServers] = useState<Record<string, { name?: string; version?: string } | true>>({});
   const formRef = useRef<HTMLFormElement | null>(null);
-  // Auth UI state for "Custom" form
-  const [authPreference, setAuthPreference] = useState<'oauth' | 'api-key'>('oauth');
+  // Auth inputs for "Custom" form
   const [apiKeyInput, setApiKeyInput] = useState<string>('');
   const [headerScheme, setHeaderScheme] = useState<HeaderScheme>('authorization-bearer');
   const [sessionOnly, setSessionOnly] = useState<boolean>(false);
@@ -261,9 +259,8 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
         savedAt: new Date().toISOString(),
         enabled: true,
         // Client-only auth metadata (no secrets here)
-        authPreference,
         headerScheme: headerScheme as StorageHeaderScheme,
-        hasStoredKey: authPreference === 'api-key' && !!apiKeyInput.trim(),
+        hasStoredKey: !!apiKeyInput.trim(),
       };
 
       // Start connection test via useMcp
@@ -405,68 +402,43 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
                 />
                 {/* Auth configuration */}
                 <div className="grid grid-cols-1 gap-3">
-                  <label className="text-sm font-medium">Auth method</label>
-                  <div className="flex items-center gap-3">
-                    <label className="flex items-center gap-2 text-sm">
-                      <input
-                        type="radio"
-                        name="auth-method"
-                        value="oauth"
-                        checked={authPreference === 'oauth'}
-                        onChange={() => setAuthPreference('oauth')}
-                      />
-                      OAuth
-                    </label>
-                    <label className="flex items-center gap-2 text-sm">
-                      <input
-                        type="radio"
-                        name="auth-method"
-                        value="api-key"
-                        checked={authPreference === 'api-key'}
-                        onChange={() => setAuthPreference('api-key')}
-                      />
-                      API key
-                    </label>
+                  <InputWithLabel
+                    id="api-key"
+                    autoComplete="off"
+                    label="API Key (optional)"
+                    type="password"
+                    placeholder="Enter API key"
+                    name="api-key"
+                    value={apiKeyInput}
+                    onChange={(e: any) => setApiKeyInput(e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    If provided, API key authentication will be used. Leave empty to automatically detect OAuth requirements.
+                  </p>
+                  <div className="grid grid-cols-1 gap-2">
+                    <label className="text-sm font-medium">Header scheme</label>
+                    <Select value={headerScheme} onValueChange={(v) => setHeaderScheme(v as HeaderScheme)}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="authorization-bearer">Authorization: Bearer</SelectItem>
+                        <SelectItem value="x-api-key">X-API-Key</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
-                </div>
-                {authPreference === 'api-key' && (
-                  <div className="grid grid-cols-1 gap-3">
-                    <InputWithLabel
-                      id="api-key"
-                      autoComplete="off"
-                      label="API key"
-                      type="password"
-                      placeholder="Enter API key"
-                      name="api-key"
-                      value={apiKeyInput}
-                      onChange={(e: any) => setApiKeyInput(e.target.value)}
+                  <div className="flex items-center gap-2 text-sm">
+                    <Checkbox
+                      id="session-only"
+                      checked={sessionOnly}
+                      onCheckedChange={(checked) => setSessionOnly(!!checked)}
                     />
-                    <div className="grid grid-cols-1 gap-2">
-                      <label className="text-sm font-medium" htmlFor="header-scheme">Header scheme</label>
-                      <select
-                        id="header-scheme"
-                        className="border rounded px-2 py-1 text-sm"
-                        value={headerScheme}
-                        onChange={(e) => setHeaderScheme(e.target.value as HeaderScheme)}
-                      >
-                        <option value="authorization-bearer">Authorization: Bearer</option>
-                        <option value="x-api-key">X-API-Key</option>
-                      </select>
-                    </div>
-                    <label className="flex items-center gap-2 text-sm">
-                      <input
-                        type="checkbox"
-                        name="session-only"
-                        checked={sessionOnly}
-                        onChange={(e) => setSessionOnly(e.target.checked)}
-                      />
-                      Session-only (don’t persist)
-                    </label>
-                    <p className="text-xs text-muted-foreground">
-                      API keys are encrypted at rest with Web Crypto (AES-GCM) when persisted. Avoid untrusted scripts (XSS).
-                    </p>
+                    <label htmlFor="session-only">Session-only (don’t persist)</label>
                   </div>
-                )}
+                  <p className="text-xs text-muted-foreground">
+                    API keys are encrypted at rest with Web Crypto (AES-GCM) when persisted. Avoid untrusted scripts (XSS).
+                  </p>
+                </div>
                 <Button
                   size="sm"
                   disabled={testing}
@@ -493,7 +465,7 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
             onReady={async () => {
               // Save API key (if configured) now that connection is ready
               try {
-                if (pendingUrl && authPreference === 'api-key' && apiKeyInput.trim()) {
+                if (pendingUrl && apiKeyInput.trim()) {
                   await saveApiKey(pendingUrl, apiKeyInput.trim(), !sessionOnly);
                 }
               } catch {
@@ -509,7 +481,6 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
               toast.success('Custom server added and connected');
               formRef.current?.reset?.();
               // Reset auth UI state (keep sensible defaults)
-              setAuthPreference('oauth');
               setApiKeyInput('');
               setHeaderScheme('authorization-bearer');
               setSessionOnly(false);
