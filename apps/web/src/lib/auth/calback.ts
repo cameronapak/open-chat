@@ -19,7 +19,7 @@ export async function onMcpAuthorization() {
   let provider: BrowserOAuthClientProvider | null = null
   let storedStateData: StoredState | null = null
   let broadcastChannel: BroadcastChannel | null = null
-  const stateKey = state ? `mcp:auth:state_${state}` : null // Reconstruct state key prefix assumption
+  const stateKey = state ? `mcp:auth:state_${state}` : '' // Reconstruct state key prefix assumption
 
   try {
     // --- Basic Error Handling ---
@@ -29,7 +29,7 @@ export async function onMcpAuthorization() {
     if (!code) {
       throw new Error('Authorization code not found in callback query parameters.')
     }
-    if (!state || !stateKey) {
+    if (!state || stateKey === '') {
       throw new Error('State parameter not found or invalid in callback query parameters.')
     }
 
@@ -96,31 +96,23 @@ export async function onMcpAuthorization() {
     // Optionally close even on error, depending on UX preference
     // window.close();
 
-    // // Display error in the callback window
-    // try {
-    //   document.body.innerHTML = `
-    //         <div style="font-family: sans-serif; padding: 20px;">
-    //         <h1>Authentication Error</h1>
-    //         <p style="color: red; background-color: #ffebeb; border: 1px solid red; padding: 10px; border-radius: 4px;">
-    //             ${errorMessage}
-    //         </p>
-    //         <p>You can close this window or <a href="#" onclick="window.close(); return false;">click here to close</a>.</p>
-    //         <pre style="font-size: 0.8em; color: #555; margin-top: 20px; white-space: pre-wrap;">${err instanceof Error ? err.stack : ''
-    //     }</pre>
-    //         </div>
-    //     `
-    // } catch (displayError) {
-    //   console.error(`${logPrefix} Could not display error in callback window:`, displayError)
-    // }
+    // Display error in the callback window
+    // We'll throw the error instead of writing to document.body.innerHTML to avoid nuking the React tree
     // Clean up potentially invalid state on error
-    if (stateKey) {
+    if (stateKey && stateKey !== '') {
       localStorage.removeItem(stateKey)
     }
     // Clean up potentially dangling verifier or last_auth_url if auth failed badly
     // Note: saveTokens should clean these on success
     if (provider) {
-      localStorage.removeItem(provider.getKey('code_verifier'))
-      localStorage.removeItem(provider.getKey('last_auth_url'))
+      try {
+        localStorage.removeItem(provider.getKey('code_verifier'))
+        localStorage.removeItem(provider.getKey('last_auth_url'))
+      } catch (storageError) {
+        console.warn(`${logPrefix} Could not clean up storage items:`, storageError)
+      }
     }
+    
+    throw new Error(errorMessage);
   }
 }
