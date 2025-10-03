@@ -7,10 +7,8 @@ import {
 	createRootRouteWithContext,
 	useRouterState,
 } from "@tanstack/react-router";
-import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 import "../index.css";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 
 const queryClient = new QueryClient();
 
@@ -52,13 +50,13 @@ function RootComponent() {
 					disableTransitionOnChange
 					storageKey="vite-ui-theme"
 				>
-					<div className="grid grid-rows-[auto_1fr] h-svh">
+					<div className="grid grid-rows-[auto_1fr] h-dvh grid-cols-1">
 						{isFetching ? <Loader /> : <Outlet />}
 					</div>
 					<Toaster richColors />
 				</ThemeProvider>
-				<TanStackRouterDevtools position="bottom-left" />
-				<ReactQueryDevtools initialIsOpen={false} />
+				{/* <TanStackRouterDevtools position="top-right" /> */}
+				{/* <ReactQueryDevtools buttonPosition="top-right" initialIsOpen={false} /> */}
 			</>
 		</QueryClientProvider>
 	);

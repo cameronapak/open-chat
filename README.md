@@ -1,14 +1,186 @@
-# Open Chat
+# OpenChat
 
 A truly open AI chatbot.
 
 Not locked down to any given LLM provider. 
 
-Sign into your OpenRouter account via Oauth, secured through encryption.
+Sign into your OpenRouter account via OAuth, secured through encryption.
 
-Easily import into your existing apps.
+Easily import into your existing apps (Coming soon).
 
-For contributors: see [AGENTS.md](AGENTS.md)
+## OpenChatComponent - Drop-in AI Chat
+
+The OpenChatComponent is a fully-featured, reusable chat component that can be easily integrated into any React application.
+
+### Installation
+
+```bash
+# Coming soon: npm package
+# For now, copy the component from apps/web/src/components/open-chat-component.tsx
+```
+
+### Basic Usage
+
+```tsx
+import { OpenChatComponent } from '@/components/open-chat-component';
+
+function App() {
+  return (
+    <OpenChatComponent
+      openRouterModel="openai/gpt-5"
+      api="http://localhost:3000/api/chat"
+      placeholder="Ask me anything..."
+      className="w-full h-screen"
+    />
+  );
+}
+```
+
+### With Authentication Required
+
+```tsx
+import { OpenChatComponent } from '@/components/open-chat-component';
+
+function SecureChat() {
+  return (
+    <OpenChatComponent
+      openRouterModel="openai/gpt-5"
+      api="http://localhost:3000/api/chat"
+      requireAuth={true}  // Forces user to connect OpenRouter account
+      placeholder="Ask OpenChat..."
+      className="w-full h-96"
+      onError={(error) => console.error("Chat error:", error)}
+    />
+  );
+}
+```
+
+### With MCP Tools Integration
+
+```tsx
+import { OpenChatComponent } from '@/components/open-chat-component';
+
+function ChatWithTools() {
+  return (
+    <OpenChatComponent
+      openRouterModel="anthropic/claude-3-opus"
+      api="http://localhost:3000/api/chat"
+      tools={{
+        enabled: true,
+        mcpServers: []  // User can add servers via the UI dialog
+      }}
+      mcpRegistryUrl="https://registry.modelcontextprotocol.io"
+      className="w-full h-screen"
+      onNewMessage={(msg) => console.log("New message:", msg)}
+    />
+  );
+}
+```
+
+### Fully Customized Example
+
+```tsx
+import { OpenChatComponent } from '@/components/open-chat-component';
+import type { UIMessage } from '@ai-sdk/react';
+
+function AdvancedChat() {
+  const initialMessages: UIMessage[] = [
+    {
+      id: "1",
+      role: "assistant",
+      content: [{ type: "text", text: "Hello! How can I help you today?" }]
+    }
+  ];
+
+  return (
+    <OpenChatComponent
+      // Model configuration
+      openRouterModel="openai/gpt-5"
+      allowedModels={[  // Restrict model selection
+        "openai/gpt-5",
+        "anthropic/claude-3-opus",
+        "google/gemini-pro"
+      ]}
+      
+      // API configuration
+      api="http://localhost:3000/api/chat"
+      requireAuth={true}
+      
+      // MCP Tools
+      tools={{
+        enabled: true,
+        mcpServers: []
+      }}
+      mcpRegistryUrl="https://registry.modelcontextprotocol.io"
+      
+      // Chat configuration
+      threadId="unique-thread-123"
+      systemPrompt="You are a helpful AI assistant specialized in coding."
+      initialMessages={initialMessages}
+      placeholder="Ask about coding..."
+      
+      // User profile
+      userProfile={{
+        name: "Developer",
+        chatPreferences: JSON.stringify({
+          preferredLanguage: "TypeScript",
+          codeStyle: "functional"
+        }),
+        avatarUrl: "https://example.com/avatar.png",
+      }}
+      
+      // UI customization
+      className="w-full h-screen max-w-4xl mx-auto"
+      height="100vh"
+      theme="dark"
+      
+      // Callbacks
+      onNewMessage={(msg) => {
+        console.log("New message:", msg);
+        // Save to database, analytics, etc.
+      }}
+      onSend={(text) => {
+        console.log("User sent:", text);
+      }}
+      onError={(error) => {
+        console.error("Error:", error);
+        // Handle errors appropriately
+      }}
+      
+      // Custom message rendering (optional)
+      renderMessage={(message, part, index) => {
+        // Return null to use default rendering
+        // Or return custom JSX for specific message types
+        if (part.type === 'custom-type') {
+          return <div key={index}>Custom rendering for {part.type}</div>;
+        }
+        return null;
+      }}
+    >
+      {/* Optional footer content */}
+      <div className="p-2 text-center text-sm text-muted-foreground">
+        Powered by OpenRouter
+      </div>
+    </OpenChatComponent>
+  );
+}
+```
+
+### Component Props
+
+See the full TypeScript interface in [`apps/web/src/types/open-chat-component.ts`](apps/web/src/types/open-chat-component.ts) for detailed prop documentation.
+
+Key props include:
+- `openRouterModel` - Initial AI model to use
+- `allowedModels` - Restrict available models for selection
+- `api` - Backend API endpoint for chat
+- `requireAuth` - Force authentication before chatting
+- `tools` - MCP server configuration
+- `systemPrompt` - System instructions for the AI
+- `threadId` - Unique thread identifier
+- `onNewMessage` - Callback for new messages
+- `renderMessage` - Custom message rendering
+- `theme` - Light/dark theme support
 
 ## Features
 
@@ -18,6 +190,7 @@ For contributors: see [AGENTS.md](AGENTS.md)
 - **[shadcn/ui](https://ui.shadcn.com/)** - Reusable UI components
 - **[ai-sdk](https://ai-sdk.dev/)** - AI Toolkit for TypeScript
 - **[ai-elements](https://ai-sdk.dev/elements/overview)** - AI Chatbot elements
+- **use-mcp** hook (fork) — "A lightweight React hook for connecting to Model Context Protocol (MCP) servers. Simplifies authentication and tool calling for AI systems implementing the MCP standard."
 - **[Hono](https://hono.dev)** - Lightweight, performant server framework
 - **[Node.js](https://nodejs.org/en)** - JavaScript runtime environment
 - **[Bun](https://bun.sh)** - JavaScript package Manager
@@ -25,18 +198,22 @@ For contributors: see [AGENTS.md](AGENTS.md)
 
 ## Roadmap 🗺️
 
-- [ ] Has default AI prompt that honors God and the Bible
-- [ ] Better Auth
 - [x] Open Router support
 - [ ] Get list of OpenRouter models based on [user provider preferences](https://openrouter.ai/docs/api-reference/list-models-filtered-by-user-provider-preferences)
 - [ ] MCP client support
   - [x] MCP Tools
   - [ ] MCP Prompts
   - [ ] MCP Resources
+- [ ] Host this app
+- [ ] Add info about [Open Inference](https://www.openinference.xyz/) into the settings dialog
+- [ ] Allow theme CSS variables for the component
 - [ ] One-click MCP install
 - [ ] Add your own MCP server
 - [x] MCP UI support
-- [ ] Local LLM support (via Transformers JS)
+- [ ] [Built-in AI support](https://ai-sdk.dev/providers/community-providers/built-in-ai) (Transformers JS + AI SDK + [built-in-ai](https://github.com/jakobhoeg/built-in-ai)) 
+  - Examples
+    - https://huggingface.co/spaces/ibm-granite/Granite-4.0-WebGPU/blob/main/src/worker.js
+    - https://huggingface.co/spaces/LiquidAI/LFM2-WebGPU/blob/main/src/App.tsx
 - [ ] Personality Profile (tailor LLM to your preferences)
 - [ ] Web component chatbot export
 - [ ] Make it onto [the official MCP Clients list](https://modelcontextprotocol.io/clients)
@@ -89,3 +266,7 @@ Here are some top-tier MCP registries I've been keeping my eyes on:
 - [Smithery](https://smithery.ai/)
 - [Pica](https://www.picaos.com/)
 - [Rube](https://rube.app/)
+
+## Contributing
+
+For contributors: see [AGENTS.md](AGENTS.md)

@@ -15,7 +15,6 @@
     "dev:web": "bun run --filter web dev",
     "dev:server": "bun run --filter server dev"
   },
-  "dependencies": {},
   "devDependencies": {
     "@types/react-syntax-highlighter": "^15.5.13",
     "oxlint": "^1.12.0"
