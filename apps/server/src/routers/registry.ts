@@ -50,7 +50,6 @@ registryApp.get('/servers', zValidator('query', z.object({
     if (query.updated_since) options.updated_since = query.updated_since;
     if (query.version) options.version = query.version;
 
-    console.log('Fetching servers with options:', options);
     const response = await mcpRegistry.server.listServers(options);
 
     // Filter to only remote servers as the frontend expects

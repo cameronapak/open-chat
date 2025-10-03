@@ -503,8 +503,6 @@ export function useMcp(options: UseMcpOptions): UseMcpResult {
     // --- Orchestrate Connection Attempts ---
     let finalStatus: 'success' | 'auth_redirect' | 'failed' | 'fallback' = 'failed' // Default to failed
 
-    console.log({ transportType })
-
     if (transportType === 'sse') {
       // SSE only - skip HTTP entirely
       addLog('debug', 'Using SSE-only transport mode')

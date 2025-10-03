@@ -10,7 +10,7 @@ const ChatBotDemo = () => {
         api={import.meta.env.VITE_SERVER_URL + '/api/chat'}
         requireAuth={true}
         placeholder="Ask OpenChat..."
-        onNewMessage={(msg) => console.log("New message:", msg)}
+        onNewMessage={isUndefined}
       />
     </section>
   );

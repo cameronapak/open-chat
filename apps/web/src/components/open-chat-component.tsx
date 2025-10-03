@@ -179,7 +179,6 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
   const enabledServersRef = useRef<SavedMCPServer[]>(enabledServers);
   useEffect(() => {
     enabledServersRef.current = enabledServers;
-    console.log('[OpenChat] enabledServers updated:', enabledServersRef.current);
   }, [enabledServers]);
 
   // Set initial model if provided
@@ -317,7 +316,6 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
       prepareSendMessagesRequest: async ({ messages, id, body }) => {
         // Use ref to avoid stale values if send happens before React re-memoizes transport
         const currentEnabled = enabledServersRef.current || [];
-        console.log('Enabled servers being sent to backend (ref):', currentEnabled);
 
         const mcpServersData = await Promise.all(
           currentEnabled.map(async (server: SavedMCPServer) => {
@@ -344,15 +342,6 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
             if (apiKey) base.apiKey = apiKey;
             return base;
           })
-        );
-        // Redact in logs
-        console.log(
-          'Mapped MCP servers data:',
-          mcpServersData.map(({ accessToken, apiKey, ...rest }) => ({
-            ...rest,
-            accessToken: accessToken ? 'present' : 'none',
-            apiKey: apiKey ? 'present' : 'none',
-          }))
         );
 
         return {

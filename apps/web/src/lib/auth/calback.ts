@@ -15,7 +15,6 @@ export async function onMcpAuthorization() {
   const errorDescription = queryParams.get('error_description')
 
   const logPrefix = '[mcp-callback]' // Generic prefix, or derive from stored state later
-  console.log(`${logPrefix} Handling callback...`, { code, state, error, errorDescription })
 
   let provider: BrowserOAuthClientProvider | null = null
   let storedStateData: StoredState | null = null
@@ -68,11 +67,9 @@ export async function onMcpAuthorization() {
     }
 
     // --- Instantiate Provider ---
-    console.log(`${logPrefix} Re-instantiating provider for server: ${serverUrl}`)
     provider = new BrowserOAuthClientProvider(serverUrl, providerOptions)
 
     // --- Call SDK Auth Function ---
-    console.log(`${logPrefix} Calling SDK auth() to exchange code...`)
     // The SDK auth() function will internally:
     // 1. Use provider.clientInformation()
     // 2. Use provider.codeVerifier()
@@ -81,7 +78,6 @@ export async function onMcpAuthorization() {
     const authResult = await auth(provider, { serverUrl, authorizationCode: code })
 
     if (authResult === 'AUTHORIZED') {
-      console.log(`${logPrefix} Authorization successful via SDK auth(). Notifying opener...`)
       // --- Notify Opener and Close (Success) ---
       broadcastChannel.postMessage({ type: 'mcp_auth_callback', success: true })
       window.close()
@@ -89,7 +85,6 @@ export async function onMcpAuthorization() {
       localStorage.removeItem(stateKey)
     } else {
       // This case shouldn't happen if `authorizationCode` is provided to `auth()`
-      console.warn(`${logPrefix} SDK auth() returned unexpected status: ${authResult}`)
       throw new Error(`Unexpected result from authentication library: ${authResult}`)
     }
   } catch (err) {
