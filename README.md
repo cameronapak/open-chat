@@ -198,13 +198,15 @@ Key props include:
 
 ## Roadmap 🗺️
 
-- [ ] Has default AI prompt that honors God and the Bible
 - [x] Open Router support
 - [ ] Get list of OpenRouter models based on [user provider preferences](https://openrouter.ai/docs/api-reference/list-models-filtered-by-user-provider-preferences)
 - [ ] MCP client support
   - [x] MCP Tools
   - [ ] MCP Prompts
   - [ ] MCP Resources
+- [ ] Host this app
+- [ ] Add info about [Open Inference](https://www.openinference.xyz/) into the settings dialog
+- [ ] Allow theme CSS variables for the component
 - [ ] One-click MCP install
 - [ ] Add your own MCP server
 - [x] MCP UI support
