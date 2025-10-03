@@ -6,9 +6,17 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function getFavicon(url: string) {
-	const domain = new URL(url).hostname.split('.').slice(-2).join('.')
-	const faviconUrl = new URL("https://www.google.com/s2/favicons")
-	faviconUrl.searchParams.set('sz', '64')
-	faviconUrl.searchParams.set('domain', domain)
-	return faviconUrl.toString()
-}
+	try {
+		const u = new URL(url)
+		if (!/^https?:$/.test(u.protocol)) return ""
+		const hostname = u.hostname
+		if (!hostname) return ""
+		const faviconUrl = new URL("https://www.google.com/s2/favicons")
+		faviconUrl.searchParams.set("sz", "64")
+		// Use full hostname; avoid naive TLD slicing  
+		faviconUrl.searchParams.set("domain", hostname)
+		return faviconUrl.toString()
+	} catch {
+		return ""
+	}
+}  
