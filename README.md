@@ -208,7 +208,10 @@ Key props include:
 - [ ] One-click MCP install
 - [ ] Add your own MCP server
 - [x] MCP UI support
-- [ ] [Built-in AI support](https://ai-sdk.dev/providers/community-providers/built-in-ai) (Transformers JS + AI SDK + [built-in-ai](https://github.com/jakobhoeg/built-in-ai))
+- [ ] [Built-in AI support](https://ai-sdk.dev/providers/community-providers/built-in-ai) (Transformers JS + AI SDK + [built-in-ai](https://github.com/jakobhoeg/built-in-ai)) 
+  - Examples
+    - https://huggingface.co/spaces/ibm-granite/Granite-4.0-WebGPU/blob/main/src/worker.js
+    - https://huggingface.co/spaces/LiquidAI/LFM2-WebGPU/blob/main/src/App.tsx
 - [ ] Personality Profile (tailor LLM to your preferences)
 - [ ] Web component chatbot export
 - [ ] Make it onto [the official MCP Clients list](https://modelcontextprotocol.io/clients)
