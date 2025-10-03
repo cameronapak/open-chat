@@ -224,20 +224,6 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
     [modelList, allowedModels]
   );
 
-  // Canonicalize URL: remove trailing slash (except bare '/'), drop hash, keep search
-  function canonicalizeUrl(u: string | null | undefined): string | null {
-    if (!u) return null;
-    try {
-      const parsed = new URL(u);
-      let pathname = parsed.pathname || '';
-      if (pathname !== '/' && pathname.endsWith('/')) {
-        pathname = pathname.slice(0, -1);
-      }
-      return `${parsed.protocol}//${parsed.host}${pathname}${parsed.search || ''}`;
-    } catch {
-      return null;
-    }
-  }
   // Transport configuration
   const transport = useMemo(() => {
     // Canonicalize URL: remove trailing slash (except bare '/'), drop hash, keep search
@@ -501,16 +487,18 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
         );
 
       case 'dynamic-tool':
-        const toolPart = part as DynamicToolUIPart;
-        return (
-          <Tool key={`${message.id}-${index}`}>
-            <ToolHeader title={toolPart.toolName} state={toolPart.state} />
-            <ToolContent>
-              <ToolInput input={toolPart.input} />
-              <ToolOutput errorText={toolPart.errorText} output={toolPart.output} />
-            </ToolContent>
-          </Tool>
-        );
+        {
+          const toolPart = part as DynamicToolUIPart;
+          return (
+            <Tool key={`${message.id}-${index}`}>
+              <ToolHeader title={toolPart.toolName} state={toolPart.state} />
+              <ToolContent>
+                <ToolInput input={toolPart.input} />
+                <ToolOutput errorText={toolPart.errorText} output={toolPart.output} />
+              </ToolContent>
+            </Tool>
+          );
+        }
 
       default:
         return null;

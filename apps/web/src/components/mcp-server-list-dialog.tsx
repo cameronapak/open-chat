@@ -50,8 +50,6 @@ function IntegrationsAccordionList({ servers, onToggleServer, onRemoveServer }: 
   servers: SavedMCPServer[],
   onToggleServer: (serverId: string) => void,
   onRemoveServer: (serverId: string) => void,
-  testingServerIds?: string[],
-  connectedServerIds?: string[],
 }) {
   const [enableWebSearch, setEnableWebSearch] = useAtom(enableOpenRouterWebSearch);
 
@@ -94,6 +92,7 @@ function IntegrationsAccordionList({ servers, onToggleServer, onRemoveServer }: 
               <a
                 href="https://openrouter.ai/docs/features/web-search"
                 target="_blank"
+                rel="noopener noreferrer"
                 className="ml-1 hover:text-primary underline"
               >
                 Learn about pricing
@@ -366,8 +365,6 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
                     prevServers.filter(server => server.id !== serverId)
                   )
                 }
-                testingServerIds={Object.keys(pendingToggleServers)}
-                connectedServerIds={Object.keys(connectedServers)}
               />
             </TabsContent>
             <TabsContent value="custom" className="h-full overflow-y-auto px-3 grid grid-cols-1 gap-4">

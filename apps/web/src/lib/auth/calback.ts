@@ -96,22 +96,22 @@ export async function onMcpAuthorization() {
     // Optionally close even on error, depending on UX preference
     // window.close();
 
-    // Display error in the callback window
-    try {
-      document.body.innerHTML = `
-            <div style="font-family: sans-serif; padding: 20px;">
-            <h1>Authentication Error</h1>
-            <p style="color: red; background-color: #ffebeb; border: 1px solid red; padding: 10px; border-radius: 4px;">
-                ${errorMessage}
-            </p>
-            <p>You can close this window or <a href="#" onclick="window.close(); return false;">click here to close</a>.</p>
-            <pre style="font-size: 0.8em; color: #555; margin-top: 20px; white-space: pre-wrap;">${err instanceof Error ? err.stack : ''
-        }</pre>
-            </div>
-        `
-    } catch (displayError) {
-      console.error(`${logPrefix} Could not display error in callback window:`, displayError)
-    }
+    // // Display error in the callback window
+    // try {
+    //   document.body.innerHTML = `
+    //         <div style="font-family: sans-serif; padding: 20px;">
+    //         <h1>Authentication Error</h1>
+    //         <p style="color: red; background-color: #ffebeb; border: 1px solid red; padding: 10px; border-radius: 4px;">
+    //             ${errorMessage}
+    //         </p>
+    //         <p>You can close this window or <a href="#" onclick="window.close(); return false;">click here to close</a>.</p>
+    //         <pre style="font-size: 0.8em; color: #555; margin-top: 20px; white-space: pre-wrap;">${err instanceof Error ? err.stack : ''
+    //     }</pre>
+    //         </div>
+    //     `
+    // } catch (displayError) {
+    //   console.error(`${logPrefix} Could not display error in callback window:`, displayError)
+    // }
     // Clean up potentially invalid state on error
     if (stateKey) {
       localStorage.removeItem(stateKey)

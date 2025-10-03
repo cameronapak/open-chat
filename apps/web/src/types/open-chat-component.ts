@@ -10,7 +10,7 @@ interface UserProfile {
   /** Optional chat preferences, e.g., as a JSON string. */
   chatPreferences?: string;
   /** Optional URL for user's avatar image. */
-  avatarUrl?: URL;
+  avatarUrl?: string;
 }
 
 /**
@@ -95,7 +95,7 @@ export interface OpenChatComponentProps {
    * URL for the MCP registry (default: 'https://registry.modelcontextprotocol.io').
    * Used to discover and connect MCP servers dynamically.
    */
-  mcpRegistryUrl?: URL;
+  mcpRegistryUrl?: string;
 
   // User Context
   /**

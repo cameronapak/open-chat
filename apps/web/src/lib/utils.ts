@@ -1,5 +1,7 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { parseDomain, fromUrl, ParseResultType } from "parse-domain";
+
 
 export function cn(...inputs: ClassValue[]) {
 	return twMerge(clsx(inputs));
@@ -7,20 +9,22 @@ export function cn(...inputs: ClassValue[]) {
 
 export function getFavicon(url: string) {
 	try {
-		const u = new URL(url)
-		if (!/^https?:$/.test(u.protocol)) return ""
-		let hostname: string = u.hostname
-		if (!hostname) return ""
-		const faviconUrl = new URL("https://www.google.com/s2/favicons")
-		faviconUrl.searchParams.set("sz", "64")
-		// Get only the primary domain NOT subdomain
-		const parts = hostname.split('.')
-		if (parts.length > 2) {
-			hostname = parts.slice(-2).join('.')
+		const parseResult = parseDomain(
+			fromUrl(url),
+		);
+
+		if (parseResult.type === ParseResultType.Invalid) {
+			return ""
 		}
-		// Use full hostname; avoid naive TLD slicing  
-		faviconUrl.searchParams.set("domain", hostname)
-		return faviconUrl.toString()
+
+		if (parseResult.type === ParseResultType.Listed) {
+			const faviconUrl = new URL("https://www.google.com/s2/favicons")
+			faviconUrl.searchParams.set("sz", "64")
+			faviconUrl.searchParams.set("domain", parseResult.domain + "." + parseResult.topLevelDomains.join("."))
+			return faviconUrl.toString()
+		}
+
+		return ""
 	} catch {
 		return ""
 	}
