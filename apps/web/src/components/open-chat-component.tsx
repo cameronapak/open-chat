@@ -111,7 +111,7 @@ function IntegrationAvatarGroup({
 
   if (webSearchEnabled) {
     avatars.push(
-      <Avatar key="open-router-web-search" className="flex items-center justify-center size-6 bg-white shadow-sm">
+      <Avatar key="open-router-web-search" className="flex items-center justify-center size-6 bg-white shadow-sm rounded-sm">
         <Globe className="h-4 w-4 text-muted-foreground" />
         <AvatarGroupTooltip>
           <p>Web Search</p>
@@ -122,7 +122,7 @@ function IntegrationAvatarGroup({
 
   enabledServers?.map((server, index) => {
     avatars.push(
-      <Avatar key={index} className="size-6 bg-white shadow-sm">
+      <Avatar key={index} className="size-6 bg-white shadow-sm rounded-sm">
         <AvatarImage src={getFavicon(server.remotes?.[0].url || "")} />
         <AvatarFallback>{server.name}</AvatarFallback>
         <AvatarGroupTooltip>

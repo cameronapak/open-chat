@@ -12,6 +12,11 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer"
 import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@/components/ui/avatar"
+import {
   Tabs,
   TabsContent,
   TabsList,
@@ -68,9 +73,9 @@ function IntegrationsAccordionList({ servers, onToggleServer, onRemoveServer }: 
           <div
             className="grid w-full grid-cols-[auto_1fr_auto] items-center gap-2"
           >
-            <div className="flex items-center justify-center h-6 w-6 rounded-full bg-white shadow-sm">
+            <Avatar key="open-router-web-search" className="flex items-center justify-center size-6 bg-white shadow-sm rounded-sm">
               <Globe className="h-4 w-4 text-muted-foreground" />
-            </div>
+            </Avatar>
             <div>
               Web Search
             </div>
@@ -110,10 +115,10 @@ function IntegrationsAccordionList({ servers, onToggleServer, onRemoveServer }: 
               <div
                 className="grid w-full grid-cols-[auto_1fr_auto] items-center gap-2"
               >
-                <img
-                  src={favicon}
-                  className="h-6 w-6 rounded-full bg-white shadow-sm"
-                />
+                <Avatar className="size-6 bg-white shadow-sm rounded-sm">
+                  <AvatarImage src={favicon} />
+                  <AvatarFallback>{savedServer.name}</AvatarFallback>
+                </Avatar>
                 <h3>
                   {savedServer.name}
                 </h3>
@@ -211,7 +216,7 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
   const [savedServers, setSavedServers] = useAtom(mcpServersAtom);
   const [, setMcpDetails] = useAtom(mcpServerDetailsAtom);
 
-   // (previously had DOM-bridge lazy-loading state; replaced with React Suspense component)
+  // (previously had DOM-bridge lazy-loading state; replaced with React Suspense component)
 
   // Controlled Tabs so we can switch to "integrations" after success
   const [tab, setTab] = useState<'integrations' | 'custom'>('integrations');
