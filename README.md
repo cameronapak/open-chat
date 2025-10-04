@@ -193,6 +193,29 @@ function ChatWithOpenRouterModels() {
 
 If you already have model data, simply map it into the `ChatModelOption` shape and pass it via the `models` prop.
 
+### Override Transport or Lock a Model with `useChatOptions`
+
+Pass `useChatOptions` when you need full control over the underlying `useChat` hook—custom transports, headers, or a fixed model. When a model is supplied through these options, the dropdown hides automatically so end users cannot switch away.
+
+```tsx
+import { DefaultChatTransport } from "ai";
+
+<OpenChatComponent
+  api="http://localhost:3000/api/chat"
+  useChatOptions={{
+    transport: new DefaultChatTransport({
+      api: "https://proxy.example.com/chat",
+      headers: { Authorization: `Bearer ${token}` },
+      body: { model: "my-provider/small-model" },
+    }),
+  }}
+/>
+```
+
+To hide the selector explicitly, set the model in your transport or supply it in the request body. The UI detects the locked model and removes the picker.
+
+> ⚠️ **Security note:** any headers, API keys, or bearer tokens defined in `useChatOptions` live in the browser. Use short-lived scoped tokens, rotate them frequently, or proxy requests through your own backend if you cannot trust the client environment.
+
 ### Component Props
 
 See the full TypeScript interface in [`apps/web/src/types/open-chat-component.ts`](apps/web/src/types/open-chat-component.ts) for detailed prop documentation.

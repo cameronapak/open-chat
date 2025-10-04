@@ -11,7 +11,6 @@ Guidance for Agents when working with this repository. Keep answers concise, ver
 - Test: No tests configured yet
 - Lint: `oxlint` (root-level linting)
 - Types: `bun check-types` for TypeScript across apps
-- PWA Assets: `cd apps/web && bun generate-pwa-assets`
 
 ## Architecture overview
 Frontend (React + Vite + TanStack Router) communicates with backend (Hono API) for AI chat functionality, integrated with MCP client via forked use-mcp hook for tools/prompts/resources, following ai-sdk standards.
