@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "workspaces": [
-    "apps/*",
+    "examples/*",
     "packages/*"
   ],
   "scripts": {
