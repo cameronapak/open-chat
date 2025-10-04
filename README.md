@@ -216,6 +216,65 @@ To hide the selector explicitly, set the model in your transport or supply it in
 
 > ⚠️ **Security note:** any headers, API keys, or bearer tokens defined in `useChatOptions` live in the browser. Use short-lived scoped tokens, rotate them frequently, or proxy requests through your own backend if you cannot trust the client environment.
 
+[OpenChatComponent](packages/open-chat/src/components/open-chat-component.tsx) no longer runs the OpenRouter OAuth dialog. Do the OAuth handshake yourself (hit `/api/oauth/start`, finish the redirect, stash the bearer wherever you trust it) and feed that token into `useChatOptions.prepareSendMessagesRequest`.
+
+```tsx
+import { useEffect, useMemo, useState } from "react";
+import OpenChatComponent from "@faith-tools/open-chat";
+
+const baseServerUrl = import.meta.env.VITE_SERVER_URL;
+const lockedModel = import.meta.env.VITE_LOCKED_MODEL?.trim();
+
+async function exchangeToken() {
+  const { authUrl } = await fetch(`${baseServerUrl}/api/oauth/start`, {
+    method: "POST",
+    credentials: "include",
+  }).then((res) => res.json());
+
+  if (authUrl) {
+    window.location.href = authUrl; // external redirect flow
+    return null;
+  }
+
+  const { token } = await fetch(`${baseServerUrl}/api/oauth/token`, {
+    credentials: "include",
+  }).then((res) => res.json());
+
+  return token;
+}
+
+export function ChatShell() {
+  const [token, setToken] = useState<string | null>(null);
+
+  useEffect(() => {
+    exchangeToken().then(setToken).catch(console.error);
+  }, []);
+
+  const chatOptions = useMemo(() => {
+    if (!token) return undefined;
+    return {
+      prepareSendMessagesRequest: ({ body }: { body?: Record<string, unknown> }) => ({
+        headers: { Authorization: `Bearer ${token}` },
+        body: {
+          ...(body ?? {}),
+          model: lockedModel ?? body?.model ?? "openai/gpt-5",
+        },
+      }),
+    };
+  }, [token]);
+
+  return (
+    <OpenChatComponent
+      api={`${baseServerUrl}/api/chat`}
+      openRouterModel={lockedModel ?? "openai/gpt-5"}
+      useChatOptions={chatOptions}
+    />
+  );
+}
+```
+
+Use an env var like `VITE_LOCKED_MODEL` to hard clamp the model (same trick as the example app). The published demo in [examples/web/src/routes/index.tsx](examples/web/src/routes/index.tsx) shows wrapping the component so you can bake in defaults—copy that pattern if you want your own opinionated shell.
+
 ### Component Props
 
 See the full TypeScript interface in [`apps/web/src/types/open-chat-component.ts`](apps/web/src/types/open-chat-component.ts) for detailed prop documentation.
