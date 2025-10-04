@@ -38,6 +38,7 @@ export type ModelsResponse = {
 };
 
 const CACHE_KEY = "openrouter_models_v1";
+const makeCacheKey = (base: string) => `${CACHE_KEY}:${base || "default"}`;
 export const MODELS_TTL_MS = 12 * 60 * 60 * 1000; // 12h
 
 type CacheEntry = {
@@ -45,9 +46,10 @@ type CacheEntry = {
   data: ModelsResponse;
 };
 
-function loadCache(): ModelsResponse | null {
+function loadCache(base: string): ModelsResponse | null {
   try {
-    const raw = typeof window !== "undefined" ? localStorage.getItem(CACHE_KEY) : null;
+    const raw =
+      typeof window !== "undefined" ? localStorage.getItem(makeCacheKey(base)) : null;
     if (!raw) return null;
     const parsed = JSON.parse(raw) as CacheEntry;
     if (Date.now() - parsed.ts < MODELS_TTL_MS && parsed.data?.data) {
@@ -59,24 +61,45 @@ function loadCache(): ModelsResponse | null {
   }
 }
 
-function saveCache(data: ModelsResponse) {
+function saveCache(base: string, data: ModelsResponse) {
   try {
     if (typeof window !== "undefined") {
       const entry: CacheEntry = { ts: Date.now(), data };
-      localStorage.setItem(CACHE_KEY, JSON.stringify(entry));
+      localStorage.setItem(makeCacheKey(base), JSON.stringify(entry));
     }
   } catch {
     // ignore cache write errors
   }
 }
 
-export async function fetchModels(baseUrl = import.meta.env.VITE_SERVER_URL as string): Promise<OpenRouterModel[]> {
-  const cached = loadCache();
+const resolveGlobalServerUrl = (): string | undefined => {
+  if (typeof globalThis !== "undefined") {
+    const globalValue =
+      (globalThis as Record<string, unknown>)["OPEN_CHAT_SERVER_URL"] ??
+      (globalThis as Record<string, unknown>)["OPEN_CHAT_API"] ??
+      (globalThis as Record<string, unknown>)["VITE_SERVER_URL"];
+    if (typeof globalValue === "string") return globalValue;
+  }
+  if (typeof process !== "undefined" && process.env?.VITE_SERVER_URL) {
+    return process.env.VITE_SERVER_URL;
+  }
+  return undefined;
+};
+
+const normalizeBaseUrl = (base?: string): string => {
+  if (!base) return "";
+  return base.replace(/\/$/, "");
+};
+
+export async function fetchModels(baseUrl?: string): Promise<OpenRouterModel[]> {
+  const resolvedBaseUrl = normalizeBaseUrl(baseUrl ?? resolveGlobalServerUrl());
+  const cacheKeyBase = resolvedBaseUrl;
+  const cached = loadCache(cacheKeyBase);
   if (cached) {
     return cached.data;
   }
 
-  const url = `${(baseUrl ?? "").replace(/\/$/, "")}/api/models`;
+  const url = `${resolvedBaseUrl}/api/models`;
   const resp = await fetch(url, {
     credentials: "include",
     headers: {
@@ -102,14 +125,14 @@ export async function fetchModels(baseUrl = import.meta.env.VITE_SERVER_URL as s
     throw new Error("Invalid models response");
   }
 
-  saveCache(json);
+  saveCache(cacheKeyBase, json);
   return json.data;
 }
 
-export function useOpenRouterModels() {
+export function useOpenRouterModels(baseUrl?: string) {
   return useQuery({
     queryKey: ["openrouter", "models"],
-    queryFn: () => fetchModels(),
+    queryFn: () => fetchModels(baseUrl),
     staleTime: MODELS_TTL_MS,
     gcTime: MODELS_TTL_MS * 2,
     retry: 1,
