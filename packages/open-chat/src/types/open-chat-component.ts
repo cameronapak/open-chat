@@ -24,6 +24,25 @@ interface ToolsConfig {
   mcpServers?: UseMcpOptions[];
 }
 
+export type Resolvable<T> = T | (() => T | Promise<T>);
+
+export type ResolvableRecord = Resolvable<Record<string, string> | Headers>;
+
+export interface EndpointConfig {
+  /** Base URL for the target AI endpoint (e.g. OpenAI-compatible gateway). */
+  baseUrl: string;
+  /** Model identifier understood by the target endpoint. */
+  model: string;
+  /** Optional provider identifier used when creating custom providers. */
+  providerId?: string;
+  /** Optional API key helper. If provided, the Authorization header will be managed automatically. */
+  apiKey?: Resolvable<string | undefined>;
+  /** Optional static or lazy headers appended to each request. */
+  headers?: ResolvableRecord;
+  /** Optional query string parameters appended to each request. */
+  query?: Record<string, string>;
+}
+
 /**
  * Definition for externally provided model options.
  */
@@ -62,6 +81,11 @@ export interface ChatModelOption {
  */
 export interface OpenChatComponentProps {
   // AI/Backend Configuration
+  /**
+   * Optional endpoint configuration for bypassing the bundled OpenRouter proxy.
+   * When provided, the component will talk directly to the specified endpoint using client-side transports.
+   */
+  endpointConfig?: EndpointConfig;
   /**
    * OpenRouter model ID to use for the chat (default: project default model).
    * Example: 'openai/gpt-5' or 'anthropic/claude-3.5-sonnet'.
