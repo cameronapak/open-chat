@@ -213,7 +213,7 @@ function McpConnectionTester({
 
 export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogProps) {
   const [savedServers, setSavedServers] = useAtom(mcpServersAtom);
-  const [, setMcpDetails] = useAtom(mcpServerDetailsAtom);
+  const [, _setMcpDetails] = useAtom(mcpServerDetailsAtom);
 
   // (previously had DOM-bridge lazy-loading state; replaced with React Suspense component)
 
@@ -227,7 +227,7 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
   // Optimistic enable testing: track multiple servers being tested concurrently
   const [pendingToggleServers, setPendingToggleServers] = useState<Record<string, SavedMCPServer>>({});
   // Track connected servers info: store serverInfo when available
-  const [connectedServers, setConnectedServers] = useState<Record<string, { name?: string; version?: string } | true>>({});
+  const [, setConnectedServers] = useState<Record<string, { name?: string; version?: string } | true>>({});
   const formRef = useRef<HTMLFormElement | null>(null);
   // Auth inputs for "Custom" form
   const [apiKeyInput, setApiKeyInput] = useState<string>('');

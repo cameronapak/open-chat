@@ -14,7 +14,6 @@ import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import { decrypt } from '@/lib/crypto';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
-import { randomUUID } from 'node:crypto';
 
 interface MCPServerConfig {
   id: string

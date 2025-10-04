@@ -82,23 +82,6 @@ import { loadApiKey } from '@/lib/keystore';
 
 const formatter = new Intl.NumberFormat("en-US");
 
-interface MCPServerConfig {
-  id: string;
-  name: string;
-  url: string;
-  enabled: boolean;
-}
-
-interface UIResource {
-  type: 'resource';
-  resource: {
-    uri: string;
-    mimeType: 'text/html' | 'text/uri-list' | 'application/vnd.mcp-ui.remote-dom';
-    text?: string;
-    blob?: string;
-  };
-}
-
 // Internal avatar group component
 function IntegrationAvatarGroup({
   enabledServers,
@@ -153,7 +136,7 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
     placeholder = 'Ask OpenChat...',
     className = 'max-w-md mx-auto w-full p-6 relative max-h-dvh',
     height = '100%',
-    tools = { enabled: true },
+    // tools = { enabled: true },
     // mcpRegistryUrl,
     // userProfile,
     onNewMessage,

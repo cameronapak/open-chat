@@ -64,7 +64,7 @@ async function fetchMcpDetails(url: string): Promise<MCPDetails> {
     try {
       // @ts-ignore
       client.handleMessage?.(message)
-    } catch (e) {
+    } catch {
       // ignore
     }
   }
@@ -87,7 +87,7 @@ async function fetchMcpDetails(url: string): Promise<MCPDetails> {
 
     try {
       await transport.close()
-    } catch (e) {
+    } catch {
       // ignore
     }
 
@@ -133,7 +133,7 @@ async function fetchMcpDetails(url: string): Promise<MCPDetails> {
 
     try {
       await transport.close()
-    } catch (e) {
+    } catch {
       // ignore
     }
 

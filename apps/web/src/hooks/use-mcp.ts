@@ -22,7 +22,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { SSEClientTransport, type SSEClientTransportOptions } from '@modelcontextprotocol/sdk/client/sse.js'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
-import { auth, UnauthorizedError, type OAuthClientProvider } from '@modelcontextprotocol/sdk/client/auth.js'
+import { auth, UnauthorizedError } from '@modelcontextprotocol/sdk/client/auth.js'
 import { sanitizeUrl } from 'strict-url-sanitise'
 import { BrowserOAuthClientProvider } from '@/lib/auth/browser-provider'
 import type { UseMcpOptions, UseMcpResult } from './use-mcp.types'
@@ -59,7 +59,6 @@ export function useMcp(options: UseMcpOptions): UseMcpResult {
     storageKeyPrefix = 'mcp:auth',
     clientConfig = {},
     customHeaders = {},
-    debug = false,
     autoRetry = false,
     autoReconnect = DEFAULT_RECONNECT_DELAY,
     transportType = 'auto',
@@ -342,7 +341,7 @@ export function useMcp(options: UseMcpOptions): UseMcpResult {
         addLog('debug', `About to call client.connect() with transport instance`)
         addLog('debug', `Transport instance type: ${transportInstance.constructor.name}`)
 
-        const initializeResponse = await clientRef.current!.connect(transportInstance)
+        const _initializeResponse = await clientRef.current!.connect(transportInstance)
 
         // --- Success Path ---
         addLog('info', `Client connected via ${transportType.toUpperCase()}. Loading tools, resources, and prompts...`)
