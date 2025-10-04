@@ -1,8 +1,10 @@
 'use client';
+import { useMemo } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import OpenChatComponent, {
   useOpenRouterModelOptions,
 } from '@faith-tools/open-chat';
+import type { UIMessage, UseChatOptions } from "@ai-sdk/react";
 import "@faith-tools/open-chat/styles.css";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
@@ -18,21 +20,45 @@ const WrappedChatbotDemo = () => {
 
 const ChatBotDemo = () => {
   const baseServerUrl = import.meta.env.VITE_SERVER_URL;
-  const { data: modelOptions, isLoading, error } = useOpenRouterModelOptions(baseServerUrl);
-
-  const modelsError = error ? (error instanceof Error ? error.message : String(error)) : undefined;
+  const lockedModelEnv = import.meta.env.VITE_LOCKED_MODEL;
+  const lockedModel = typeof lockedModelEnv === "string" ? lockedModelEnv.trim() : undefined;
+  const lockedChatOptions = useMemo(() => {
+    if (!lockedModel) return undefined;
+    return {
+      prepareSendMessagesRequest: ({ body }: { body?: Record<string, unknown> }) => ({
+        body: {
+          ...(body ?? {}),
+          model: lockedModel,
+        },
+      }),
+    };
+  }, [lockedModel]) as UseChatOptions<UIMessage> | undefined;
+  const shouldFetchModels = !lockedModel;
+  const modelsQuery = shouldFetchModels ? useOpenRouterModelOptions(baseServerUrl) : undefined;
+  const modelsErrorValue = modelsQuery?.error;
+  const modelsError = modelsErrorValue
+    ? modelsErrorValue instanceof Error
+      ? modelsErrorValue.message
+      : String(modelsErrorValue)
+    : undefined;
+  const fetchProps = shouldFetchModels
+    ? {
+        models: modelsQuery?.data,
+        modelsLoading: Boolean(modelsQuery?.isLoading),
+        modelsError,
+      }
+    : {};
 
   return (
     <section className="grid grid-cols-1 h-dvh">
       <OpenChatComponent
-        openRouterModel="openai/gpt-5"
+        openRouterModel={lockedModel ?? "openai/gpt-5"}
         api={import.meta.env.VITE_SERVER_URL + '/api/chat'}
         requireAuth={true}
         placeholder="Ask OpenChat..."
         onNewMessage={undefined}
-        models={modelOptions}
-        modelsLoading={isLoading}
-        modelsError={modelsError}
+        useChatOptions={lockedChatOptions}
+        {...fetchProps}
       />
     </section>
   );
