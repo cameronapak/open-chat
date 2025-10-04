@@ -10,7 +10,7 @@
     "start": "node dist/index.js"
   },
   "dependencies": {
-    "mcp-registry-spec-sdk": "^0.1.1",
+    "mcp-registry-spec-sdk": "^0.1.2",
     "@ai-sdk/openai": "^2.0.32",
     "@hono/node-server": "^1.14.4",
     "@hono/zod-validator": "^0.7.3",

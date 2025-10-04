@@ -20,7 +20,7 @@
         "arktype": "^2.1.22",
         "dotenv": "^17.2.1",
         "hono": "^4.8.2",
-        "mcp-registry-spec-sdk": "^0.1.1",
+        "mcp-registry-spec-sdk": "^0.1.2",
         "zod": "^4.1.11",
       },
       "devDependencies": {
@@ -1553,7 +1553,7 @@
 
     "math-intrinsics": ["math-intrinsics@1.1.0", "", {}, "sha512-/IXtbwEk5HTPyEwyKX6hGkYXxM9nbj64B+ilVJnC/R6B0pH5G4V3b0pVbL7DBj4tkhBAppbQUlf6F6Xl9LHu1g=="],
 
-    "mcp-registry-spec-sdk": ["mcp-registry-spec-sdk@0.1.1", "", { "dependencies": { "zod": "^3.23.8" } }, "sha512-lctcRXP7YwaBnwoJkhH/G+Zc7WrnfSOIBrakM6HaSGn533uCuIB1oISbrEjZtqZoGkAPCKDQNQTfir/z+xYSUA=="],
+    "mcp-registry-spec-sdk": ["mcp-registry-spec-sdk@0.1.2", "", { "dependencies": { "zod": "^3.23.8" } }, "sha512-liTb7RMsRAKfBxpEhajJvouf1ih8GbJZSur07xaP2Tg6rgcVWPj2UULyxdHrZbpN0vpWwcNvoQpRToAX0fgu+Q=="],
 
     "mdast-util-find-and-replace": ["mdast-util-find-and-replace@3.0.2", "", { "dependencies": { "@types/mdast": "^4.0.0", "escape-string-regexp": "^5.0.0", "unist-util-is": "^6.0.0", "unist-util-visit-parents": "^6.0.0" } }, "sha512-Tmd1Vg/m3Xz43afeNxDIhWRtFZgM2VLyaf4vSTYwudTyeuTneoL3qtWMA5jeLyz/O1vDJmmV4QuScFCA2tBPwg=="],
 
