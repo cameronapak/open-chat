@@ -217,6 +217,7 @@ Key props include:
 - [ ] Personality Profile (tailor LLM to your preferences)
 - [ ] Web component chatbot export
 - [ ] Make it onto [the official MCP Clients list](https://modelcontextprotocol.io/clients)
+- [ ] Make `dialogAsDrawer: boolean` prop for apps that don't want a drawer and would just benefit from a dialog popup for the connectors panel.
 
 ## Getting Started
 
