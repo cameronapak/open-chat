@@ -11,11 +11,11 @@
     "allowSyntheticDefaultImports": true,
     "rootDirs": [
       "./src",
-      "../../apps/web/src"
+      "../../examples/web/src"
     ],
     "baseUrl": ".",
     "paths": {
-      "@/*": ["../../apps/web/src/*"]
+      "@/*": ["../../examples/web/src/*"]
     },
     "outDir": "./dist",
     "declaration": true,
@@ -24,6 +24,6 @@
   },
   "include": [
     "src",
-    "../../apps/web/src"
+    "../../examples/web/src"
   ]
 }
