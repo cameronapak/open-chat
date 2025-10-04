@@ -143,4 +143,8 @@ export interface OpenChatComponentProps {
    * that will be rendered. If it returns null, the default rendering will be used.
    */
   renderMessage?: (message: UIMessage, part: any, index: number) => React.ReactNode | null;
+  controlledModels?: string[];
+  controlledModelsLoading?: boolean;
+  controlledModelsError?: Error;
+  onModelChange?: (model: string) => void;
 }

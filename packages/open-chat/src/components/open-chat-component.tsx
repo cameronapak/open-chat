@@ -56,7 +56,7 @@ import {
 } from './ui/dialog';
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 import { MCPServerListDialog } from './mcp-server-list-dialog';
-import { useOpenRouterModels, type OpenRouterModel } from '../lib/openrouter.models';
+import { type OpenRouterModel } from '../lib/openrouter.models';
 import { type SavedMCPServer } from '../lib/mcp-storage';
 import { getFavicon } from '../lib/utils';
 import { enableOpenRouterWebSearch, enabledMcpServersAtom, modelAtom } from '../lib/atoms';
@@ -144,6 +144,10 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
     theme = 'light',
     requireAuth = false,
     allowedModels = [],
+    controlledModels,
+    controlledModelsLoading,
+    controlledModelsError,
+    onModelChange,
   } = props;
 
   const [connected, setConnected] = useState<boolean>(false);
@@ -154,6 +158,11 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
   const [error, setError] = useState<string | null>(null);
   const [modelMenuOpen, setModelMenuOpen] = useState(false);
   const enabledServers = useAtomValue(enabledMcpServersAtom);
+
+  const isModelsControlled = controlledModels !== undefined;
+  const [internalModels, setInternalModels] = useState<OpenRouterModel[]>(managedModels ?? []);
+  const [internalModelsLoading, setInternalModelsLoading] = useState<boolean>(false);
+  const [internalModelsError, setInternalModelsError] = useState<string | null>(null);
 
   const enabledServersRef = useRef<SavedMCPServer[]>(enabledServers);
   useEffect(() => {
@@ -191,13 +200,98 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
     checkStatus();
   }, [requireAuth, api]);
 
-  const { data: modelList, isLoading: modelsLoading, isError: modelsError } = useOpenRouterModels();
+  useEffect(() => {
+    if (isModelsControlled) {
+      setInternalModels(controlledModels ?? []);
+      setInternalModelsLoading(false);
+      setInternalModelsError(null);
+      return;
+    }
+
+    let cancelled = false;
+
+    const loadModels = async () => {
+      setInternalModelsLoading(true);
+      setInternalModelsError(null);
+      try {
+        const baseUrl = api.replace('/api/chat', '');
+        const response = await fetch(`${baseUrl}/api/models`, {
+          credentials: 'include',
+          headers: { accept: 'application/json' },
+        });
+        const text = await response.text();
+        let parsed: any = {};
+        try {
+          parsed = text ? JSON.parse(text) : {};
+        } catch {
+          parsed = {};
+        }
+        if (!response.ok) {
+          const message = parsed?.error || parsed?.message || 'Failed to fetch models';
+          throw new Error(message);
+        }
+        const modelsData: OpenRouterModel[] = Array.isArray(parsed?.data) ? parsed.data : [];
+        if (!cancelled) {
+          setInternalModels(modelsData);
+        }
+      } catch (err: any) {
+        if (!cancelled) {
+          setInternalModelsError(err?.message || 'Failed to fetch models');
+          setInternalModels([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setInternalModelsLoading(false);
+        }
+      }
+    };
+
+    loadModels();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isModelsControlled, controlledModels, api]);
+
+  const resolvedModels = isModelsControlled ? controlledModels ?? [] : internalModels;
+  const modelsLoading =
+    controlledModelsLoading ?? (isModelsControlled ? false : internalModelsLoading);
+  const modelsErrorMessage =
+    controlledModelsError ?? (isModelsControlled ? null : internalModelsError);
+  const modelsError = Boolean(modelsErrorMessage);
+
   const modelOptions = useMemo<OpenRouterModel[]>(
     () =>
-      (modelList || [])
+      (resolvedModels || [])
         .filter((m) => !allowedModels.length || allowedModels.includes(m.id))
         .sort((a, b) => a.name.localeCompare(b.name)),
-    [modelList, allowedModels],
+    [resolvedModels, allowedModels],
+  );
+
+  useEffect(() => {
+    if (!modelOptions.length) {
+      if (model) {
+        setModel('');
+        onModelChange?.('');
+      }
+      return;
+    }
+    if (modelOptions.some((m) => m.id === model)) {
+      return;
+    }
+    const nextModel = modelOptions[0]?.id;
+    if (nextModel) {
+      setModel(nextModel);
+      onModelChange?.(nextModel);
+    }
+  }, [modelOptions, model, setModel, onModelChange]);
+
+  const handleModelSelect = useCallback(
+    (value: string) => {
+      setModel(value);
+      onModelChange?.(value);
+    },
+    [setModel, onModelChange],
   );
 
   const transport = useMemo(() => {
@@ -501,7 +595,7 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
             <div className="space-y-4">
               {connected ? (
                 <PromptInputModelSelect
-                  onValueChange={setModel}
+                  onValueChange={handleModelSelect}
                   value={model}
                   disabled={!connected || modelsLoading || modelsError}
                   open={modelMenuOpen}
@@ -512,38 +606,51 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
                   </PromptInputModelSelectTrigger>
                   {modelMenuOpen ? (
                     <PromptInputModelSelectContent>
-                      {modelOptions.map((m) =>
-                        m.id === model ? (
-                          <PromptInputModelSelectItem key={m.id} value={m.id}>
-                            {m.name}
-                          </PromptInputModelSelectItem>
-                        ) : (
-                          <PromptInputModelSelectItem key={m.id} value={m.id}>
-                            <div className="flex-1 grid grid-cols gap-1">
-                              <p className="w-full">{m.name}</p>
-                              {m.context_length ? (
-                                <p className="text-xs text-muted-foreground font-mono">
-                                  {formatter.format(m.context_length)} context
-                                </p>
-                              ) : null}
-                              {m.pricing?.completion ? (
-                                <p className="text-xs text-muted-foreground font-mono">
-                                  {`$${m.pricing?.completion || '0.00'}`}
-                                </p>
-                              ) : null}
-                            </div>
-                          </PromptInputModelSelectItem>
-                        ),
+                      {modelOptions.length ? (
+                        modelOptions.map((m) =>
+                          m.id === model ? (
+                            <PromptInputModelSelectItem key={m.id} value={m.id}>
+                              {m.name}
+                            </PromptInputModelSelectItem>
+                          ) : (
+                            <PromptInputModelSelectItem key={m.id} value={m.id}>
+                              <div className="flex-1 grid grid-cols gap-1">
+                                <p className="w-full">{m.name}</p>
+                                {m.context_length ? (
+                                  <p className="text-xs text-muted-foreground font-mono">
+                                    {formatter.format(m.context_length)} context
+                                  </p>
+                                ) : null}
+                                {m.pricing?.completion ? (
+                                  <p className="text-xs text-muted-foreground font-mono">
+                                    {`$${m.pricing?.completion || '0.00'}`}
+                                  </p>
+                                ) : null}
+                              </div>
+                            </PromptInputModelSelectItem>
+                          ),
+                        )
+                      ) : (
+                        <PromptInputModelSelectItem value="no-models" disabled>
+                          {modelsLoading ? 'Loading models...' : 'No models available'}
+                        </PromptInputModelSelectItem>
                       )}
                     </PromptInputModelSelectContent>
                   ) : (
                     <PromptInputModelSelectContent>
-                      <PromptInputModelSelectItem key={model} value={model}>
-                        {modelOptions.find((m) => m.id === model)?.name}
-                      </PromptInputModelSelectItem>
+                      {modelOptions.length ? (
+                        <PromptInputModelSelectItem key={model} value={model}>
+                          {modelOptions.find((m) => m.id === model)?.name}
+                        </PromptInputModelSelectItem>
+                      ) : (
+                        <PromptInputModelSelectItem value="no-models" disabled>
+                          {modelsLoading ? 'Loading models...' : 'No models available'}
+                        </PromptInputModelSelectItem>
+                      )}
                     </PromptInputModelSelectContent>
                   )}
                 </PromptInputModelSelect>
+                {modelsErrorMessage ? <p className="text-xs text-destructive">{modelsErrorMessage}</p> : null}
               ) : (
                 <Button onClick={handleConnect} className="w-full">
                   <ExternalLink className="mr-2 h-4 w-4" />
