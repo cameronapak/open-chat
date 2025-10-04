@@ -78,6 +78,79 @@ import { TooltipProvider } from './ui/tooltip';
 import { sanitizeUrl } from 'strict-url-sanitise';
 import { loadApiKey } from '../lib/keystore';
 
+type ChatOptions = Parameters<typeof useChat>[0];
+
+const mergeUseChatOptions = (
+  defaults: ChatOptions,
+  overrides?: ChatOptions,
+): ChatOptions => {
+  if (!overrides) return defaults;
+
+  const base = { ...defaults } as Record<string, any>;
+  const extra = overrides as Record<string, any>;
+
+  const composePrepare = (first?: any, second?: any) => {
+    if (typeof first !== 'function') return second ?? first;
+    if (typeof second !== 'function') return first;
+
+    return async (args: any) => {
+      const firstResult = await first(args);
+      const secondResult = await second(args);
+      const mergedResult: Record<string, any> = {
+        ...(firstResult ?? {}),
+        ...(secondResult ?? {}),
+      };
+
+      if (firstResult?.headers || secondResult?.headers) {
+        mergedResult.headers = {
+          ...(firstResult?.headers ?? {}),
+          ...(secondResult?.headers ?? {}),
+        };
+      }
+
+      if (firstResult?.body || secondResult?.body) {
+        mergedResult.body = {
+          ...(firstResult?.body ?? {}),
+          ...(secondResult?.body ?? {}),
+        };
+      }
+
+      return mergedResult;
+    };
+  };
+
+  base.prepareSendMessagesRequest = composePrepare(
+    base.prepareSendMessagesRequest,
+    extra.prepareSendMessagesRequest,
+  );
+
+  if (
+    extra.prepareReconnectToStreamRequest !== undefined ||
+    base.prepareReconnectToStreamRequest !== undefined
+  ) {
+    base.prepareReconnectToStreamRequest = composePrepare(
+      base.prepareReconnectToStreamRequest,
+      extra.prepareReconnectToStreamRequest,
+    );
+  }
+
+  Object.keys(extra).forEach((key) => {
+    if (
+      key === 'prepareSendMessagesRequest' ||
+      key === 'prepareReconnectToStreamRequest'
+    ) {
+      return;
+    }
+
+    const value = extra[key];
+    if (value !== undefined) {
+      base[key] = value;
+    }
+  });
+
+  return base as ChatOptions;
+};
+
 const formatter = new Intl.NumberFormat('en-US');
 const costFormatter = new Intl.NumberFormat('en-US', {
   style: 'currency',
@@ -153,6 +226,7 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
     modelsLoading = false,
     modelsError,
     onModelChange,
+    useChatOptions,
   } = props;
 
   const [connected, setConnected] = useState<boolean>(false);
@@ -367,10 +441,25 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
     });
   }, [api, systemPrompt, threadId]);
 
-  const { messages: rawMessages, sendMessage, stop, status: rawStatus } = useChat({
-    transport,
-    messages: initialMessages,
-  });
+  const defaultChatOptions = useMemo<ChatOptions>(() => {
+    const base: Record<string, any> = {
+      transport,
+    };
+
+    if (threadId) {
+      base.id = threadId;
+    }
+
+    return base as ChatOptions;
+  }, [transport, initialMessages, threadId]);
+
+  const mergedChatOptions = useMemo(
+    () => mergeUseChatOptions(defaultChatOptions, useChatOptions),
+    [defaultChatOptions, useChatOptions],
+  );
+
+  const { messages: rawMessages, sendMessage, stop, status: rawStatus } =
+    useChat(mergedChatOptions);
 
   const status = rawStatus;
 
@@ -389,7 +478,7 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
       }
 
       const hasText = Boolean(message.text);
-      const hasAttachments = Boolean(message.files?.length);
+      const hasAttachments = Boolean(message.files?.length)
 
       if (!(hasText || hasAttachments)) return;
 

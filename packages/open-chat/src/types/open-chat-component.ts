@@ -1,5 +1,5 @@
 import '@fontsource-variable/geist';
-import { type UIMessage } from '@ai-sdk/react';
+import { type UIMessage, type UseChatOptions } from '@ai-sdk/react';
 import type { UseMcpOptions } from '../hooks/use-mcp.types';
 
 /**
@@ -95,6 +95,11 @@ export interface OpenChatComponentProps {
    * API endpoint for AI SDK-compatible LLM chat requests
    */
   api: string;
+  /**
+   * Additional configuration to pass directly into the underlying useChat hook.
+   * Defaults are merged first so OpenChat behaviour (transport, MCP wiring) stays intact.
+   */
+  useChatOptions?: UseChatOptions<UIMessage>;
   /**
    * Initial system prompt to set conversation context.
    * Sent as the first message in the thread.
