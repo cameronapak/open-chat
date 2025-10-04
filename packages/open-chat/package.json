@@ -11,13 +11,19 @@
       "import": "./dist/index.js",
       "types": "./dist/index.d.ts"
     },
-    "./styles.css": "./dist/styles.css"
+    "./styles.css": "./dist/tailwind.css"
   },
+  "style": "./dist/tailwind.css",
+  "sideEffects": [
+    "*.css"
+  ],
   "files": [
     "dist"
   ],
   "scripts": {
-    "build": "tsup src/index.ts --format esm --dts --sourcemap --clean --out-dir dist",
+    "build:css": "tailwindcss -i src/index.css -o dist/tailwind.css --minify",
+    "build:ts": "tsup src/index.ts --format esm --dts --sourcemap --clean --out-dir dist",
+    "build": "bun run build:ts && bun run build:css",
     "check-types": "tsc --project tsconfig.json --noEmit",
     "prepublishOnly": "bun run build"
   },
@@ -73,7 +79,9 @@
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
     "tsup": "^8.3.0",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "tailwindcss": "^4",
+    "@tailwindcss/cli": "^4.1.13"
   },
   "license": "MIT",
   "repository": {

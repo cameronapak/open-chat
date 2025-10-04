@@ -1,6 +1,7 @@
 'use client';
 import { createFileRoute } from "@tanstack/react-router";
 import OpenChatComponent from '@faith-tools/open-chat';
+import "@faith-tools/open-chat/styles.css";
 
 const ChatBotDemo = () => {
   return (
