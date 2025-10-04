@@ -65,32 +65,44 @@ const propTypes = {
 } as const
 
 const eventOptions = {
-  onNewMessage: { bubbles: true, composed: true, event: 'openchat:newmessage' },
-  onSend: { bubbles: true, composed: true, event: 'openchat:send' },
-  onError: { bubbles: true, composed: true, event: 'openchat:error' },
+  onNewMessage: { bubbles: true, composed: true },
+  onSend: { bubbles: true, composed: true },
+  onError: { bubbles: true, composed: true },
 } as const
 
-const OpenChatElement = r2wc(WebComponentAdapter, {
-  props: propTypes,
-  events: eventOptions,
-})
+type CreateOpenChatElementOptions = {
+  shadow?: ShadowRootMode
+}
+
+const createOpenChatElement = ({ shadow }: CreateOpenChatElementOptions = {}) =>
+  r2wc(WebComponentAdapter, {
+    props: propTypes,
+    events: eventOptions,
+    shadow,
+  })
+
+const OpenChatElement = createOpenChatElement()
 
 export interface DefineOpenChatElementOptions {
   tagName?: string
+  shadow?: ShadowRootMode
 }
 
 export const defineOpenChatElement = ({
-  tagName = 'open-chat'
+  tagName = 'open-chat',
+  shadow,
 }: DefineOpenChatElementOptions = {}) => {
+  const Element = shadow ? createOpenChatElement({ shadow }) : OpenChatElement
+
   if (typeof window === 'undefined' || typeof customElements === 'undefined') {
-    return OpenChatElement
+    return Element
   }
 
   if (!customElements.get(tagName)) {
-    customElements.define(tagName, OpenChatElement)
+    customElements.define(tagName, Element)
   }
 
-  return OpenChatElement
+  return Element
 }
 
 export default OpenChatElement
