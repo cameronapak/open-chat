@@ -4,8 +4,6 @@ import OpenChatComponent from './components/open-chat-component'
 import type { OpenChatComponentProps } from './types/open-chat-component'
 import { createElement } from 'react'
 
-type MaybeString = string | undefined | null
-
 const NUMERIC_STRING_REGEX = /^\d+$/
 
 const normalizeHeight = (height: OpenChatComponentProps['height']): OpenChatComponentProps['height'] => {

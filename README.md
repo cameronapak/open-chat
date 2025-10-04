@@ -166,6 +166,33 @@ function AdvancedChat() {
 }
 ```
 
+### Supplying Models Externally
+
+Model selection is now fully controlled by the parent. Fetch any list of models (for example, from OpenRouter) and pass it into the component:
+
+```tsx
+import OpenChatComponent, {
+  useOpenRouterModelOptions,
+} from "@faith-tools/open-chat";
+
+function ChatWithOpenRouterModels() {
+  const baseServerUrl = import.meta.env.VITE_SERVER_URL;
+  const { data: models, isLoading, error } = useOpenRouterModelOptions(baseServerUrl);
+
+  return (
+    <OpenChatComponent
+      api={`${baseServerUrl}/api/chat`}
+      requireAuth
+      models={models}
+      modelsLoading={isLoading}
+      modelsError={error ? (error instanceof Error ? error.message : String(error)) : undefined}
+    />
+  );
+}
+```
+
+If you already have model data, simply map it into the `ChatModelOption` shape and pass it via the `models` prop.
+
 ### Component Props
 
 See the full TypeScript interface in [`apps/web/src/types/open-chat-component.ts`](apps/web/src/types/open-chat-component.ts) for detailed prop documentation.

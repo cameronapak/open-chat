@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { type ChatModelOption } from "../types/open-chat-component";
 
 export type OpenRouterModel = {
   id: string;
@@ -70,20 +71,6 @@ function saveCache(base: string, data: ModelsResponse) {
   } catch {
     // ignore cache write errors
   }
-}
-
-const resolveGlobalServerUrl = (): string | undefined => {
-  if (typeof globalThis !== "undefined") {
-    const globalValue =
-      (globalThis as Record<string, unknown>)["OPEN_CHAT_SERVER_URL"] ??
-      (globalThis as Record<string, unknown>)["OPEN_CHAT_API"] ??
-      (globalThis as Record<string, unknown>)["VITE_SERVER_URL"];
-    if (typeof globalValue === "string") return globalValue;
-  }
-  if (typeof process !== "undefined" && process.env?.VITE_SERVER_URL) {
-    return process.env.VITE_SERVER_URL;
-  }
-  return undefined;
 };
 
 const normalizeBaseUrl = (base?: string): string => {
@@ -91,8 +78,8 @@ const normalizeBaseUrl = (base?: string): string => {
   return base.replace(/\/$/, "");
 };
 
-export async function fetchModels(baseUrl?: string): Promise<OpenRouterModel[]> {
-  const resolvedBaseUrl = normalizeBaseUrl(baseUrl ?? resolveGlobalServerUrl());
+export async function fetchModels(baseUrl: string): Promise<OpenRouterModel[]> {
+  const resolvedBaseUrl = normalizeBaseUrl(baseUrl);
   const cacheKeyBase = resolvedBaseUrl;
   const cached = loadCache(cacheKeyBase);
   if (cached) {
@@ -129,10 +116,50 @@ export async function fetchModels(baseUrl?: string): Promise<OpenRouterModel[]> 
   return json.data;
 }
 
-export function useOpenRouterModels(baseUrl?: string) {
+export function useOpenRouterModels(baseUrl: string) {
   return useQuery({
     queryKey: ["openrouter", "models"],
     queryFn: () => fetchModels(baseUrl),
+    staleTime: MODELS_TTL_MS,
+    gcTime: MODELS_TTL_MS * 2,
+    retry: 1,
+  });
+}
+
+const parsePrice = (value?: string | null): number | undefined => {
+  if (!value) return undefined;
+  const parsed = Number.parseFloat(value);
+  return Number.isNaN(parsed) ? undefined : parsed;
+};
+
+export function mapOpenRouterModelToChatOption(model: OpenRouterModel): ChatModelOption {
+  return {
+    id: model.id,
+    label: model.name ?? model.id,
+    description: model.description,
+    contextLength: model.context_length ?? model.top_provider?.context_length,
+    promptCostPerToken: parsePrice(
+      model.pricing?.prompt ??
+        model.pricing?.request ??
+        model.pricing?.web_search ??
+        undefined,
+    ),
+    completionCostPerToken: parsePrice(model.pricing?.completion ?? model.pricing?.web_search ?? undefined),
+    metadata: {
+      raw: model,
+    },
+  };
+}
+
+export async function fetchOpenRouterModelOptions(baseUrl: string): Promise<ChatModelOption[]> {
+  const modelsList = await fetchModels(baseUrl);
+  return modelsList.map(mapOpenRouterModelToChatOption);
+}
+
+export function useOpenRouterModelOptions(baseUrl: string) {
+  return useQuery({
+    queryKey: ["openrouter", "model-options"],
+    queryFn: () => fetchOpenRouterModelOptions(baseUrl),
     staleTime: MODELS_TTL_MS,
     gcTime: MODELS_TTL_MS * 2,
     retry: 1,

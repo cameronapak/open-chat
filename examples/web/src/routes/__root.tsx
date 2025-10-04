@@ -8,9 +8,6 @@ import {
 	useRouterState,
 } from "@tanstack/react-router";
 import "../index.css";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-
-const queryClient = new QueryClient();
 
 export interface RouterAppContext {}
 
@@ -41,23 +38,21 @@ function RootComponent() {
 	});
 
 	return (
-		<QueryClientProvider client={queryClient}>
-			<>
-				<HeadContent />
-				<ThemeProvider
-					attribute="class"
-					defaultTheme="light"
-					disableTransitionOnChange
-					storageKey="vite-ui-theme"
-				>
-					<div className="grid grid-rows-[auto_1fr] h-dvh grid-cols-1">
-						{isFetching ? <Loader /> : <Outlet />}
-					</div>
-					<Toaster richColors />
-				</ThemeProvider>
-				{/* <TanStackRouterDevtools position="top-right" /> */}
-				{/* <ReactQueryDevtools buttonPosition="top-right" initialIsOpen={false} /> */}
-			</>
-		</QueryClientProvider>
+		<>
+			<HeadContent />
+			<ThemeProvider
+				attribute="class"
+				defaultTheme="light"
+				disableTransitionOnChange
+				storageKey="vite-ui-theme"
+			>
+				<div className="grid grid-rows-[auto_1fr] h-dvh grid-cols-1">
+					{isFetching ? <Loader /> : <Outlet />}
+				</div>
+				<Toaster richColors />
+			</ThemeProvider>
+			{/* <TanStackRouterDevtools position="top-right" /> */}
+			{/* <ReactQueryDevtools buttonPosition="top-right" initialIsOpen={false} /> */}
+		</>
 	);
 }

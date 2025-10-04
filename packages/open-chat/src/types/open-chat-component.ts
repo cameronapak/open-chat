@@ -25,6 +25,26 @@ interface ToolsConfig {
 }
 
 /**
+ * Definition for externally provided model options.
+ */
+export interface ChatModelOption {
+  /** Unique model identifier (e.g., openrouter slug). */
+  id: string;
+  /** Friendly label to display in the selector. */
+  label: string;
+  /** Optional detailed description shown in tooltips or UI. */
+  description?: string;
+  /** Maximum context length supported by the model. */
+  contextLength?: number;
+  /** Prompt-side cost per token in USD cents (or raw units), if known. */
+  promptCostPerToken?: number;
+  /** Completion-side cost per token in USD cents (or raw units), if known. */
+  completionCostPerToken?: number;
+  /** Optional metadata bag for advanced consumers. */
+  metadata?: Record<string, unknown>;
+}
+
+/**
  * Props interface for the OpenChatComponent.
  * 
  * This defines a standalone, drop-in React component for AI-powered chat
@@ -143,8 +163,20 @@ export interface OpenChatComponentProps {
    * that will be rendered. If it returns null, the default rendering will be used.
    */
   renderMessage?: (message: UIMessage, part: any, index: number) => React.ReactNode | null;
-  controlledModels?: string[];
-  controlledModelsLoading?: boolean;
-  controlledModelsError?: Error;
-  onModelChange?: (model: string) => void;
+  /**
+   * External set of model options available to the component. When omitted, the selector will be hidden.
+   */
+  models?: ChatModelOption[];
+  /**
+   * Loading state for the external model fetch.
+   */
+  modelsLoading?: boolean;
+  /**
+   * Error message to display when fetching models fails.
+   */
+  modelsError?: string;
+  /**
+   * Notifies parent components whenever the active model changes.
+   */
+  onModelChange?: (modelId: string) => void;
 }
