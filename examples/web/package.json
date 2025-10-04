@@ -12,6 +12,7 @@
     "generate-pwa-assets": "pwa-assets-generator"
   },
   "dependencies": {
+    "@faith-tools/open-chat": "workspace:*",
     "@ai-sdk/react": "^2.0.48",
     "@fontsource-variable/geist": "^5.2.8",
     "@hookform/resolvers": "^5.1.1",

@@ -129,7 +129,7 @@ function IntegrationAvatarGroup({
 export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
   const {
     openRouterModel: initialModel,
-    api = import.meta.env.VITE_SERVER_URL + '/api/chat',
+    api,
     systemPrompt,
     threadId,
     initialMessages = [],

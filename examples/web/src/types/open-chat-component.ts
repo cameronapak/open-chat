@@ -47,10 +47,9 @@ export interface OpenChatComponentProps {
    */
   openRouterModel?: string;
   /**
-   * API endpoint for AI SDK requests (default: process.env.VITE_SERVER_URL).
-   * Points to the backend Hono API for chat handling.
+   * API endpoint for AI SDK-compatible LLM chat requests
    */
-  api?: string;
+  api: string;
   /**
    * Initial system prompt to set conversation context.
    * Sent as the first message in the thread.
