@@ -1,0 +1,29 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "Node",
+    "jsx": "react-jsx",
+    "strict": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "allowSyntheticDefaultImports": true,
+    "rootDirs": [
+      "./src",
+      "../../apps/web/src"
+    ],
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["../../apps/web/src/*"]
+    },
+    "outDir": "./dist",
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true
+  },
+  "include": [
+    "src",
+    "../../apps/web/src"
+  ]
+}
