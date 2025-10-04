@@ -1,3 +1,4 @@
+import { Fragment } from 'react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { type SavedMCPServer } from '@/lib/mcp-storage';
@@ -40,6 +41,16 @@ import MCPServerDetails from './mcp-server-details';
 import { saveApiKey, getApiKeyPresenceLabel } from "@/lib/keystore";
 import type { HeaderScheme as StorageHeaderScheme } from '@/lib/mcp-storage';
 import { Checkbox } from './ui/checkbox';
+import {
+  Item,
+  ItemActions,
+  ItemContent,
+  ItemDescription,
+  ItemGroup,
+  ItemMedia,
+  ItemSeparator,
+  ItemTitle,
+} from "@/components/ui/item"
 
 interface MCPServerListDialogProps {
   open: boolean;
@@ -63,47 +74,64 @@ function IntegrationsAccordionList({ servers, onToggleServer, onRemoveServer }: 
 
   return (
     <Accordion type="single" collapsible className="w-full">
-      <AccordionItem value="open-router-online">
-        <AccordionTrigger
-          className="p-3 items-center"
-          asChild
-        >
-          <div
-            className="grid w-full grid-cols-[auto_1fr_auto] items-center gap-2"
-          >
-            <Avatar key="open-router-web-search" className="flex items-center justify-center size-6 bg-white shadow-sm rounded-sm">
-              <Globe className="h-4 w-4 text-muted-foreground" />
-            </Avatar>
-            <div>
-              Web Search
-            </div>
-            <Switch
-              className="touch-hitbox"
-              onClick={(e) => e.stopPropagation()}
-              checked={enableWebSearch}
-              onCheckedChange={() => setEnableWebSearch(!enableWebSearch)}
-            />
-          </div>
-        </AccordionTrigger>
-        <AccordionContent className="px-3">
-          <div className="grid grid-cols-1 auto-cols-min gap-2">
-            <p className="text-muted-foreground">
-              Get real-time web search results.
-              <a
-                href="https://openrouter.ai/docs/features/web-search"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="ml-1 hover:text-primary underline"
-              >
-                Learn about pricing
-              </a>
-            </p>
-          </div>
-        </AccordionContent>
-      </AccordionItem>
+      <Fragment>
+        <ItemGroup>
+          <Item>
+            <ItemMedia>
+              <Avatar key="open-router-web-search" className="flex items-center justify-center size-8 bg-white shadow-sm rounded-sm">
+                <Globe className="h-6 w-6 text-muted-foreground" />
+                <span className='sr-only'>
+                  Web Search
+                </span>
+              </Avatar>
+            </ItemMedia>
+            <ItemContent className="gap-1">
+              <ItemTitle>OpenRouter Online</ItemTitle>
+              <ItemDescription>Get real-time web search results.</ItemDescription>
+            </ItemContent>
+            <ItemActions>
+              <Switch
+                className="touch-hitbox"
+                onClick={(e) => e.stopPropagation()}
+                checked={enableWebSearch}
+                onCheckedChange={() => setEnableWebSearch(!enableWebSearch)}
+              />
+            </ItemActions>
+          </Item>
+        </ItemGroup>
+        <ItemSeparator />
+      </Fragment>
 
-      {servers.map((savedServer) => {
+      {servers.map((savedServer, index) => {
         const favicon = getFavicon(savedServer.remotes?.[0].url || "")
+
+        return (
+          <Fragment key={savedServer.id}>
+            <ItemGroup>
+              <Item>
+                <ItemMedia>
+                  <Avatar className="rounded-sm shadow">
+                    <AvatarImage src={favicon} className="rounded-sm" />
+                    <AvatarFallback>{savedServer.name.charAt(0)}</AvatarFallback>
+                  </Avatar>
+                </ItemMedia>
+                <ItemContent className="gap-1">
+                  <ItemTitle>{savedServer.name}</ItemTitle>
+                  <ItemDescription>{savedServer.description}</ItemDescription>
+                </ItemContent>
+                <ItemActions>
+                  <Switch
+                    className="touch-hitbox"
+                    onClick={(e) => e.stopPropagation()}
+                    checked={savedServer.enabled}
+                    onCheckedChange={() => onToggleServer(savedServer.id)}
+                  />
+                </ItemActions>
+              </Item>
+            </ItemGroup>
+            {index !== servers.length - 1 && <ItemSeparator />}
+          </Fragment>
+        )
 
         return (
           <AccordionItem key={savedServer.id} value={savedServer.id}>
