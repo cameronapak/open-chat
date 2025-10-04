@@ -10,20 +10,20 @@
     "resolveJsonModule": true,
     "allowSyntheticDefaultImports": true,
     "rootDirs": [
-      "./src",
-      "../../examples/web/src"
+      "./src"
     ],
-    "baseUrl": ".",
+    "baseUrl": "./src",
     "paths": {
-      "@/*": ["../../examples/web/src/*"]
+      "@/*": ["./*"]
     },
+    "types": ["react", "react-dom"],
+    "lib": ["DOM", "DOM.Iterable", "ESNext"],
     "outDir": "./dist",
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true
   },
   "include": [
-    "src",
-    "../../examples/web/src"
+    "src"
   ]
 }
