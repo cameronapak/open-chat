@@ -208,7 +208,7 @@ Key props include:
 - [ ] Add info about [Open Inference](https://www.openinference.xyz/) into the settings dialog
 - [ ] Allow theme CSS variables for the component
 - [ ] One-click MCP install
-- [ ] Add your own MCP server
+- [x] Add your own MCP server
 - [x] MCP UI support
 - [ ] [Built-in AI support](https://ai-sdk.dev/providers/community-providers/built-in-ai) (Transformers JS + AI SDK + [built-in-ai](https://github.com/jakobhoeg/built-in-ai)) 
   - Examples
