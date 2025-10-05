@@ -53,7 +53,7 @@ import {
 import { MCPServerListDialog } from './mcp-server-list-dialog';
 import { type SavedMCPServer } from '../lib/mcp-storage';
 import { getFavicon } from '../lib/utils';
-import { enabledMcpServersAtom } from '../lib/atoms';
+import { enabledMcpServersAtom, modelAtom } from '../lib/atoms';
 import { useAtomValue } from 'jotai';
 import { ModeToggle } from './mode-toggle';
 import { type ChatModelOption, type OpenChatComponentProps } from '../types/open-chat-component';
@@ -74,12 +74,6 @@ import { sanitizeUrl } from 'strict-url-sanitise';
 import { loadApiKey } from '../lib/keystore';
 import { ModelCombobox } from './ai-elements/model-combobox';
 import { useAtom } from 'jotai';
-import { atomWithStorage } from 'jotai/utils'
-
-const MODEL_STORAGE_KEY = 'openchat:selectedModel';
-export const modelAtom = atomWithStorage<string>(MODEL_STORAGE_KEY, "openai/gpt-5", undefined, {
-  getOnInit: true,
-});
 
 type ChatOptions = Parameters<typeof useChat>[0];
 
@@ -258,18 +252,17 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
   const lastPropModelIdRef = useRef<string | undefined>(initialModelId);
 
   useEffect(() => {
-    if (initialModelId !== undefined) {
-      setModel(initialModelId);
-    }
-  }, [initialModelId]);
-
-  useEffect(() => {
     if (
       initialModelId !== undefined &&
       initialModelId !== lastPropModelIdRef.current
     ) {
-      setModel(initialModelId);
-      lastPropModelIdRef.current = initialModelId;
+      setModel((prev) => {
+        if (prev) {
+          lastPropModelIdRef.current = prev;
+          return prev;
+        }
+        return initialModelId;
+      });
     }
   }, [initialModelId]);
 
