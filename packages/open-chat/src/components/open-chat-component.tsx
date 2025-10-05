@@ -42,6 +42,7 @@ import {
   Settings,
   Puzzle,
   Globe,
+  Sparkle,
 } from 'lucide-react';
 import { Button } from './ui/button';
 import {
@@ -818,14 +819,14 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
                       size="icon"
                       type="button"
                       onClick={openSettings}
-                      aria-label="Settings"
+                      aria-label="AI model selector"
                     >
-                      <Settings className="h-4 w-4 text-muted-foreground" />
-                      <span className="sr-only">Settings</span>        
+                      <Sparkle className="h-4 w-4 text-muted-foreground" />
+                      <span className="sr-only">model Selector</span>        
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p>Settings</p>
+                    <p>Model Selector</p>
                   </TooltipContent>
                 </Tooltip>
               </PromptInputTools>
