@@ -1,10 +1,14 @@
 # OpenChat
 
-A truly open AI chatbot.
+![OpenChat](./open-chat-banner.png)
+
+Self-host your own MCP client in your existing apps.
+
+OpenChat is a truly open AI chatbot.
 
 Not locked down to any given LLM provider. 
 
-Sign into your OpenRouter account via OAuth, secured through encryption.
+Use any AI SDK-compatible transport. (Comes with helpers to easily integrate OpenRouter, letting users control their own models and token usage.)
 
 Easily import into your existing apps (Coming soon).
 
