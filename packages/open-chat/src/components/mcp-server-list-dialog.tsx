@@ -242,10 +242,19 @@ function McpConnectionTester({
   });
 
   const prevStateRef = useRef(state);
+  const awaitingAuthRef = useRef(false);
 
   useEffect(() => {
     if (!url) return;
-    if (state === 'ready') {
+    if (state === 'authenticating' && prevStateRef.current !== 'authenticating') {
+      awaitingAuthRef.current = true;
+      onAuthRedirect?.(authUrl);
+    } else if (state === 'ready') {
+      if (awaitingAuthRef.current && authUrl) {
+        prevStateRef.current = state;
+        return;
+      }
+      awaitingAuthRef.current = false;
       // Provide structured details to the parent
       onReady({
         tools,
@@ -257,10 +266,9 @@ function McpConnectionTester({
       // Quiet disconnect to avoid UI flicker
       disconnect(true);
     } else if (state === 'failed') {
+      awaitingAuthRef.current = false;
       onFailed(error);
       disconnect(true);
-    } else if (state === 'authenticating' && prevStateRef.current !== 'authenticating') {
-      onAuthRedirect?.(authUrl);
     }
     prevStateRef.current = state;
   }, [state, error, url, onReady, onFailed, disconnect, tools, resources, prompts, resourceTemplates, serverInfo, onAuthRedirect, authUrl]);
@@ -288,6 +296,7 @@ export function MCPServerListDialog({
   // Testing flow state
   const [testing, setTesting] = useState(false);
   const [pendingServer, setPendingServer] = useState<SavedMCPServer | null>(null);
+  const [authRedirectUrl, setAuthRedirectUrl] = useState<string | undefined>(undefined);
 
   // Optimistic enable testing: track multiple servers being tested concurrently
   const [pendingToggleServers, setPendingToggleServers] = useState<Record<string, SavedMCPServer>>({});
@@ -336,6 +345,7 @@ export function MCPServerListDialog({
       setPendingServer(customServer);
       setTesting(true);
       setTab('custom');
+      setAuthRedirectUrl(undefined);
       toast.info('Connecting to server (OAuth popup may open)...');
       // Do NOT save yet; we only save on successful connection
     } catch (err: any) {
@@ -506,11 +516,33 @@ export function MCPServerListDialog({
                 </div>
                 <Button
                   size="sm"
-                  disabled={testing}
+                  disabled={Boolean(pendingServer)}
                 >
                   <Plus className="h-4 w-4 mr-1" />
-                  {testing ? 'Adding...' : 'Add'}
+                  {pendingServer
+                    ? authRedirectUrl
+                      ? 'Awaiting OAuth...'
+                      : testing
+                        ? 'Adding...'
+                        : 'Adding...'
+                    : 'Add'}
                 </Button>
+                {pendingServer && authRedirectUrl ? (
+                  <div className="rounded-md border border-dashed border-muted p-3 text-sm text-muted-foreground">
+                    <p className="font-medium text-foreground">Authorization required</p>
+                    <p className="mt-1">
+                      Complete the OAuth step in the popup window. If it did not open, use the link below.
+                    </p>
+                    <a
+                      className="mt-2 inline-flex items-center text-sm font-medium text-primary underline underline-offset-4"
+                      href={authRedirectUrl}
+                      target="_blank"
+                      rel="noreferrer noopener"
+                    >
+                      Open authorization URL
+                    </a>
+                  </div>
+                ) : null}
               </form>
             </TabsContent>
           </Tabs>
@@ -524,7 +556,7 @@ export function MCPServerListDialog({
         {/* details fetching is now handled by MCPServerDetails via Suspense/use() */}
 
         {/* Hidden tester mounts when testing starts */}
-        {testing && pendingServer ? (
+        {pendingServer ? (
           <McpConnectionTester
             url={pendingUrl}
             onReady={async () => {
@@ -550,16 +582,23 @@ export function MCPServerListDialog({
               setSessionOnly(false);
               setTab('integrations');
               setTesting(false);
+              setAuthRedirectUrl(undefined);
               setPendingServer(null);
             }}
             onFailed={(err) => {
               toast.error(err || 'Failed to connect to server');
               setTesting(false);
+              setAuthRedirectUrl(undefined);
               setPendingServer(null);
             }}
             onAuthRedirect={(manualUrl) => {
               setTesting(false);
-              toast.info('Complete OAuth in the authorization popup to finish adding this server.');
+              setAuthRedirectUrl(manualUrl);
+              toast.info(
+                manualUrl
+                  ? 'Complete OAuth in the popup or open the authorization link provided.'
+                  : 'Complete OAuth in the authorization popup to finish adding this server.',
+              );
             }}
           />
         ) : null}

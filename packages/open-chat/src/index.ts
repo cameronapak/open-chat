@@ -23,3 +23,6 @@ export type {
   UseOpenRouterAuthReturn,
 } from "./lib/auth/types";
 export default OpenChatComponent;
+export {
+  onMcpAuthorization
+} from "@/lib/auth/callback";
