@@ -849,7 +849,21 @@ export function useMcp(options: UseMcpOptions): UseMcpResult {
         onPopupWindow,
       })
       addLog('debug', 'BrowserOAuthClientProvider initialized/updated on mount/option change.')
-      setBroadcastChannel(new BroadcastChannel(`mcp-auth-${url}`))
+      if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+        let channelId = `mcp-auth-${url}`
+        try {
+          const targetUrl = new URL(sanitizeUrl(url))
+          channelId = `mcp-auth-${targetUrl.host}`
+        } catch (parseError) {
+          addLog('warn', 'Failed to parse MCP URL for broadcast channel; falling back to raw URL.', parseError)
+        }
+        setBroadcastChannel((previousChannel) => {
+          previousChannel?.close()
+          return new BroadcastChannel(channelId)
+        })
+      } else {
+        setBroadcastChannel(null)
+      }
     }
     connect() // Call stable connect
     return () => {
