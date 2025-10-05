@@ -49,7 +49,7 @@ export type UseMcpResult = {
   /** List of prompts available from the connected MCP server */
   prompts: Prompt[]
   /** Server information from the initialize response (name, version) */
-  serverInfo?: { name: string; version: string }
+  serverInfo?: ServerInfo
   /** Server capabilities from the initialize response */
   serverCapabilities?: Record<string, any>
   /** Protocol version negotiated during initialization */
@@ -130,5 +130,5 @@ export type UseMcpResult = {
 }
 
 // Export server information types for TypeScript users
-export type ServerInfo = { name: string; version: string }
+export type ServerInfo = { name: string; version: string; description?: string }
 export type ServerCapabilities = Record<string, any>
