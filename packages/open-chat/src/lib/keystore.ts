@@ -1,4 +1,3 @@
-// ... existing code ...
 /**
  * Simple client-side keystore for MCP API keys.
  * - Encrypts API keys at rest with AES-GCM via Web Crypto.
