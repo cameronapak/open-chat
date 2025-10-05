@@ -2,7 +2,7 @@ import { Fragment, type ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { type SavedMCPServer } from '@/lib/mcp-storage';
-import { Plus, Trash2, Puzzle, Globe } from 'lucide-react';
+import { Plus, Puzzle, Globe } from 'lucide-react';
 import {
   Drawer,
   DrawerClose,
@@ -23,12 +23,6 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs"
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion"
 import { InputWithLabel } from './ui/input';
 import { getFavicon } from "@/lib/utils";
 import { Switch } from './ui/switch';
@@ -37,7 +31,7 @@ import { useAtom } from 'jotai';
 import { VisuallyHidden } from 'radix-ui';
 import { useEffect, useRef, useState } from 'react';
 import { useMcp } from '@/hooks/use-mcp';
-import MCPServerDetails from './mcp-server-details';
+// import MCPServerDetails from './mcp-server-details';
 import { saveApiKey, getApiKeyPresenceLabel } from "@/lib/keystore";
 import type { HeaderScheme as StorageHeaderScheme } from '@/lib/mcp-storage';
 import { Checkbox } from './ui/checkbox';
@@ -83,7 +77,7 @@ function IntegrationsAccordionList({
 }) {
   const renderWebSearchToggle = typeof onWebSearchToggle === 'function';
 
-  const handleRemoveServer = (serverId: string, serverName: string) => {
+  const _handleRemoveServer = (serverId: string, serverName: string) => {
     const confirmed = confirm(`Do you want to delete ${serverName} integration?`);
     if (confirmed) {
       onRemoveServer(serverId);
@@ -92,7 +86,7 @@ function IntegrationsAccordionList({
   };
 
   return (
-    <Accordion type="single" collapsible className="w-full">
+    <div className='w-full'>
       {renderWebSearchToggle ? (
         <>
           <ItemGroup>
@@ -116,7 +110,10 @@ function IntegrationsAccordionList({
                   className="touch-hitbox"
                   onClick={(e) => e.stopPropagation()}
                   checked={Boolean(webSearchEnabled)}
-                  onCheckedChange={(checked) => onWebSearchToggle?.(checked)}
+                  onCheckedChange={(checked) => {
+                    console.log(`WebSearch Switch change: checked=${checked}`);
+                    onWebSearchToggle?.(checked);
+                  }}
                 />
               </ItemActions>
             </Item>
@@ -126,7 +123,7 @@ function IntegrationsAccordionList({
       ) : null}
 
       {servers.map((savedServer, index) => {
-        const favicon = getFavicon(savedServer.remotes?.[0].url || "")
+        const favicon = getFavicon(savedServer.remotes?.[0].url || "");
 
         return (
           <Fragment key={savedServer.id}>
@@ -147,71 +144,19 @@ function IntegrationsAccordionList({
                     className="touch-hitbox"
                     onClick={(e) => e.stopPropagation()}
                     checked={savedServer.enabled}
-                    onCheckedChange={() => onToggleServer(savedServer.id)}
+                    onCheckedChange={(checked) => {
+                      console.log(`Switch change for ${savedServer.id}: checked=${checked}`);
+                      onToggleServer(savedServer.id);
+                    }}
                   />
                 </ItemActions>
               </Item>
             </ItemGroup>
             {index !== servers.length - 1 && <ItemSeparator />}
           </Fragment>
-        )
-
-        return (
-          <AccordionItem key={savedServer.id} value={savedServer.id}>
-            <AccordionTrigger
-              className="p-3 items-center"
-              asChild
-            >
-              <div
-                className="grid w-full grid-cols-[auto_1fr_auto] items-center gap-2"
-              >
-                <Avatar className="size-6 bg-white shadow-sm rounded-sm">
-                  <AvatarImage src={favicon} />
-                  <AvatarFallback>{savedServer.name}</AvatarFallback>
-                </Avatar>
-                <h3>
-                  {savedServer.name}
-                </h3>
-                <Switch
-                  className="touch-hitbox"
-                  onClick={(e) => e.stopPropagation()}
-                  checked={savedServer.enabled}
-                  onCheckedChange={() => onToggleServer(savedServer.id)}
-                />
-              </div>
-            </AccordionTrigger>
-            <AccordionContent className="px-3">
-              <div className="grid grid-cols-1 auto-cols-min gap-2">
-                <p className="text-muted-foreground">
-                  {savedServer.description}
-                </p>
-                <Button
-                  variant="ghost"
-                  className="w-fit -translate-x-1.5 text-muted-foreground"
-                  size="sm"
-                  onClick={() => handleRemoveServer(savedServer.id, savedServer.name)}
-                >
-                  <Trash2 className="h-4 w-4" />
-                  Remove Integration
-                </Button>
-
-                {/* Details: lazy-load tools/prompts/resources using React Suspense + use() */}
-                <details className="mt-2">
-                  <summary className="cursor-pointer font-medium">Available items</summary>
-                  <div className="mt-2">
-                    {/* MCPServerDetails is a client component that uses Suspense/use() to fetch and persist details */}
-                    <MCPServerDetails
-                      url={savedServer.remotes?.find(r => r.type === 'streamable-http' || r.type === 'http+sse')?.url || ''}
-                      serverId={savedServer.id}
-                    />
-                  </div>
-                </details>
-              </div>
-            </AccordionContent>
-          </AccordionItem>
         );
       })}
-    </Accordion>
+    </div>
   )
 }
 
@@ -358,6 +303,8 @@ export function MCPServerListDialog({
     const target = savedServers.find(s => s.id === serverId);
     if (!target) return;
 
+    console.log(`Toggle attempt for ${serverId}: enabled=${target.enabled}, pending=${!!pendingToggleServers[serverId]}`);
+
     // Ignore duplicate toggles for a server already under test
     if (pendingToggleServers[serverId]) return;
 
@@ -372,6 +319,12 @@ export function MCPServerListDialog({
         delete next[serverId];
         return next;
       });
+      // Clear pending if any (though disable shouldn't have it)
+      setPendingToggleServers(prev => {
+        const next = { ...prev };
+        delete next[serverId];
+        return next;
+      });
       return;
     }
 
@@ -380,12 +333,24 @@ export function MCPServerListDialog({
       prev.map(s => (s.id === serverId ? { ...s, enabled: true } : s)),
     );
     setPendingToggleServers(prev => ({ ...prev, [serverId]: target }));
+    console.log(`Pending set for ${serverId}`);
     // Remove from connected servers while testing
     setConnectedServers(prev => {
       const next = { ...prev };
       delete next[serverId];
       return next;
-    });
+    })
+
+    // TODO: Implement tester for existing server toggle (mount McpConnectionTester for this server)
+    // For now, clear pending after short delay to allow re-toggle
+    setTimeout(() => {
+      setPendingToggleServers(prev => {
+        const next = { ...prev };
+        delete next[serverId];
+        console.log(`Pending cleared for ${serverId} after timeout`);
+        return next;
+      });
+    }, 1000);
   };
 
   const pendingUrl = pendingServer?.remotes?.find(r => r.type === 'streamable-http' || r.type === 'http+sse')?.url || '';
