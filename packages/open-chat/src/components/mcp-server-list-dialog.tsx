@@ -2,7 +2,7 @@ import { Fragment, type ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { type SavedMCPServer } from '@/lib/mcp-storage';
-import { Plus, Puzzle, Globe } from 'lucide-react';
+import { Plus, Puzzle, Globe, X, Trash } from 'lucide-react';
 import {
   Drawer,
   DrawerClose,
@@ -77,7 +77,7 @@ function IntegrationsAccordionList({
 }) {
   const renderWebSearchToggle = typeof onWebSearchToggle === 'function';
 
-  const _handleRemoveServer = (serverId: string, serverName: string) => {
+  const handleRemoveServer = (serverId: string, serverName: string) => {
     const confirmed = confirm(`Do you want to delete ${serverName} integration?`);
     if (confirmed) {
       onRemoveServer(serverId);
@@ -139,7 +139,18 @@ function IntegrationsAccordionList({
                   <ItemTitle>{savedServer.name}</ItemTitle>
                   <ItemDescription>{savedServer.description}</ItemDescription>
                 </ItemContent>
-                <ItemActions>
+                <ItemActions className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleRemoveServer(savedServer.id, savedServer.name);
+                    }}
+                  >
+                    <Trash />
+                  </Button>
+
                   <Switch
                     className="touch-hitbox"
                     onClick={(e) => e.stopPropagation()}
@@ -541,29 +552,29 @@ export function MCPServerListDialog({
               };
               setSavedServers(prev => [...prev, withKeyFlag]);
               toast.success('Custom server added and connected');
-              formRef.current?.reset?.();
+              formRef.current?.reset?.()
               // Reset auth UI state (keep sensible defaults)
-              setApiKeyInput('');
-              setSessionOnly(false);
-              setTab('integrations');
-              setTesting(false);
-              setAuthRedirectUrl(undefined);
-              setPendingServer(null);
+              setApiKeyInput('')
+              setSessionOnly(false)
+              setTab('integrations')
+              setTesting(false)
+              setAuthRedirectUrl(undefined)
+              setPendingServer(null)
             }}
             onFailed={(err) => {
-              toast.error(err || 'Failed to connect to server');
-              setTesting(false);
-              setAuthRedirectUrl(undefined);
-              setPendingServer(null);
+              toast.error(err || 'Failed to connect to server')
+              setTesting(false)
+              setAuthRedirectUrl(undefined)
+              setPendingServer(null)
             }}
             onAuthRedirect={(manualUrl) => {
-              setTesting(false);
-              setAuthRedirectUrl(manualUrl);
+              setTesting(false)
+              setAuthRedirectUrl(manualUrl)
               toast.info(
                 manualUrl
                   ? 'Complete OAuth in the popup or open the authorization link provided.'
                   : 'Complete OAuth in the authorization popup to finish adding this server.',
-              );
+              )
             }}
           />
         ) : null}
