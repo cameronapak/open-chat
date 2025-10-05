@@ -76,7 +76,7 @@ const ChatBotDemo = () => {
       name: "OpenRouter",
       webSearchLabel: "Enable OpenRouter Web Search",
       webSearchDescription:
-        "Augment responses with OpenRouter’s web results for fresher answers.",
+        "Augment responses with OpenRouter's web results for fresher answers.",
       authCTA: (
         <button
           type="button"
