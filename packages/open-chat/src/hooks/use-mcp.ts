@@ -197,7 +197,7 @@ export function useMcp(options: UseMcpOptions): UseMcpResult {
     setState('discovering')
     addLog('info', `Connecting attempt #${connectAttemptRef.current} to ${url}...`)
     addLog('debug', 'Connect called, connectingRef set to true')
-    
+
     // Initialize provider/client if needed (idempotent)
     // Ensure provider/client are initialized (idempotent check)
     if (!authProviderRef.current) {
@@ -251,7 +251,7 @@ export function useMcp(options: UseMcpOptions): UseMcpResult {
           },
         }
         // Sanitize the URL to prevent XSS attacks from malicious server URLs
-        const sanitizedUrl = sanitizeUrl(url)
+        const sanitizedUrl = url
         const targetUrl = new URL(sanitizedUrl)
 
         addLog('debug', `Creating ${transportType.toUpperCase()} transport for URL: ${targetUrl.toString()}`)
@@ -436,7 +436,11 @@ export function useMcp(options: UseMcpOptions): UseMcpResult {
         }
 
         // Check for Auth error (Simplified - requires more thought for interaction with fallback)
-        if (errorInstance instanceof UnauthorizedError || errorMessage.includes('Unauthorized') || errorMessage.includes('401')) {
+        if (
+          errorInstance instanceof UnauthorizedError ||
+          errorMessage.includes('Unauthorized') ||
+          errorMessage.includes('401')
+        ) {
           addLog('info', 'Authentication required.')
 
           // Check if we have existing tokens before triggering auth flow
@@ -458,6 +462,8 @@ export function useMcp(options: UseMcpOptions): UseMcpResult {
             authTimeoutRef.current = setTimeout(() => {
               /* ... timeout logic ... */
             }, AUTH_TIMEOUT)
+
+            addLog('debug', `authUrl from authProviderRef.current:`, authProviderRef.current?.getLastAttemptedAuthUrl())
           }
 
           try {
@@ -478,6 +484,11 @@ export function useMcp(options: UseMcpOptions): UseMcpResult {
             } else if (authResult === 'REDIRECT') {
               addLog('info', 'Redirecting for authentication. Waiting for callback...')
               addLog('debug', 'Auth redirect issued; connectingRef stays true until OAuth callback resolves.')
+              const manualAuthUrl = authProviderRef.current?.getLastAttemptedAuthUrl();
+              addLog('debug', 'authUrl from auth provider:', manualAuthUrl); // Log authUrl
+              if (manualAuthUrl && isMountedRef.current) {
+                setAuthUrl(manualAuthUrl);
+              }
               return 'auth_redirect' // Signal that we are waiting for redirect
             }
           } catch (sdkAuthError) {
@@ -540,7 +551,7 @@ export function useMcp(options: UseMcpOptions): UseMcpResult {
       connectingRef.current = false;
     } else if (finalStatus === 'auth_redirect') {
       connectingRef.current = true;
-      addLog('debug', 'auth_redirect status detected; awaiting OAuth popup callback before clearing connect state.')
+      addLog('debug', 'auth_redirect status detected; awaiting OAuth popup callback before clearing connect state.');
     }
 
     addLog('debug', `Connection sequence finished with status: ${finalStatus}`)

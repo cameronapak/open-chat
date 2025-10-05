@@ -366,6 +366,8 @@ export function MCPServerListDialog({
 
   const pendingUrl = pendingServer?.remotes?.find(r => r.type === 'streamable-http' || r.type === 'http+sse')?.url || '';
 
+  console.log('pendingUrl:', pendingUrl); // Log pendingUrl
+
   return (
     <Drawer open={open} onOpenChange={(isOpen: boolean) => {
       if (!isOpen) {
@@ -568,6 +570,7 @@ export function MCPServerListDialog({
               setPendingServer(null)
             }}
             onAuthRedirect={(manualUrl) => {
+              console.log('authRedirectUrl set to:', manualUrl); // Log authRedirectUrl
               setTesting(false)
               setAuthRedirectUrl(manualUrl)
               toast.info(
