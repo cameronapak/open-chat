@@ -73,6 +73,13 @@ import { TooltipProvider } from './ui/tooltip';
 import { sanitizeUrl } from 'strict-url-sanitise';
 import { loadApiKey } from '../lib/keystore';
 import { ModelCombobox } from './ai-elements/model-combobox';
+import { useAtom } from 'jotai';
+import { atomWithStorage } from 'jotai/utils'
+
+const MODEL_STORAGE_KEY = 'openchat:selectedModel';
+export const modelAtom = atomWithStorage<string>(MODEL_STORAGE_KEY, "openai/gpt-5", undefined, {
+  getOnInit: true,
+});
 
 type ChatOptions = Parameters<typeof useChat>[0];
 
@@ -239,7 +246,7 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
 
   const [isOpen, setIsOpen] = useState(false);
   const [mcpDialogOpen, setMcpDialogOpen] = useState(false);
-  const [model, setModel] = useState(initialModelId ?? '');
+  const [model, setModel] = useAtom(modelAtom);
   const [modelMenuOpen, setModelMenuOpen] = useState(false);
   const enabledServers = useAtomValue(enabledMcpServersAtom);
   const authReady = authState?.ready ?? true;
@@ -249,6 +256,12 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
   const enabledServersRef = useRef<SavedMCPServer[]>(enabledServers);
   const modelRef = useRef<string>(model);
   const lastPropModelIdRef = useRef<string | undefined>(initialModelId);
+
+  useEffect(() => {
+    if (initialModelId !== undefined) {
+      setModel(initialModelId);
+    }
+  }, [initialModelId]);
 
   useEffect(() => {
     if (
@@ -577,7 +590,7 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
               </Message>
               {message.role === 'assistant' && index === rawMessages.length - 1 && (
                 <Actions className="mt-2">
-                  <Action onClick={() => {}} label="Retry">
+                  <Action onClick={() => { }} label="Retry">
                     <RefreshCcwIcon className="size-3" />
                   </Action>
                   <Action
@@ -783,7 +796,7 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
                 placeholder={
                   requireAuth && !authReady ? authMessage : placeholder
                 }
-                disabled={requireAuth && !authReady }
+                disabled={requireAuth && !authReady}
                 aria-label="Chat input"
               />
             </PromptInputBody>

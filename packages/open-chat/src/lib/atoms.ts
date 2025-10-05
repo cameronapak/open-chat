@@ -64,9 +64,6 @@ export const enabledMcpServersAtom = atom<SavedMCPServer[]>(
   }
 );
 
-const MODEL_STORAGE_KEY = 'openchat:selectedModel';
-export const modelAtom = atomWithStorage<string>(MODEL_STORAGE_KEY, "openai/gpt-5");
-
 // --- New: persistent store for per-server metadata (tools/prompts/resources/serverInfo) ---
 export interface MCPServerDetails {
   tools?: unknown[]; // raw tools data from server/tools/list
