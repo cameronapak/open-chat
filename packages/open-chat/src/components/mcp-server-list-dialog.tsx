@@ -312,6 +312,7 @@ export function MCPServerListDialog({
 
     const name = (e.currentTarget as any)["integration-name"].value as string;
     const url = (e.currentTarget as any).url.value as string;
+    const description = (e.currentTarget as any).description.value as string;
 
     if (!name.trim() || !url.trim()) {
       toast.error('Name and URL are required');
@@ -327,7 +328,7 @@ export function MCPServerListDialog({
       const customServer: SavedMCPServer = {
         id: serverId,
         name: name.trim(),
-        description: "",
+        description: description.trim() || 'Custom Integration',
         version: '1.0.0',
         remotes: [{
           type: 'streamable-http',
@@ -466,7 +467,7 @@ export function MCPServerListDialog({
                   label="Integration name"
                   type="text"
                   autoComplete='off'
-                  placeholder="Integration"
+                  placeholder="Notion"
                   name="integration-name"
                 />
                 <InputWithLabel
@@ -477,6 +478,14 @@ export function MCPServerListDialog({
                   type="url"
                   placeholder="https://example.com/mcp"
                   name="url"
+                />
+                <InputWithLabel
+                  id="description"
+                  autoComplete='off'
+                  label="Description (optional)"
+                  type="text"
+                  placeholder="What does this integration do?"
+                  name="description"
                 />
                 {/* Auth configuration */}
                 <div className="grid grid-cols-1 gap-3">
@@ -550,8 +559,7 @@ export function MCPServerListDialog({
         {pendingServer ? (
           <McpConnectionTester
             url={pendingUrl}
-            onReady={async (props) => {
-              console.log(props)
+            onReady={async () => {
               // Save API key (if configured) now that connection is ready
               try {
                 if (pendingUrl && apiKeyInput.trim()) {
