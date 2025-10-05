@@ -55,8 +55,8 @@ import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 import { MCPServerListDialog } from './mcp-server-list-dialog';
 import { type SavedMCPServer } from '../lib/mcp-storage';
 import { getFavicon } from '../lib/utils';
-import { enableOpenRouterWebSearch, enabledMcpServersAtom, modelAtom } from '../lib/atoms';
-import { useAtom, useAtomValue } from 'jotai';
+import { enabledMcpServersAtom } from '../lib/atoms';
+import { useAtomValue } from 'jotai';
 import { ModeToggle } from './mode-toggle';
 import { type ChatModelOption, type OpenChatComponentProps } from '../types/open-chat-component';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
@@ -148,7 +148,7 @@ const mergeUseChatOptions = (
   return base as ChatOptions;
 };
 
-const DEFAULT_AUTH_MESSAGE = 'Please connect your OpenRouter account to start chatting.';
+const DEFAULT_AUTH_MESSAGE = 'Please connect your account to start chatting.';
 const formatter = new Intl.NumberFormat('en-US');
 const costFormatter = new Intl.NumberFormat('en-US', {
   style: 'currency',
@@ -159,22 +159,28 @@ const costFormatter = new Intl.NumberFormat('en-US', {
 
 function IntegrationAvatarGroup({
   enabledServers,
-  webSearchEnabled,
+  webSearchActive,
+  webSearchLabel,
+  webSearchAvatar,
 }: {
   enabledServers: SavedMCPServer[];
-  webSearchEnabled: boolean;
+  webSearchActive: boolean;
+  webSearchLabel?: string;
+  webSearchAvatar?: React.ReactNode;
 }) {
   const avatars: React.ReactElement[] = [];
 
-  if (webSearchEnabled) {
+  if (webSearchActive) {
     avatars.push(
       <Avatar
-        key="open-router-web-search"
+        key="web-search"
         className="flex items-center justify-center size-6 bg-white shadow-sm rounded-sm"
       >
-        <Globe className="h-4 w-4 text-muted-foreground" />
+        <span className="flex items-center justify-center text-muted-foreground">
+          {webSearchAvatar ?? <Globe className="h-4 w-4" />}
+        </span>
         <AvatarGroupTooltip>
-          <p>Web Search</p>
+          <p>{webSearchLabel ?? 'Web Search'}</p>
         </AvatarGroupTooltip>
       </Avatar>,
     );
@@ -205,7 +211,7 @@ function IntegrationAvatarGroup({
 
 export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
   const {
-    openRouterModel: initialModel,
+    modelId: initialModelId,
     api,
     systemPrompt,
     threadId,
@@ -226,39 +232,48 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
     onModelChange,
     useChatOptions,
     authState,
+    authMessage: authMessageProp,
     prepareAuthRequest,
+    capabilities,
+    providerMeta,
   } = props;
 
   const [isOpen, setIsOpen] = useState(false);
   const [mcpDialogOpen, setMcpDialogOpen] = useState(false);
-  const [model, setModel] = useAtom(modelAtom);
-  const [enableWebSearch] = useAtom(enableOpenRouterWebSearch);
+  const [model, setModel] = useState(initialModelId ?? '');
   const [modelMenuOpen, setModelMenuOpen] = useState(false);
   const enabledServers = useAtomValue(enabledMcpServersAtom);
   const authReady = authState?.ready ?? true;
-  const authMessage = authState?.message ?? DEFAULT_AUTH_MESSAGE;
-
+  const authMessage = authMessageProp ?? authState?.message ?? DEFAULT_AUTH_MESSAGE;
+  const canUseWebSearch = capabilities?.webSearch === true;
+  const [webSearchActive, setWebSearchActive] = useState(false);
   const enabledServersRef = useRef<SavedMCPServer[]>(enabledServers);
+  const modelRef = useRef<string>(model);
+  const lastPropModelIdRef = useRef<string | undefined>(initialModelId);
+
+  useEffect(() => {
+    if (
+      initialModelId !== undefined &&
+      initialModelId !== lastPropModelIdRef.current
+    ) {
+      setModel(initialModelId);
+      lastPropModelIdRef.current = initialModelId;
+    }
+  }, [initialModelId]);
+
   useEffect(() => {
     enabledServersRef.current = enabledServers;
   }, [enabledServers]);
 
   useEffect(() => {
-    if (initialModel) {
-      setModel(initialModel);
-    }
-  }, [initialModel, setModel]);
-
-  const modelRef = useRef<string>(model);
-  useEffect(() => {
-    modelRef.current = model + (enableWebSearch ? ':online' : '');
-  }, [model, enableWebSearch]);
+    modelRef.current = model;
+  }, [model]);
 
   useEffect(() => {
-    if (requireAuth && !authReady) {
-      setIsOpen(true);
+    if (!canUseWebSearch && webSearchActive) {
+      setWebSearchActive(false);
     }
-  }, [requireAuth, authReady]);
+  }, [canUseWebSearch, webSearchActive]);
 
   const modelOptions = useMemo<ChatModelOption[]>(
     () =>
@@ -295,7 +310,7 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
       setModel(value);
       onModelChange?.(value);
     },
-    [setModel, onModelChange],
+    [onModelChange],
   );
 
   const transport = useMemo(() => {
@@ -382,7 +397,7 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       prepareSendMessagesRequest: async ({ messages, id, body }) => {
-        const currentEnabled = enabledServersRef.current || [];
+        const currentEnabled = enabledServersRef.current ?? [];
 
         const mcpServersData = await Promise.all(
           currentEnabled.map(async (server: SavedMCPServer) => {
@@ -411,18 +426,47 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
           }),
         );
 
-        const result: { body: Record<string, unknown>; headers?: Record<string, string>; } = {
-          body: {
-            ...body,
-            id,
-            messages,
-            model: modelRef.current,
-            reasoning: true,
-            systemPrompt,
-            threadId,
-            mcpServers: mcpServersData,
-          },
+        const mergedBody: Record<string, unknown> = {
+          ...(body ?? {}),
+          id,
+          messages,
         };
+
+        if (modelRef.current) {
+          mergedBody.model = modelRef.current;
+        }
+
+        if (systemPrompt) {
+          mergedBody.systemPrompt = systemPrompt;
+        }
+
+        if (threadId) {
+          mergedBody.threadId = threadId;
+        }
+
+        if (mcpServersData.length) {
+          mergedBody.mcpServers = mcpServersData;
+        }
+
+        const result: {
+          body: Record<string, unknown>;
+          headers?: Record<string, string>;
+        } = {
+          body: mergedBody,
+        };
+
+        if (canUseWebSearch) {
+          const existingMetadata = result.body.metadata;
+          const normalizedMetadata =
+            typeof existingMetadata === 'object' && existingMetadata !== null
+              ? (existingMetadata as Record<string, unknown>)
+              : undefined;
+
+          result.body.metadata = {
+            ...(normalizedMetadata ?? {}),
+            webSearch: webSearchActive,
+          };
+        }
 
         if (prepareAuthRequest) {
           try {
@@ -447,7 +491,7 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
         return result;
       },
     });
-  }, [api, systemPrompt, threadId, prepareAuthRequest, onError]);
+  }, [api, systemPrompt, threadId, prepareAuthRequest, onError, canUseWebSearch, webSearchActive]);
 
   const defaultChatOptions = useMemo<ChatOptions>(() => {
     const base: Record<string, any> = {
@@ -459,7 +503,7 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
     }
 
     return base as ChatOptions;
-  }, [transport, initialMessages, threadId]);
+  }, [transport, threadId]);
 
   const mergedChatOptions = useMemo(
     () => mergeUseChatOptions(defaultChatOptions, useChatOptions),
@@ -512,7 +556,7 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
   const openSettings = () => setIsOpen(true);
   const openMcpDialog = () => setMcpDialogOpen(true);
 
-  const shouldShowAvatarGroup = Boolean(enabledServers.length || enableWebSearch);
+  const shouldShowAvatarGroup = Boolean(enabledServers.length || (canUseWebSearch && webSearchActive));
 
   const renderMessageContent = useCallback(
     (message: any, part: any, index: number) => {
@@ -670,7 +714,15 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
         </DialogContent>
       </Dialog>
 
-      <MCPServerListDialog open={mcpDialogOpen} onOpenChange={setMcpDialogOpen} />
+      <MCPServerListDialog
+        open={mcpDialogOpen}
+        onOpenChange={setMcpDialogOpen}
+        webSearchEnabled={canUseWebSearch ? webSearchActive : undefined}
+        onWebSearchToggle={canUseWebSearch ? setWebSearchActive : undefined}
+        webSearchLabel={providerMeta?.webSearchLabel}
+        webSearchDescription={providerMeta?.webSearchDescription}
+        webSearchAvatar={providerMeta?.brandingAvatar}
+      />
 
       <div className={className} style={{ height }}>
         <div className="flex flex-col h-full">
@@ -680,6 +732,9 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
                 <Message from="assistant">
                   <MessageContent>
                     <Response>{authMessage}</Response>
+                    {providerMeta?.authCTA ? (
+                      <div className="mt-3">{providerMeta.authCTA}</div>
+                    ) : null}
                   </MessageContent>
                 </Message>
               )}
@@ -727,7 +782,7 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
                 placeholder={
                   requireAuth && !authReady ? authMessage : placeholder
                 }
-                disabled={requireAuth && !authReady}
+                disabled={requireAuth && !authReady }
                 aria-label="Chat input"
               />
             </PromptInputBody>
@@ -745,7 +800,9 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
                     {shouldShowAvatarGroup ? (
                       <IntegrationAvatarGroup
                         enabledServers={enabledServers}
-                        webSearchEnabled={enableWebSearch}
+                        webSearchActive={webSearchActive}
+                        webSearchLabel={providerMeta?.webSearchLabel}
+                        webSearchAvatar={providerMeta?.brandingAvatar}
                       />
                     ) : (
                       <Puzzle className="h-4 w-4 text-muted-foreground" />
@@ -764,7 +821,7 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
                       aria-label="Settings"
                     >
                       <Settings className="h-4 w-4 text-muted-foreground" />
-                      <span className="sr-only">Settings</span>
+                      <span className="sr-only">Settings</span>        
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>

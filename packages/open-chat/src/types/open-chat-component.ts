@@ -1,5 +1,6 @@
 import "@fontsource-variable/geist";
 import { type UIMessage, type UseChatOptions } from "@ai-sdk/react";
+import { type ReactNode } from "react";
 import type { UseMcpOptions } from "../hooks/use-mcp.types";
 import type { AuthState, PreparedAuthInjection } from "../lib/auth/types";
 
@@ -28,6 +29,26 @@ interface ToolsConfig {
 export type Resolvable<T> = T | (() => T | Promise<T>);
 
 export type ResolvableRecord = Resolvable<Record<string, string> | Headers>;
+
+export interface ProviderCapabilities {
+	/** Toggle to indicate if real-time web search is supported (default: off). */
+	webSearch?: boolean;
+	/** Toggle to indicate if advanced reasoning should be requested (default: off). */
+	reasoning?: boolean;
+}
+
+export interface ProviderMeta {
+	/** Friendly provider name for UI copy. */
+	name?: string;
+	/** Optional avatar or logo rendered alongside integrations. */
+	brandingAvatar?: ReactNode;
+	/** Optional call-to-action rendered with the auth message when auth is required. */
+	authCTA?: ReactNode;
+	/** Optional label used for the web search integration toggle. */
+	webSearchLabel?: string;
+	/** Optional helper text shown under the web search integration toggle. */
+	webSearchDescription?: string;
+}
 
 export interface EndpointConfig {
 	/** Base URL for the target AI endpoint (e.g. OpenAI-compatible gateway). */
@@ -68,13 +89,13 @@ export interface ChatModelOption {
  * Props interface for the OpenChatComponent.
  * 
  * This defines a standalone, drop-in React component for AI-powered chat
- * integrated with OpenRouter, AI SDK, and MCP tools. Designed for POC simplicity:
+ * integrated with AI SDK runtimes and optional MCP tooling. Designed for POC simplicity:
  * most props optional with sensible defaults aligned to project env (e.g., api uses VITE_SERVER_URL).
  * 
  * Usage example:
  * ```tsx
  * <OpenChatComponent
- *   openRouterModel="openai/gpt-5"
+ *   modelId="my-provider/model"
  *   initialMessages={messages}
  *   tools={{ enabled: true, mcpServers: [...] }}
  * />
@@ -83,15 +104,15 @@ export interface ChatModelOption {
 export interface OpenChatComponentProps {
 	// AI/Backend Configuration
 	/**
-	 * Optional endpoint configuration for bypassing the bundled OpenRouter proxy.
+	 * Optional endpoint configuration for bypassing the bundled proxy.
 	 * When provided, the component will talk directly to the specified endpoint using client-side transports.
 	 */
 	endpointConfig?: EndpointConfig;
 	/**
-	 * OpenRouter model ID to use for the chat (default: project default model).
+	 * Model ID to use for the chat (default: project default model).
 	 * Example: 'openai/gpt-5' or 'anthropic/claude-3.5-sonnet'.
 	 */
-	openRouterModel?: string;
+	modelId?: string;
 	/**
 	 * API endpoint for AI SDK-compatible LLM chat requests
 	 */
@@ -178,7 +199,7 @@ export interface OpenChatComponentProps {
 	 */
 	theme?: 'light' | 'dark';
 	/**
-	 * If true, the component will require the user to connect their OpenRouter account before chatting.
+	 * If true, the component will require the user to complete authentication before chatting.
 	 * (default: false)
 	 */
 	requireAuth?: boolean;
@@ -187,9 +208,21 @@ export interface OpenChatComponentProps {
 	 */
 	authState?: AuthState;
 	/**
+	 * Optional custom message shown when authentication is required. Falls back to authState.message or a generic prompt.
+	 */
+	authMessage?: string;
+	/**
 	 * Optional hook to prepare auth-per-request headers/body. Called before sending when provided.
 	 */
 	prepareAuthRequest?: () => Promise<PreparedAuthInjection | void>;
+	/**
+	 * Optional provider capabilities used to toggle feature affordances (e.g., web search, reasoning).
+	 */
+	capabilities?: ProviderCapabilities;
+	/**
+	 * Optional provider branding and UI metadata.
+	 */
+	providerMeta?: ProviderMeta;
 	/**
 	 * An array of allowed model IDs. If provided, the model selection dropdown will only show these models.
 	 * Example: ['openai/gpt-5', 'anthropic/claude-3-opus'].

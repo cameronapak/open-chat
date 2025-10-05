@@ -1,4 +1,4 @@
-import { Fragment } from 'react';
+import { Fragment, type ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { type SavedMCPServer } from '@/lib/mcp-storage';
@@ -32,7 +32,7 @@ import {
 import { InputWithLabel } from './ui/input';
 import { getFavicon } from "@/lib/utils";
 import { Switch } from './ui/switch';
-import { enableOpenRouterWebSearch, mcpServersAtom, mcpServerDetailsAtom } from '@/lib/atoms';
+import { mcpServersAtom, mcpServerDetailsAtom } from '@/lib/atoms';
 import { useAtom } from 'jotai';
 import { VisuallyHidden } from 'radix-ui';
 import { useEffect, useRef, useState } from 'react';
@@ -55,14 +55,33 @@ import {
 interface MCPServerListDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  webSearchEnabled?: boolean;
+  onWebSearchToggle?: (enabled: boolean) => void;
+  webSearchLabel?: string;
+  webSearchDescription?: string;
+  webSearchAvatar?: ReactNode;
 }
 
-function IntegrationsAccordionList({ servers, onToggleServer, onRemoveServer }: {
-  servers: SavedMCPServer[],
-  onToggleServer: (serverId: string) => void,
-  onRemoveServer: (serverId: string) => void,
+function IntegrationsAccordionList({
+  servers,
+  onToggleServer,
+  onRemoveServer,
+  webSearchEnabled,
+  onWebSearchToggle,
+  webSearchLabel,
+  webSearchDescription,
+  webSearchAvatar,
+}: {
+  servers: SavedMCPServer[];
+  onToggleServer: (serverId: string) => void;
+  onRemoveServer: (serverId: string) => void;
+  webSearchEnabled?: boolean;
+  onWebSearchToggle?: (enabled: boolean) => void;
+  webSearchLabel?: string;
+  webSearchDescription?: string;
+  webSearchAvatar?: ReactNode;
 }) {
-  const [enableWebSearch, setEnableWebSearch] = useAtom(enableOpenRouterWebSearch);
+  const renderWebSearchToggle = typeof onWebSearchToggle === 'function';
 
   const handleRemoveServer = (serverId: string, serverName: string) => {
     const confirmed = confirm(`Do you want to delete ${serverName} integration?`);
@@ -74,33 +93,37 @@ function IntegrationsAccordionList({ servers, onToggleServer, onRemoveServer }: 
 
   return (
     <Accordion type="single" collapsible className="w-full">
-      <Fragment>
-        <ItemGroup>
-          <Item>
-            <ItemMedia>
-              <Avatar key="open-router-web-search" className="flex items-center justify-center size-8 bg-white shadow-sm rounded-sm">
-                <Globe className="h-6 w-6 text-muted-foreground" />
-                <span className='sr-only'>
-                  Web Search
-                </span>
-              </Avatar>
-            </ItemMedia>
-            <ItemContent className="gap-1">
-              <ItemTitle>OpenRouter Online</ItemTitle>
-              <ItemDescription>Get real-time web search results.</ItemDescription>
-            </ItemContent>
-            <ItemActions>
-              <Switch
-                className="touch-hitbox"
-                onClick={(e) => e.stopPropagation()}
-                checked={enableWebSearch}
-                onCheckedChange={() => setEnableWebSearch(!enableWebSearch)}
-              />
-            </ItemActions>
-          </Item>
-        </ItemGroup>
-        <ItemSeparator />
-      </Fragment>
+      {renderWebSearchToggle ? (
+        <>
+          <ItemGroup>
+            <Item>
+              <ItemMedia>
+                <Avatar className="flex items-center justify-center size-8 bg-white shadow-sm rounded-sm">
+                  {webSearchAvatar ?? <Globe className="h-6 w-6 text-muted-foreground" />}
+                  <span className="sr-only">
+                    {webSearchLabel ?? 'Web Search'}
+                  </span>
+                </Avatar>
+              </ItemMedia>
+              <ItemContent className="gap-1">
+                <ItemTitle>{webSearchLabel ?? 'Web Search'}</ItemTitle>
+                <ItemDescription>
+                  {webSearchDescription ?? 'Get real-time web search results.'}
+                </ItemDescription>
+              </ItemContent>
+              <ItemActions>
+                <Switch
+                  className="touch-hitbox"
+                  onClick={(e) => e.stopPropagation()}
+                  checked={Boolean(webSearchEnabled)}
+                  onCheckedChange={(checked) => onWebSearchToggle?.(checked)}
+                />
+              </ItemActions>
+            </Item>
+          </ItemGroup>
+          <ItemSeparator />
+        </>
+      ) : null}
 
       {servers.map((savedServer, index) => {
         const favicon = getFavicon(savedServer.remotes?.[0].url || "")
@@ -239,7 +262,15 @@ function McpConnectionTester({
   return null;
 }
 
-export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogProps) {
+export function MCPServerListDialog({
+  open,
+  onOpenChange,
+  webSearchEnabled,
+  onWebSearchToggle,
+  webSearchLabel,
+  webSearchDescription,
+  webSearchAvatar,
+}: MCPServerListDialogProps) {
   const [savedServers, setSavedServers] = useAtom(mcpServersAtom);
   const [, _setMcpDetails] = useAtom(mcpServerDetailsAtom);
 
@@ -393,6 +424,11 @@ export function MCPServerListDialog({ open, onOpenChange }: MCPServerListDialogP
                     prevServers.filter(server => server.id !== serverId)
                   )
                 }
+                webSearchEnabled={webSearchEnabled}
+                onWebSearchToggle={onWebSearchToggle}
+                webSearchLabel={webSearchLabel}
+                webSearchDescription={webSearchDescription}
+                webSearchAvatar={webSearchAvatar}
               />
             </TabsContent>
             <TabsContent value="custom" className="h-full overflow-y-auto px-3 grid grid-cols-1 gap-4">
