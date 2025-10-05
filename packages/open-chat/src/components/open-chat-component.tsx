@@ -42,9 +42,7 @@ import {
   Settings,
   Puzzle,
   Globe,
-  ExternalLink,
 } from 'lucide-react';
-import { toast } from 'sonner';
 import { Button } from './ui/button';
 import {
   Dialog,
@@ -151,6 +149,7 @@ const mergeUseChatOptions = (
   return base as ChatOptions;
 };
 
+const DEFAULT_AUTH_MESSAGE = 'Please connect your OpenRouter account to start chatting.';
 const formatter = new Intl.NumberFormat('en-US');
 const costFormatter = new Intl.NumberFormat('en-US', {
   style: 'currency',
@@ -227,16 +226,18 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
     modelsError,
     onModelChange,
     useChatOptions,
+    authState,
+    prepareAuthRequest,
   } = props;
 
-  const [connected, setConnected] = useState<boolean>(false);
   const [isOpen, setIsOpen] = useState(false);
   const [mcpDialogOpen, setMcpDialogOpen] = useState(false);
   const [model, setModel] = useAtom(modelAtom);
   const [enableWebSearch] = useAtom(enableOpenRouterWebSearch);
-  const [error, setError] = useState<string | null>(null);
   const [modelMenuOpen, setModelMenuOpen] = useState(false);
   const enabledServers = useAtomValue(enabledMcpServersAtom);
+  const authReady = authState?.ready ?? true;
+  const authMessage = authState?.message ?? DEFAULT_AUTH_MESSAGE;
 
   const enabledServersRef = useRef<SavedMCPServer[]>(enabledServers);
   useEffect(() => {
@@ -255,24 +256,10 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
   }, [model, enableWebSearch]);
 
   useEffect(() => {
-    const checkStatus = async () => {
-      try {
-        const baseUrl = api.replace('/api/chat', '');
-        const res = await fetch(`${baseUrl}/api/oauth/status`, {
-          credentials: 'include',
-        });
-        const data = await res.json().catch(() => ({ connected: false }));
-        setConnected(Boolean(data.connected));
-        if (requireAuth && !data.connected) {
-          setIsOpen(true);
-        }
-      } catch {
-        setConnected(false);
-        if (requireAuth) setIsOpen(true);
-      }
-    };
-    checkStatus();
-  }, [requireAuth, api]);
+    if (requireAuth && !authReady) {
+      setIsOpen(true);
+    }
+  }, [requireAuth, authReady]);
 
   const modelOptions = useMemo<ChatModelOption[]>(
     () =>
@@ -425,7 +412,7 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
           }),
         );
 
-        return {
+        const result: { body: Record<string, unknown>; headers?: Record<string, string>; } = {
           body: {
             ...body,
             id,
@@ -437,9 +424,31 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
             mcpServers: mcpServersData,
           },
         };
+
+        if (prepareAuthRequest) {
+          try {
+            const authInjection = await prepareAuthRequest();
+            if (authInjection?.body) {
+              result.body = {
+                ...result.body,
+                ...authInjection.body,
+              };
+            }
+            if (authInjection?.headers) {
+              result.headers = {
+                'Content-Type': 'application/json',
+                ...authInjection.headers,
+              };
+            }
+          } catch (authError) {
+            onError?.(authError instanceof Error ? authError : new Error(String(authError)));
+          }
+        }
+
+        return result;
       },
     });
-  }, [api, systemPrompt, threadId]);
+  }, [api, systemPrompt, threadId, prepareAuthRequest, onError]);
 
   const defaultChatOptions = useMemo<ChatOptions>(() => {
     const base: Record<string, any> = {
@@ -482,8 +491,8 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
 
       if (!(hasText || hasAttachments)) return;
 
-      if (requireAuth && !connected) {
-        toast.error('Please connect your OpenRouter account first');
+      if (requireAuth && !authReady) {
+        setIsOpen(true);
         return;
       }
 
@@ -498,46 +507,8 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
 
       event.currentTarget.reset();
     },
-    [status, connected, requireAuth, sendMessage, onSend, stop],
+    [status, authReady, requireAuth, sendMessage, onSend, stop],
   );
-
-  const handleConnect = useCallback(async () => {
-    try {
-      setError(null);
-      const baseUrl = api.replace('/api/chat', '');
-      const res = await fetch(`${baseUrl}/api/oauth/start`, {
-        method: 'POST',
-        credentials: 'include',
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || 'Failed to start OAuth');
-      }
-      const { authUrl } = await res.json();
-      if (!authUrl) throw new Error('Missing authUrl');
-      window.location.href = authUrl;
-    } catch (e: any) {
-      const errMsg = e.message || 'Failed to start OAuth';
-      setError(errMsg);
-      onError?.(new Error(errMsg));
-    }
-  }, [api, onError]);
-
-  const handleDisconnect = useCallback(async () => {
-    try {
-      const baseUrl = api.replace('/api/chat', '');
-      await fetch(`${baseUrl}/api/oauth/disconnect`, {
-        method: 'POST',
-        credentials: 'include',
-      });
-      setConnected(false);
-      setError(null);
-      setIsOpen(true);
-    } catch {
-      setConnected(false);
-      setIsOpen(true);
-    }
-  }, [api]);
 
   const openSettings = () => setIsOpen(true);
   const openMcpDialog = () => setMcpDialogOpen(true);
@@ -620,83 +591,76 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
           <DialogHeader>
             <DialogTitle>Settings</DialogTitle>
             <DialogDescription>
-              Configure your OpenRouter account and settings.
+              Configure your chat preferences.
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
-            {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
             <div className="space-y-4">
-              {connected ? (
-                hasModelSelectionUi ? (
-                  <>
-                    <PromptInputModelSelect
-                      onValueChange={handleModelSelect}
-                      value={modelOptions.some((m) => m.id === model) ? model : ''}
-                      disabled={
-                        !connected ||
-                        modelsLoading ||
-                        Boolean(modelsError) ||
-                        !modelOptions.length
-                      }
-                      open={modelMenuOpen}
-                      onOpenChange={setModelMenuOpen}
-                    >
-                      <PromptInputModelSelectTrigger className="!border !border-solid border-input w-full">
-                        <PromptInputModelSelectValue placeholder="Select a model" />
-                      </PromptInputModelSelectTrigger>
-                      <PromptInputModelSelectContent>
-                        {modelOptions.length ? (
-                          modelOptions.map((m) => {
-                            const promptCost = m.promptCostPerToken;
-                            const completionCost = m.completionCostPerToken;
-                            return (
-                              <PromptInputModelSelectItem key={m.id} value={m.id}>
-                                <div className="flex-1 grid grid-cols gap-1">
-                                  <p className="w-full">{m.label}</p>
-                                  {m.description ? (
-                                    <p className="text-xs text-muted-foreground">
-                                      {m.description}
-                                    </p>
-                                  ) : null}
-                                  {m.contextLength ? (
-                                    <p className="text-xs text-muted-foreground font-mono">
-                                      {formatter.format(m.contextLength)} context
-                                    </p>
-                                  ) : null}
-                                  {promptCost !== undefined || completionCost !== undefined ? (
-                                    <p className="text-xs text-muted-foreground font-mono">
-                                      {promptCost !== undefined
-                                        ? `${costFormatter.format(promptCost)} prompt`
-                                        : null}
-                                      {promptCost !== undefined && completionCost !== undefined ? ' · ' : ''}
-                                      {completionCost !== undefined
-                                        ? `${costFormatter.format(completionCost)} completion`
-                                        : null}
-                                    </p>
-                                  ) : null}
-                                </div>
-                              </PromptInputModelSelectItem>
-                            );
-                          })
-                        ) : (
-                          <PromptInputModelSelectItem value="no-models" disabled>
-                            {modelsLoading ? 'Loading models...' : 'No models available'}
-                          </PromptInputModelSelectItem>
-                        )}
-                      </PromptInputModelSelectContent>
-                    </PromptInputModelSelect>
-                    {modelsError ? <p className="text-xs text-destructive">{modelsError}</p> : null}
-                  </>
-                ) : (
-                  <p className="text-sm text-muted-foreground">
-                    Provide model options to enable selection in settings.
-                  </p>
-                )
+              {requireAuth && !authReady ? (
+                <p className="text-sm text-muted-foreground">{authMessage}</p>
+              ) : hasModelSelectionUi ? (
+                <>
+                  <PromptInputModelSelect
+                    onValueChange={handleModelSelect}
+                    value={modelOptions.some((m) => m.id === model) ? model : ''}
+                    disabled={
+                      modelsLoading ||
+                      Boolean(modelsError) ||
+                      !modelOptions.length
+                    }
+                    open={modelMenuOpen}
+                    onOpenChange={setModelMenuOpen}
+                  >
+                    <PromptInputModelSelectTrigger className="!border !border-solid border-input w-full">
+                      <PromptInputModelSelectValue placeholder="Select a model" />
+                    </PromptInputModelSelectTrigger>
+                    <PromptInputModelSelectContent>
+                      {modelOptions.length ? (
+                        modelOptions.map((m) => {
+                          const promptCost = m.promptCostPerToken;
+                          const completionCost = m.completionCostPerToken;
+                          return (
+                            <PromptInputModelSelectItem key={m.id} value={m.id}>
+                              <div className="flex-1 grid grid-cols gap-1">
+                                <p className="w-full">{m.label}</p>
+                                {m.description ? (
+                                  <p className="text-xs text-muted-foreground">
+                                    {m.description}
+                                  </p>
+                                ) : null}
+                                {m.contextLength ? (
+                                  <p className="text-xs text-muted-foreground font-mono">
+                                    {formatter.format(m.contextLength)} context
+                                  </p>
+                                ) : null}
+                                {promptCost !== undefined || completionCost !== undefined ? (
+                                  <p className="text-xs text-muted-foreground font-mono">
+                                    {promptCost !== undefined
+                                      ? `${costFormatter.format(promptCost)} prompt`
+                                      : null}
+                                    {promptCost !== undefined && completionCost !== undefined ? ' · ' : ''}
+                                    {completionCost !== undefined
+                                      ? `${costFormatter.format(completionCost)} completion`
+                                      : null}
+                                  </p>
+                                ) : null}
+                              </div>
+                            </PromptInputModelSelectItem>
+                          );
+                        })
+                      ) : (
+                        <PromptInputModelSelectItem value="no-models" disabled>
+                          {modelsLoading ? 'Loading models...' : 'No models available'}
+                        </PromptInputModelSelectItem>
+                      )}
+                    </PromptInputModelSelectContent>
+                  </PromptInputModelSelect>
+                  {modelsError ? <p className="text-xs text-destructive">{modelsError}</p> : null}
+                </>
               ) : (
-                <Button onClick={handleConnect} className="w-full">
-                  <ExternalLink className="mr-2 h-4 w-4" />
-                  Get Started with OpenRouter
-                </Button>
+                <p className="text-sm text-muted-foreground">
+                  Provide model options to enable selection in settings.
+                </p>
               )}
               <div className="flex items-center justify-between">
                 <span>Dark Mode</span>
@@ -704,13 +668,6 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
               </div>
             </div>
           </div>
-          <DialogFooter className="flex justify-end space-x-2">
-            {connected && (
-              <Button variant="destructive" onClick={handleDisconnect}>
-                Disconnect
-              </Button>
-            )}
-          </DialogFooter>
         </DialogContent>
       </Dialog>
 
@@ -720,13 +677,10 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
         <div className="flex flex-col h-full">
           <Conversation className="h-full">
             <ConversationContent>
-              {!connected && !isOpen && requireAuth && (
+              {requireAuth && !authReady && !isOpen && (
                 <Message from="assistant">
                   <MessageContent>
-                    <Response>
-                      Please connect your OpenRouter account using the settings to start
-                      chatting.
-                    </Response>
+                    <Response>{authMessage}</Response>
                   </MessageContent>
                 </Message>
               )}
@@ -771,8 +725,10 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
               </PromptInputAttachments>
               <PromptInputTextarea
                 className="transition-none"
-                placeholder={requireAuth && !connected ? 'Connect OpenRouter first' : placeholder}
-                disabled={requireAuth && !connected}
+                placeholder={
+                  requireAuth && !authReady ? authMessage : placeholder
+                }
+                disabled={requireAuth && !authReady}
                 aria-label="Chat input"
               />
             </PromptInputBody>
@@ -818,7 +774,7 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
                 </Tooltip>
               </PromptInputTools>
               <PromptInputSubmit
-                disabled={(requireAuth && !connected) || !model}
+                disabled={(requireAuth && !authReady) || !model}
                 status={status || undefined}
                 aria-label={status === 'streaming' ? 'Stop' : 'Send'}
               />

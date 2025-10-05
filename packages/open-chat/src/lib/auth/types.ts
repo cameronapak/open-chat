@@ -1,9 +1,5 @@
 import type { OAuthMetadata } from '@modelcontextprotocol/sdk/shared/auth.js'
 
-/**
- * Internal type for storing OAuth state in localStorage during the popup flow.
- * @internal
- */
 export interface StoredState {
   expiry: number
   metadata?: OAuthMetadata // Optional: might not be needed if auth() rediscovers
@@ -18,3 +14,5 @@ export interface StoredState {
     scopes?: string[]
   }
 }
+
+export type { AuthState, PreparedAuthInjection } from './server-helpers.js'
