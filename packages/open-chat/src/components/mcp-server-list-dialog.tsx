@@ -222,12 +222,14 @@ function McpConnectionTester({
   url,
   onReady,
   onFailed,
+  onAuthRedirect,
 }: {
   url: string;
   onReady: (details: { tools?: any[]; resources?: any[]; prompts?: any[]; resourceTemplates?: any[]; serverInfo?: { name?: string; version?: string } }) => void;
   onFailed: (error?: string) => void;
+  onAuthRedirect?: (manualUrl?: string) => void;
 }) {
-  const { state, error, disconnect, tools, resources, prompts, resourceTemplates, serverInfo } = useMcp({
+  const { state, error, disconnect, tools, resources, prompts, resourceTemplates, serverInfo, authUrl } = useMcp({
     url,
     clientName: 'OpenChat',
     clientUri: typeof window !== 'undefined' ? window.location.origin : '',
@@ -238,6 +240,8 @@ function McpConnectionTester({
     autoRetry: false,
     preventAutoAuth: false,
   });
+
+  const prevStateRef = useRef(state);
 
   useEffect(() => {
     if (!url) return;
@@ -255,9 +259,11 @@ function McpConnectionTester({
     } else if (state === 'failed') {
       onFailed(error);
       disconnect(true);
+    } else if (state === 'authenticating' && prevStateRef.current !== 'authenticating') {
+      onAuthRedirect?.(authUrl);
     }
-    // For 'authenticating' / 'pending_auth' we just wait; popup flow will resolve.
-  }, [state, error, url, onReady, onFailed, disconnect, tools, resources, prompts, resourceTemplates, serverInfo]);
+    prevStateRef.current = state;
+  }, [state, error, url, onReady, onFailed, disconnect, tools, resources, prompts, resourceTemplates, serverInfo, onAuthRedirect, authUrl]);
 
   return null;
 }
@@ -550,6 +556,10 @@ export function MCPServerListDialog({
               toast.error(err || 'Failed to connect to server');
               setTesting(false);
               setPendingServer(null);
+            }}
+            onAuthRedirect={(manualUrl) => {
+              setTesting(false);
+              toast.info('Complete OAuth in the authorization popup to finish adding this server.');
             }}
           />
         ) : null}

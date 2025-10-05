@@ -86,7 +86,7 @@ export function useMcp(options: UseMcpOptions): UseMcpResult {
   const connectingRef = useRef<boolean>(false)
   const isMountedRef = useRef<boolean>(true)
   const connectAttemptRef = useRef<number>(0)
-  const authTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const authTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const isClosingRef = useRef(false)
 
   // --- Refs for values used in callbacks ---
@@ -477,6 +477,7 @@ export function useMcp(options: UseMcpOptions): UseMcpResult {
               return 'failed' // Stop this attempt sequence, new one started
             } else if (authResult === 'REDIRECT') {
               addLog('info', 'Redirecting for authentication. Waiting for callback...')
+              addLog('debug', 'Auth redirect issued; connectingRef stays true until OAuth callback resolves.')
               return 'auth_redirect' // Signal that we are waiting for redirect
             }
           } catch (sdkAuthError) {
@@ -536,9 +537,11 @@ export function useMcp(options: UseMcpOptions): UseMcpResult {
     // It should be false if 'success' or 'failed'.
     // It should remain true if 'auth_redirect'.
     if (finalStatus === 'success' || finalStatus === 'failed') {
-      connectingRef.current = false
+      connectingRef.current = false;
+    } else if (finalStatus === 'auth_redirect') {
+      connectingRef.current = true;
+      addLog('debug', 'auth_redirect status detected; awaiting OAuth popup callback before clearing connect state.')
     }
-    // If finalStatus is 'auth_redirect', connectingRef remains true (set at the start).
 
     addLog('debug', `Connection sequence finished with status: ${finalStatus}`)
   }, [
@@ -869,7 +872,7 @@ export function useMcp(options: UseMcpOptions): UseMcpResult {
 
   // Auto-Retry (depends on state, config, stable callbacks)
   useEffect(() => {
-    let retryTimeoutId: NodeJS.Timeout | null = null
+    let retryTimeoutId: ReturnType<typeof setTimeout> | null = null
     // Use state directly here, as this effect *should* run when state changes to 'failed'
     if (state === 'failed' && autoRetry && connectAttemptRef.current > 0) {
       const delay = typeof autoRetry === 'number' ? autoRetry : DEFAULT_RETRY_DELAY
