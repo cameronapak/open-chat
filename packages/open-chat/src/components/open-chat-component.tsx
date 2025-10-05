@@ -39,10 +39,8 @@ import { Actions, Action } from './ai-elements/actions';
 import {
   CopyIcon,
   RefreshCcwIcon,
-  Settings,
   Puzzle,
   Globe,
-  Sparkle,
 } from 'lucide-react';
 import { Button } from './ui/button';
 import {
@@ -52,7 +50,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from './ui/dialog';
-import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 import { MCPServerListDialog } from './mcp-server-list-dialog';
 import { type SavedMCPServer } from '../lib/mcp-storage';
 import { getFavicon } from '../lib/utils';
@@ -75,6 +72,7 @@ import { ThemeProvider } from './theme-provider';
 import { TooltipProvider } from './ui/tooltip';
 import { sanitizeUrl } from 'strict-url-sanitise';
 import { loadApiKey } from '../lib/keystore';
+import { ModelCombobox } from './ai-elements/model-combobox';
 
 type ChatOptions = Parameters<typeof useChat>[0];
 
@@ -554,10 +552,12 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
     [status, authReady, requireAuth, sendMessage, onSend, stop],
   );
 
-  const openSettings = () => setIsOpen(true);
   const openMcpDialog = () => setMcpDialogOpen(true);
 
   const shouldShowAvatarGroup = Boolean(enabledServers.length || (canUseWebSearch && webSearchActive));
+  const showInlineModelCombobox = Boolean(
+    modelsLoading || modelsError || modelOptions.length > 1,
+  );
 
   const renderMessageContent = useCallback(
     (message: any, part: any, index: number) => {
@@ -812,23 +812,16 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
                   </div>
                 </Button>
 
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      type="button"
-                      onClick={openSettings}
-                      aria-label="AI model selector"
-                    >
-                      <Sparkle className="h-4 w-4 text-muted-foreground" />
-                      <span className="sr-only">model Selector</span>        
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Model Selector</p>
-                  </TooltipContent>
-                </Tooltip>
+                {showInlineModelCombobox ? (
+                  <ModelCombobox
+                    value={modelOptions.some((m) => m.id === model) ? model : ''}
+                    options={modelOptions}
+                    onSelect={handleModelSelect}
+                    disabled={requireAuth && !authReady}
+                    loading={modelsLoading}
+                    error={modelsError}
+                  />
+                ) : null}
               </PromptInputTools>
               <PromptInputSubmit
                 disabled={(requireAuth && !authReady) || !model}
