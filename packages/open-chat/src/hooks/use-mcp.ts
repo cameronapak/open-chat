@@ -19,13 +19,13 @@ import {
   type Prompt,
 } from '@modelcontextprotocol/sdk/types.js'
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { sanitizeUrl } from 'strict-url-sanitise'
 import { SSEClientTransport, type SSEClientTransportOptions } from '@modelcontextprotocol/sdk/client/sse.js'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { auth, UnauthorizedError } from '@modelcontextprotocol/sdk/client/auth.js'
-import { sanitizeUrl } from 'strict-url-sanitise'
 import { BrowserOAuthClientProvider } from '@/lib/auth/browser-provider'
-import type { UseMcpOptions, UseMcpResult } from './use-mcp.types'
+import type { UseMcpOptions, UseMcpResult } from '@/hooks/use-mcp.types'
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js'
 
 const DEFAULT_RECONNECT_DELAY = 3000
