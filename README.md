@@ -26,7 +26,7 @@ The OpenChatComponent is a fully-featured, reusable chat component that can be e
 ### Basic Usage
 
 ```tsx
-import { OpenChatComponent } from '@/components/open-chat-component';
+import OpenChatComponent from "<package-name-tbd>";
 
 function App() {
   return (
@@ -43,7 +43,7 @@ function App() {
 ### With Authentication Required
 
 ```tsx
-import { OpenChatComponent } from '@/components/open-chat-component';
+import OpenChatComponent from "<package-name-tbd>";
 
 function SecureChat() {
   return (
@@ -62,7 +62,7 @@ function SecureChat() {
 ### With MCP Tools Integration
 
 ```tsx
-import { OpenChatComponent } from '@/components/open-chat-component';
+import OpenChatComponent from "<package-name-tbd>";
 
 function ChatWithTools() {
   return (
@@ -84,7 +84,7 @@ function ChatWithTools() {
 ### Fully Customized Example
 
 ```tsx
-import { OpenChatComponent } from '@/components/open-chat-component';
+import OpenChatComponent from "<package-name-tbd>";
 import type { UIMessage } from '@ai-sdk/react';
 
 function AdvancedChat() {
@@ -177,7 +177,7 @@ Model selection is now fully controlled by the parent. Fetch any list of models 
 ```tsx
 import OpenChatComponent, {
   useOpenRouterModelOptions,
-} from "@faith-tools/open-chat";
+} from "<package-name-tbd>";
 
 function ChatWithOpenRouterModels() {
   const baseServerUrl = import.meta.env.VITE_SERVER_URL;
@@ -202,6 +202,9 @@ If you already have model data, simply map it into the `ChatModelOption` shape a
 Pass `useChatOptions` when you need full control over the underlying `useChat` hook—custom transports, headers, or a fixed model. When a model is supplied through these options, the dropdown hides automatically so end users cannot switch away.
 
 ```tsx
+import OpenChatComponent, {
+  useOpenRouterModelOptions,
+} from "<package-name-tbd>";
 import { DefaultChatTransport } from "ai";
 
 <OpenChatComponent
@@ -224,7 +227,7 @@ To hide the selector explicitly, set the model in your transport or supply it in
 
 ```tsx
 import { useEffect, useMemo, useState } from "react";
-import OpenChatComponent from "@faith-tools/open-chat";
+import OpenChatComponent from "<package-name-tbd>";
 
 const baseServerUrl = import.meta.env.VITE_SERVER_URL;
 const lockedModel = import.meta.env.VITE_LOCKED_MODEL?.trim();
