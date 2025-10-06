@@ -42,6 +42,8 @@ import {
   RefreshCcwIcon,
   Puzzle,
   Globe,
+  KeyRound,
+  MessageCircle,
 } from 'lucide-react';
 import { Button } from './ui/button';
 import {
@@ -59,6 +61,13 @@ import { useAtomValue } from 'jotai';
 import { ModeToggle } from './mode-toggle';
 import { type ChatModelOption, type OpenChatComponentProps } from '../types/open-chat-component';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
+import {
+  Empty,
+  EmptyMedia,
+  EmptyHeader,
+  EmptyTitle,
+  EmptyDescription,
+} from './ui/empty';
 import { AvatarGroup, AvatarGroupTooltip } from './ui/shadcn-io/avatar-group';
 import { Source, Sources, SourcesContent, SourcesTrigger } from './ai-elements/sources';
 import { Reasoning, ReasoningContent, ReasoningTrigger } from './ai-elements/reasoning';
@@ -735,16 +744,39 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
       <div className={className} style={{ height }}>
         <div className="flex flex-col h-full">
           <Conversation className="h-full">
-            <ConversationContent>
-              {requireAuth && !authReady && !isOpen && (
-                <Message from="assistant">
-                  <MessageContent>
-                    <Response>{authMessage}</Response>
-                    {providerMeta?.authCTA ? (
-                      <div className="mt-3">{providerMeta.authCTA}</div>
-                    ) : null}
-                  </MessageContent>
-                </Message>
+            <ConversationContent className="h-full">
+              {rawMessages.length === 0 && (
+                <section className="grid grid-rows-1 h-full grid-cols-1 justify-center items-center gap-4">
+                  <Empty>
+                    <EmptyHeader>
+                      {requireAuth && !authReady && !isOpen ? (
+                        <>
+                          <EmptyMedia variant="icon">
+                            <KeyRound />
+                          </EmptyMedia>
+                          <EmptyTitle>
+                            {authMessage}
+                          </EmptyTitle>
+                          {providerMeta?.authCTA ? (
+                            <div className="mt-3">{providerMeta.authCTA}</div>
+                          ) : null}
+                        </>
+                      ) : (
+                        <>
+                          <EmptyMedia variant="icon">
+                            <MessageCircle />
+                          </EmptyMedia>
+                          <EmptyTitle>
+                            No messages yet
+                          </EmptyTitle>
+                          <EmptyDescription>
+                            Start a conversation by sending a message
+                          </EmptyDescription>
+                        </>
+                      )}
+                    </EmptyHeader>
+                  </Empty>
+                </section>
               )}
 
               {rawMessages.map((message) => (
