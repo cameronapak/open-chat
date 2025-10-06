@@ -2,7 +2,7 @@
 
 ![OpenChat](./open-chat-banner.png)
 
-Self-host your own MCP client in your existing apps.
+Own your chat. Self-host your own MCP client in your existing apps.
 
 OpenChat is a truly open AI chatbot.
 
