@@ -1,12 +1,12 @@
 import { type UIMessage, type UseChatOptions } from "@ai-sdk/react";
 import { type ReactNode } from "react";
-import type { UseMcpOptions } from "../hooks/use-mcp.types";
-import type { AuthState, PreparedAuthInjection } from "../lib/auth/types";
+import type { UseMcpOptions } from "@/hooks/use-mcp.types";
+import type { AuthState, PreparedAuthInjection } from "@/lib/auth/types";
 
 /**
  * User profile for providing context in the chat.
  */
-interface UserProfile {
+export interface UserProfile {
 	/** User's display name. */
 	nickname: string;
 	/** Optional chat preferences, e.g., as a JSON string. */
@@ -18,7 +18,7 @@ interface UserProfile {
 /**
  * Configuration for enabling and configuring MCP tools.
  */
-interface ToolsConfig {
+export interface ToolsConfig {
 	/** Whether to enable tools and MCP integration (default: true). */
 	enabled?: boolean;
 	/** Array of MCP server configurations using project hook types. */
