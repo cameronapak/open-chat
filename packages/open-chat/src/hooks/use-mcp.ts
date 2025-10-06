@@ -251,8 +251,8 @@ export function useMcp(options: UseMcpOptions): UseMcpResult {
           },
         }
         // Sanitize the URL to prevent XSS attacks from malicious server URLs
-        const sanitizedUrl = url
-        const targetUrl = new URL(sanitizedUrl)
+        const sanitizedUrl = sanitizeUrl(url)
+        const targetUrl = sanitizedUrl.toString();
 
         addLog('debug', `Creating ${transportType.toUpperCase()} transport for URL: ${targetUrl.toString()}`)
         addLog('debug', `Transport options:`, {
