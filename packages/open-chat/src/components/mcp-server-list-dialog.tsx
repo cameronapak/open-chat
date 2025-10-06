@@ -2,7 +2,7 @@ import { Fragment, type ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { type SavedMCPServer } from '@/lib/mcp-storage';
-import { Plus, Puzzle, Globe, X, Trash } from 'lucide-react';
+import { Plus, Puzzle, Globe, Trash } from 'lucide-react';
 import {
   Drawer,
   DrawerClose,
