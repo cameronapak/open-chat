@@ -1,9 +1,6 @@
 import React, { useMemo, useState } from 'react';
-// ... existing code ...
-import { Button } from '../ui/button';
-// ... existing code ...
-import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
-// ... existing code ...
+import { Button } from '@/components/ui/button';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   Command,
   CommandEmpty,
@@ -11,15 +8,11 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from '../ui/command';
-// ... existing code ...
-import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
-// ... existing code ...
+} from '@/components/ui/command';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Check, Loader2, Sparkle } from 'lucide-react';
-// ... existing code ...
-import { cn } from '../../lib/utils';
-// ... existing code ...
-import type { ChatModelOption } from '../../types/open-chat-component';
+import { cn } from '@/lib/utils';
+import type { ChatModelOption } from '@/types/open-chat-component';
 
 const contextFormatter = new Intl.NumberFormat('en-US');
 const costFormatter = new Intl.NumberFormat('en-US', {
