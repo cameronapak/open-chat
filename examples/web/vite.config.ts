@@ -19,6 +19,12 @@ export default defineConfig({
     //   devOptions: { enabled: true },
     // })
   ],
+  server: {
+    // Using LocalCan to expose localhost:3001
+    // to my local internet but with HTTPS.
+    // This is an NGROK tunnel alternative.
+    allowedHosts: ["open-chat.local"]
+  },
 	resolve: {
 		alias: {
 			"@": path.resolve(__dirname, "./src"),
