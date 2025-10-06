@@ -61,7 +61,7 @@ export const Context = ({
 const ContextIcon = () => {
   const { usedTokens, maxTokens } = useContextValue();
   const circumference = 2 * Math.PI * ICON_RADIUS;
-  const usedPercent = usedTokens / maxTokens;
+  const usedPercent = maxTokens > 0 ? usedTokens / maxTokens : 0;
   const dashOffset = circumference * (1 - usedPercent);
 
   return (
@@ -103,7 +103,7 @@ export type ContextTriggerProps = ComponentProps<typeof Button>;
 
 export const ContextTrigger = ({ children, ...props }: ContextTriggerProps) => {
   const { usedTokens, maxTokens } = useContextValue();
-  const usedPercent = usedTokens / maxTokens;
+  const usedPercent = maxTokens > 0 ? usedTokens / maxTokens : 0;
   const renderedPercent = new Intl.NumberFormat("en-US", {
     style: "percent",
     maximumFractionDigits: 1,
@@ -143,7 +143,7 @@ export const ContextContentHeader = ({
   ...props
 }: ContextContentHeader) => {
   const { usedTokens, maxTokens } = useContextValue();
-  const usedPercent = usedTokens / maxTokens;
+  const usedPercent = maxTokens > 0 ? usedTokens / maxTokens : 0;
   const displayPct = new Intl.NumberFormat("en-US", {
     style: "percent",
     maximumFractionDigits: 1,
@@ -200,6 +200,8 @@ export const ContextContentFooter = ({
         usage: {
           input: usage?.inputTokens ?? 0,
           output: usage?.outputTokens ?? 0,
+          reasoningTokens: usage?.reasoningTokens ?? 0,
+          cacheReads: usage?.cachedInputTokens ?? 0,
         },
       }).totalUSD
     : undefined;
