@@ -156,12 +156,13 @@ export async function fetchOpenRouterModelOptions(baseUrl: string): Promise<Chat
   return modelsList.map(mapOpenRouterModelToChatOption);
 }
 
-export function useOpenRouterModelOptions(baseUrl: string) {
+export function useOpenRouterModelOptions(baseUrl: string, options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: ["openrouter", "model-options"],
     queryFn: () => fetchOpenRouterModelOptions(baseUrl),
     staleTime: MODELS_TTL_MS,
     gcTime: MODELS_TTL_MS * 2,
     retry: 1,
+    enabled: options?.enabled,
   });
 }

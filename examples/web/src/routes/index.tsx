@@ -41,8 +41,8 @@ const ChatBotDemo = () => {
     };
   }, [lockedModel]) as UseChatOptions<UIMessage> | undefined;
   const shouldFetchModels = !lockedModel;
-  const modelsQuery = shouldFetchModels ? useOpenRouterModelOptions(baseServerUrl) : undefined;
-  const modelsErrorValue = modelsQuery?.error;
+  const modelsQuery = useOpenRouterModelOptions(normalizedServerUrl, { enabled: shouldFetchModels });
+  const modelsErrorValue = shouldFetchModels ? modelsQuery.error : undefined;
   const modelsError = modelsErrorValue
     ? modelsErrorValue instanceof Error
       ? modelsErrorValue.message
@@ -50,8 +50,8 @@ const ChatBotDemo = () => {
     : undefined;
   const fetchProps = shouldFetchModels
     ? {
-        models: modelsQuery?.data,
-        modelsLoading: Boolean(modelsQuery?.isLoading),
+        models: modelsQuery.data,
+        modelsLoading: Boolean(modelsQuery.isLoading),
         modelsError,
       }
     : {};
