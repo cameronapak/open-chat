@@ -1,5 +1,5 @@
 'use client'
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { ListToolsResultSchema, ListResourcesResultSchema, ListPromptsResultSchema } from '@modelcontextprotocol/sdk/types.js'
 import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
