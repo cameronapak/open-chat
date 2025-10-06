@@ -1,4 +1,3 @@
-import "@fontsource-variable/geist";
 import { type UIMessage, type UseChatOptions } from "@ai-sdk/react";
 import { type ReactNode } from "react";
 import type { UseMcpOptions } from "../hooks/use-mcp.types";

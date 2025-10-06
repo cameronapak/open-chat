@@ -1,5 +1,6 @@
 'use client';
 
+import "@fontsource-variable/geist";
 import React, {
   useState,
   useEffect,
