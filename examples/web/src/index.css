@@ -1,0 +1,32 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: 'Geist Variable', sans-serif;
+}
+
+@utility touch-hitbox {
+  position: relative;
+  &:before {
+    @apply w-full h-full -translate-x-1/2 -translate-y-1/2 absolute block top-1/2 left-1/2 min-h-[44px] min-w-[44px] z-50;
+
+    content: '';
+  }
+}
+
+html,
+body {
+  @media (prefers-color-scheme: dark) {
+    color-scheme: dark;
+  }
+}
+
+@layer base {
+  html {
+    /* https://x.com/BHolmesDev/status/1970489474866958642 */
+    overscroll-behavior: none;
+    @apply font-sans;
+  }
+}

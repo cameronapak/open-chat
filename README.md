@@ -1,10 +1,14 @@
 # OpenChat
 
-A truly open AI chatbot.
+![OpenChat](./open-chat-banner.png)
+
+Own your chat. Self-host your own MCP client in your existing apps.
+
+OpenChat is a truly open AI chatbot.
 
 Not locked down to any given LLM provider. 
 
-Sign into your OpenRouter account via OAuth, secured through encryption.
+Use any AI SDK-compatible transport. (Comes with helpers to easily integrate OpenRouter, letting users control their own models and token usage.)
 
 Easily import into your existing apps (Coming soon).
 
@@ -22,7 +26,7 @@ The OpenChatComponent is a fully-featured, reusable chat component that can be e
 ### Basic Usage
 
 ```tsx
-import { OpenChatComponent } from '@/components/open-chat-component';
+import OpenChatComponent from "<package-name-tbd>";
 
 function App() {
   return (
@@ -39,7 +43,7 @@ function App() {
 ### With Authentication Required
 
 ```tsx
-import { OpenChatComponent } from '@/components/open-chat-component';
+import OpenChatComponent from "<package-name-tbd>";
 
 function SecureChat() {
   return (
@@ -58,7 +62,7 @@ function SecureChat() {
 ### With MCP Tools Integration
 
 ```tsx
-import { OpenChatComponent } from '@/components/open-chat-component';
+import OpenChatComponent from "<package-name-tbd>";
 
 function ChatWithTools() {
   return (
@@ -80,7 +84,7 @@ function ChatWithTools() {
 ### Fully Customized Example
 
 ```tsx
-import { OpenChatComponent } from '@/components/open-chat-component';
+import OpenChatComponent from "<package-name-tbd>";
 import type { UIMessage } from '@ai-sdk/react';
 
 function AdvancedChat() {
@@ -166,6 +170,118 @@ function AdvancedChat() {
 }
 ```
 
+### Supplying Models Externally
+
+Model selection is now fully controlled by the parent. Fetch any list of models (for example, from OpenRouter) and pass it into the component:
+
+```tsx
+import OpenChatComponent, {
+  useOpenRouterModelOptions,
+} from "<package-name-tbd>";
+
+function ChatWithOpenRouterModels() {
+  const baseServerUrl = import.meta.env.VITE_SERVER_URL;
+  const { data: models, isLoading, error } = useOpenRouterModelOptions(baseServerUrl);
+
+  return (
+    <OpenChatComponent
+      api={`${baseServerUrl}/api/chat`}
+      requireAuth
+      models={models}
+      modelsLoading={isLoading}
+      modelsError={error ? (error instanceof Error ? error.message : String(error)) : undefined}
+    />
+  );
+}
+```
+
+If you already have model data, simply map it into the `ChatModelOption` shape and pass it via the `models` prop.
+
+### Override Transport or Lock a Model with `useChatOptions`
+
+Pass `useChatOptions` when you need full control over the underlying `useChat` hook—custom transports, headers, or a fixed model. When a model is supplied through these options, the dropdown hides automatically so end users cannot switch away.
+
+```tsx
+import OpenChatComponent, {
+  useOpenRouterModelOptions,
+} from "<package-name-tbd>";
+import { DefaultChatTransport } from "ai";
+
+<OpenChatComponent
+  api="http://localhost:3000/api/chat"
+  useChatOptions={{
+    transport: new DefaultChatTransport({
+      api: "https://proxy.example.com/chat",
+      headers: { Authorization: `Bearer ${token}` },
+      body: { model: "my-provider/small-model" },
+    }),
+  }}
+/>
+```
+
+To hide the selector explicitly, set the model in your transport or supply it in the request body. The UI detects the locked model and removes the picker.
+
+> ⚠️ **Security note:** any headers, API keys, or bearer tokens defined in `useChatOptions` live in the browser. Use short-lived scoped tokens, rotate them frequently, or proxy requests through your own backend if you cannot trust the client environment.
+
+[OpenChatComponent](packages/open-chat/src/components/open-chat-component.tsx) no longer runs the OpenRouter OAuth dialog. Do the OAuth handshake yourself (hit `/api/oauth/start`, finish the redirect, stash the bearer wherever you trust it) and feed that token into `useChatOptions.prepareSendMessagesRequest`.
+
+```tsx
+import { useEffect, useMemo, useState } from "react";
+import OpenChatComponent from "<package-name-tbd>";
+
+const baseServerUrl = import.meta.env.VITE_SERVER_URL;
+const lockedModel = import.meta.env.VITE_LOCKED_MODEL?.trim();
+
+async function exchangeToken() {
+  const { authUrl } = await fetch(`${baseServerUrl}/api/oauth/start`, {
+    method: "POST",
+    credentials: "include",
+  }).then((res) => res.json());
+
+  if (authUrl) {
+    window.location.href = authUrl; // external redirect flow
+    return null;
+  }
+
+  const { token } = await fetch(`${baseServerUrl}/api/oauth/token`, {
+    credentials: "include",
+  }).then((res) => res.json());
+
+  return token;
+}
+
+export function ChatShell() {
+  const [token, setToken] = useState<string | null>(null);
+
+  useEffect(() => {
+    exchangeToken().then(setToken).catch(console.error);
+  }, []);
+
+  const chatOptions = useMemo(() => {
+    if (!token) return undefined;
+    return {
+      prepareSendMessagesRequest: ({ body }: { body?: Record<string, unknown> }) => ({
+        headers: { Authorization: `Bearer ${token}` },
+        body: {
+          ...(body ?? {}),
+          model: lockedModel ?? body?.model ?? "openai/gpt-5",
+        },
+      }),
+    };
+  }, [token]);
+
+  return (
+    <OpenChatComponent
+      api={`${baseServerUrl}/api/chat`}
+      openRouterModel={lockedModel ?? "openai/gpt-5"}
+      useChatOptions={chatOptions}
+    />
+  );
+}
+```
+
+Use an env var like `VITE_LOCKED_MODEL` to hard clamp the model (same trick as the example app). The published demo in [examples/web/src/routes/index.tsx](examples/web/src/routes/index.tsx) shows wrapping the component so you can bake in defaults—copy that pattern if you want your own opinionated shell.
+
 ### Component Props
 
 See the full TypeScript interface in [`apps/web/src/types/open-chat-component.ts`](apps/web/src/types/open-chat-component.ts) for detailed prop documentation.
@@ -208,7 +324,7 @@ Key props include:
 - [ ] Add info about [Open Inference](https://www.openinference.xyz/) into the settings dialog
 - [ ] Allow theme CSS variables for the component
 - [ ] One-click MCP install
-- [ ] Add your own MCP server
+- [x] Add your own MCP server
 - [x] MCP UI support
 - [ ] [Built-in AI support](https://ai-sdk.dev/providers/community-providers/built-in-ai) (Transformers JS + AI SDK + [built-in-ai](https://github.com/jakobhoeg/built-in-ai)) 
   - Examples
@@ -217,6 +333,7 @@ Key props include:
 - [ ] Personality Profile (tailor LLM to your preferences)
 - [ ] Web component chatbot export
 - [ ] Make it onto [the official MCP Clients list](https://modelcontextprotocol.io/clients)
+- [ ] Make `dialogAsDrawer: boolean` prop for apps that don't want a drawer and would just benefit from a dialog popup for the connectors panel.
 
 ## Getting Started
 
