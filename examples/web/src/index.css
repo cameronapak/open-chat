@@ -1,5 +1,5 @@
-@import "tailwindcss";
-@import "tw-animate-css";
+@import 'tailwindcss';
+@import 'tw-animate-css';
 
 @custom-variant dark (&:where(.dark, .dark *));
 
@@ -7,11 +7,12 @@
   --font-sans: 'Geist Variable', sans-serif;
 }
 
-@utility touch-hitbox { 
-  position: relative; 
-  &:before { 
-    @apply w-full h-full transform-[translate(-50%,-50%)] absolute block top-[50%] left-[50%] min-h-[44px] min-w-[44px] z-9999; 
-    content: ""; 
+@utility touch-hitbox {
+  position: relative;
+  &:before {
+    @apply w-full h-full -translate-x-1/2 -translate-y-1/2 absolute block top-1/2 left-1/2 min-h-[44px] min-w-[44px] z-50;
+
+    content: '';
   }
 }
 
