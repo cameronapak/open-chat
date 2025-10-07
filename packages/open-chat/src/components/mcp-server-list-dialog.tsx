@@ -639,28 +639,28 @@ export function MCPServerListDialog({
   );
 
   const tabs = (
-    <Tabs
-      value={tab}
-      onValueChange={(v) => setTab(v as 'connections' | 'custom' | 'explore')}
-      className="h-full overflow-hidden grid grid-rows-[auto_1fr] gap-0"
-    >
-      <TabsList className="grid grid-cols-3 w-full">
-        <TabsTrigger value="connections">
-          <Puzzle className="h-4 w-4 mr-1 text-muted-foreground" />
-          Connections
-        </TabsTrigger>
-        <TabsTrigger value="explore">
-          <Globe className="h-4 w-4 mr-1 text-muted-foreground" />
-          Explore
-        </TabsTrigger>
-        <TabsTrigger value="custom">
-          <Plus className="h-4 w-4 mr-1 text-muted-foreground" />
-          Custom
-        </TabsTrigger>
-      </TabsList>
+    <AnimatedHeight className="max-h-[90svh] overflow-y-auto">
+      <Tabs
+        value={tab}
+        onValueChange={(v) => setTab(v as 'connections' | 'custom' | 'explore')}
+        className="sticky top-0 h-full overflow-hidden grid grid-rows-[auto_1fr] gap-0"
+      >
+        <TabsList className="grid grid-cols-3 w-full">
+          <TabsTrigger value="connections">
+            <Puzzle className="h-4 w-4 mr-1 text-muted-foreground" />
+            Connections
+          </TabsTrigger>
+          <TabsTrigger value="explore">
+            <Globe className="h-4 w-4 mr-1 text-muted-foreground" />
+            Explore
+          </TabsTrigger>
+          <TabsTrigger value="custom">
+            <Plus className="h-4 w-4 mr-1 text-muted-foreground" />
+            Custom
+          </TabsTrigger>
+        </TabsList>
 
-      <AnimatedHeight className="max-h-[90svh] overflow-y-auto">
-        <TabsContent value="connections" className="relative h-full overflow-y-auto grid grid-cols-1 gap-4 pt-4">
+        <TabsContent value="connections" className="relative grid grid-cols-1 gap-4 pt-4">
           {/* {savedServers.length ? (
           <VisuallyHidden.Root>
             <DrawerHeader id='connections' className="flex flex-col items-center gap-2">
@@ -695,7 +695,7 @@ export function MCPServerListDialog({
           />
         </TabsContent>
 
-        <TabsContent value="explore" className="relative h-full overflow-y-auto grid grid-cols-1 gap-4 pt-4">
+        <TabsContent value="explore" className="relative grid grid-cols-1 gap-4 pt-4">
           {/* <DrawerHeader className="flex flex-col items-center gap-2">
           <DrawerTitle>Explore Connectors</DrawerTitle>
           <DrawerDescription>
@@ -759,7 +759,7 @@ export function MCPServerListDialog({
           </div>
         </TabsContent>
 
-        <TabsContent value="custom" className="h-full overflow-y-auto px-3 grid grid-cols-1 gap-4 pt-8">
+        <TabsContent value="custom" className="px-3 grid grid-cols-1 gap-4 pt-8 pb-6">
           {/* <div className="flex flex-col gap-2">
           <DrawerHeader>
             <DrawerTitle>New Integration</DrawerTitle>
@@ -857,8 +857,8 @@ export function MCPServerListDialog({
             ) : null}
           </form>
         </TabsContent>
-      </AnimatedHeight>
-    </Tabs>
+      </Tabs>
+    </AnimatedHeight>
   );
 
   const desktopContent = (
