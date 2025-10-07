@@ -270,8 +270,8 @@ export function MCPServerListDialog({
 
   // (previously had DOM-bridge lazy-loading state; replaced with React Suspense component)
 
-  // Controlled Tabs so we can switch to "integrations" after success
-  const [tab, setTab] = useState<'integrations' | 'custom' | 'explore'>('integrations');
+  // Controlled Tabs so we can switch to "connections" after success
+  const [tab, setTab] = useState<'connections' | 'custom' | 'explore'>('connections');
 
   // Testing flow state
   const [testing, setTesting] = useState(false);
@@ -392,7 +392,7 @@ export function MCPServerListDialog({
       toast.info(`${connector.name} is already saved.`);
       setExploreDialogOpen(false);
       setSelectedRegistryConnector(null);
-      setTab('integrations');
+      setTab('connections');
       return;
     }
 
@@ -411,7 +411,7 @@ export function MCPServerListDialog({
     toast.success(`Saved ${connector.name}`);
     setExploreDialogOpen(false);
     setSelectedRegistryConnector(null);
-    setTab('integrations');
+    setTab('connections');
   }, [savedServers, setSavedServers]);
 
   const handleAddCustomServer = (e: React.FormEvent<HTMLFormElement>) => {
@@ -517,7 +517,7 @@ export function MCPServerListDialog({
 
   const handleRootOpenChange = useCallback((isOpen: boolean) => {
     if (!isOpen) {
-      setTab('integrations');
+      setTab('connections');
     }
     onOpenChange(isOpen);
   }, [onOpenChange]);
@@ -640,13 +640,13 @@ export function MCPServerListDialog({
   const tabs = (
     <Tabs
       value={tab}
-      onValueChange={(v) => setTab(v as 'integrations' | 'custom' | 'explore')}
-      className="h-full overflow-hidden grid grid-rows-[auto_1fr] gap-4"
+      onValueChange={(v) => setTab(v as 'connections' | 'custom' | 'explore')}
+      className="h-full overflow-hidden grid grid-rows-[auto_1fr]"
     >
       <TabsList className="grid grid-cols-3 w-full">
-        <TabsTrigger value="integrations">
+        <TabsTrigger value="connections">
           <Puzzle className="h-4 w-4 mr-1 text-muted-foreground" />
-          Integrations
+          Connections
         </TabsTrigger>
         <TabsTrigger value="explore">
           <Globe className="h-4 w-4 mr-1 text-muted-foreground" />
@@ -658,10 +658,10 @@ export function MCPServerListDialog({
         </TabsTrigger>
       </TabsList>
 
-      <TabsContent value="integrations" className="relative h-full overflow-y-auto grid grid-cols-1 gap-4">
+      <TabsContent value="connections" className="relative h-full overflow-y-auto grid grid-cols-1 gap-4">
         {/* {savedServers.length ? (
           <VisuallyHidden.Root>
-            <DrawerHeader id='integrations' className="flex flex-col items-center gap-2">
+            <DrawerHeader id='connections' className="flex flex-col items-center gap-2">
               <DrawerTitle>Integrations</DrawerTitle>
               <DrawerDescription>
                 Added integrations will appear here.
@@ -669,7 +669,7 @@ export function MCPServerListDialog({
             </DrawerHeader>
           </VisuallyHidden.Root>
         ) : (
-          <DrawerHeader id='integrations' className="flex flex-col items-center gap-2">
+          <DrawerHeader id='connections' className="flex flex-col items-center gap-2">
             <DrawerTitle>Integrations</DrawerTitle>
             <DrawerDescription>
               Added integrations will appear here.
@@ -862,9 +862,6 @@ export function MCPServerListDialog({
     <>
       <DialogHeader>
         <DialogTitle className="text-center">Manage Connections</DialogTitle>
-        <DialogDescription className="text-center">
-          Connect, explore, or add custom Model Context Protocol servers.
-        </DialogDescription>
       </DialogHeader>
       <div className="h-[70vh] overflow-hidden">
         <div className="h-full overflow-hidden grid grid-rows-[1fr_auto] gap-4">
@@ -877,13 +874,7 @@ export function MCPServerListDialog({
 
   const mobileContent = (
     <>
-      <DrawerHeader className="flex flex-col items-center gap-2">
-        <DrawerTitle>Manage MCP Integrations</DrawerTitle>
-        <DrawerDescription>
-          Connect, explore, or add custom servers.
-        </DrawerDescription>
-      </DrawerHeader>
-      <section className="h-full overflow-hidden grid grid-cols-1 px-4 pb-4">
+      <section className="mt-4 h-full overflow-hidden grid grid-cols-1 px-4 pb-4">
         {tabs}
         {connectorDialog}
       </section>
@@ -927,7 +918,7 @@ export function MCPServerListDialog({
             formRef.current?.reset?.()
             setApiKeyInput('')
             setSessionOnly(false)
-            setTab('integrations')
+            setTab('connections')
             setTesting(false)
             setAuthRedirectUrl(undefined)
             setPendingServer(null)
