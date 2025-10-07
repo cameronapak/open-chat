@@ -1,4 +1,3 @@
-
 import { Fragment, type ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
@@ -35,12 +34,7 @@ import { InputWithLabel } from './ui/input';
 import { getFavicon } from "@/lib/utils";
 import { Switch } from './ui/switch';
 import { mcpServersAtom, mcpServerDetailsAtom } from '@/lib/atoms';
-import { useAtom } from 'jotai';
-import { useEffect, useRef, useState, useCallback } from 'react';
-import { useMcp } from '@/hooks/use-mcp';
-// import MCPServerDetails from './mcp-server-details';
-import { saveApiKey, getApiKeyPresenceLabel } from "@/lib/keystore";
-import type { HeaderScheme as StorageHeaderScheme } from '@/lib/mcp-storage';
+import { type HeaderScheme as StorageHeaderScheme } from '@/lib/mcp-storage';
 import { Checkbox } from './ui/checkbox';
 import {
   Item,
@@ -55,6 +49,10 @@ import {
 import { MCPRegistryClient } from 'mcp-registry-spec-sdk'
 import type { ServerListResponse } from 'mcp-registry-spec-sdk'
 import { AnimatePresence, motion, Transition } from 'motion/react';
+import { useRef, useEffect, useState, useCallback } from 'react';
+import { useAtom } from 'jotai';
+import { useMcp } from '@/hooks/use-mcp';
+import { saveApiKey, getApiKeyPresenceLabel } from "@/lib/keystore";
 
 interface MCPServerListDialogProps {
   open: boolean;
@@ -285,10 +283,11 @@ export function MCPServerListDialog({
   const [testing, setTesting] = useState(false);
   const [pendingServer, setPendingServer] = useState<SavedMCPServer | null>(null);
   const [authRedirectUrl, setAuthRedirectUrl] = useState<string | undefined>(undefined);
+  const [pendingSource, setPendingSource] = useState<'custom' | 'explore' | null>(null);
 
   // Optimistic enable testing: track multiple servers being tested concurrently
   const [pendingToggleServers, setPendingToggleServers] = useState<Record<string, SavedMCPServer>>({});
-  // Track connected servers info: store serverInfo when available
+ // Track connected servers info: store serverInfo when available
   const [, setConnectedServers] = useState<Record<string, { name?: string; version?: string } | true>>({});
   const formRef = useRef<HTMLFormElement | null>(null);
   // Auth inputs for "Custom" form
@@ -391,6 +390,7 @@ export function MCPServerListDialog({
   }, []);
 
   const handleSaveConnector = useCallback((connector: RegistryConnector) => {
+    console.log('[handleSaveConnector] connector:', connector);
     if (!connector.remotes?.length) {
       toast.error('Connector is missing a compatible remote endpoint.');
       return;
@@ -415,12 +415,15 @@ export function MCPServerListDialog({
       hasStoredKey: false,
     };
 
-    setSavedServers((prev) => [...prev, savedConnector]);
-    toast.success(`Saved ${connector.name}`);
+    console.log('[handleSaveConnector] prepared savedConnector:', savedConnector);
     setExploreDialogOpen(false);
     setSelectedRegistryConnector(null);
-    setTab('connections');
-  }, [savedServers, setSavedServers]);
+    setPendingServer(savedConnector);
+    setPendingSource('explore');
+    setTesting(true);
+    setAuthRedirectUrl(undefined);
+    toast.info(`Connecting to ${connector.name}...`);
+  }, [savedServers, setTab]);
 
   const handleAddCustomServer = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -439,6 +442,7 @@ export function MCPServerListDialog({
 
       const computedHeaderScheme: StorageHeaderScheme =
         apiKeyInput.trim() ? 'x-api-key' : 'authorization-bearer';
+      console.log('handleAddCustomServer: computedHeaderScheme:', computedHeaderScheme);
 
       const customServer: SavedMCPServer = {
         id: serverId,
@@ -455,11 +459,12 @@ export function MCPServerListDialog({
         headerScheme: computedHeaderScheme,
         hasStoredKey: !!apiKeyInput.trim(),
       };
+      console.log('handleAddCustomServer: customServer:', customServer);
 
       // Start connection test via useMcp
       setPendingServer(customServer);
+      setPendingSource('custom');
       setTesting(true);
-      setTab('custom');
       setAuthRedirectUrl(undefined);
       toast.info('Connecting to server (OAuth popup may open)...');
       // Do NOT save yet; we only save on successful connection
@@ -530,7 +535,11 @@ export function MCPServerListDialog({
     onOpenChange(isOpen);
   }, [onOpenChange]);
 
-  const pendingUrl = pendingServer?.remotes?.find(r => r.type === 'streamable-http' || r.type === 'http+sse')?.url || '';
+  const pendingUrl = (() => {
+    const priority = ['streamable-http', 'http+sse', 'sse'];
+    const remote = pendingServer?.remotes?.find((r) => priority.includes(r.type));
+    return remote?.url ?? '';
+  })();
 
   const connectorDetailBody = selectedRegistryConnector ? (
     <div className="space-y-4 text-sm text-muted-foreground">
@@ -645,11 +654,11 @@ export function MCPServerListDialog({
     />
   );
 
-  const tabTransition = {
+  const tabTransition: Transition = {
     duration: 0.3,
     type: "spring",
     bounce: 0.2,
-  } as Transition;
+  };
 
   const tabs = (
     <AnimatedHeight className="max-h-[90svh] overflow-y-auto">
@@ -926,43 +935,78 @@ export function MCPServerListDialog({
       {pendingServer ? (
         <McpConnectionTester
           url={pendingUrl}
-          onReady={async () => {
+          onReady={async (details) => {
+            const serverName = pendingServer?.name ?? 'Server';
             try {
-              if (pendingUrl && apiKeyInput.trim()) {
+              if (pendingSource === 'custom' && pendingUrl && apiKeyInput.trim()) {
                 await saveApiKey(pendingUrl, apiKeyInput.trim(), !sessionOnly);
               }
             } catch {
+              console.warn('[McpConnectionTester] Failed to persist API key for', pendingUrl);
             }
+
             const keyPresence = pendingUrl ? getApiKeyPresenceLabel(pendingUrl) : 'none';
-            const withKeyFlag: SavedMCPServer = {
-              ...pendingServer,
-              hasStoredKey: keyPresence !== 'none',
-            };
-            setSavedServers(prev => [...prev, withKeyFlag]);
-            toast.success('Custom server added and connected');
-            formRef.current?.reset?.()
-            setApiKeyInput('')
-            setSessionOnly(false)
-            setTab('connections')
-            setTesting(false)
-            setAuthRedirectUrl(undefined)
-            setPendingServer(null)
+            const serverToSave = pendingServer
+              ? {
+                  ...pendingServer,
+                  hasStoredKey: keyPresence !== 'none',
+                  enabled: true,
+                }
+              : null;
+
+            if (serverToSave) {
+              _setMcpDetails((prev) => ({
+                ...prev,
+                [serverToSave.id]: {
+                  tools: details.tools ?? [],
+                  resources: details.resources ?? [],
+                  resourceTemplates: details.resourceTemplates ?? [],
+                  prompts: details.prompts ?? [],
+                  serverInfo: details.serverInfo ?? null,
+                  lastSeen: new Date().toISOString(),
+                },
+              }));
+
+              setSavedServers((prev) => {
+                const existingIndex = prev.findIndex((s) => s.id === serverToSave.id);
+                if (existingIndex >= 0) {
+                  const next = [...prev];
+                  next[existingIndex] = serverToSave;
+                  return next;
+                }
+                return [...prev, serverToSave];
+              });
+            }
+
+            toast.success(`${serverName} connected and saved`);
+            if (pendingSource === 'custom') {
+              formRef.current?.reset?.();
+              setApiKeyInput('');
+              setSessionOnly(false);
+            }
+            setTab('connections');
+            setTesting(false);
+            setAuthRedirectUrl(undefined);
+            setPendingServer(null);
+            setPendingSource(null);
           }}
           onFailed={(err) => {
-            toast.error(err || 'Failed to connect to server')
-            setTesting(false)
-            setAuthRedirectUrl(undefined)
-            setPendingServer(null)
+            const failedName = pendingServer?.name ?? 'Server';
+            toast.error(err ? `${failedName} connection failed: ${err}` : 'Failed to connect to server');
+            setTesting(false);
+            setAuthRedirectUrl(undefined);
+            setPendingServer(null);
+            setPendingSource(null);
           }}
           onAuthRedirect={(manualUrl) => {
             console.log('authRedirectUrl set to:', manualUrl);
-            setTesting(false)
-            setAuthRedirectUrl(manualUrl)
+            setTesting(false);
+            setAuthRedirectUrl(manualUrl);
             toast.info(
               manualUrl
                 ? 'Complete OAuth in the popup or open the authorization link provided.'
                 : 'Complete OAuth in the authorization popup to finish adding this server.',
-            )
+            );
           }}
         />
       ) : null}
