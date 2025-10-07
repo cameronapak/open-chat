@@ -491,13 +491,13 @@ export function MCPServerListDialog({
       // Remove from connected servers when disabled
       setConnectedServers(prev => {
         const next = { ...prev };
-        delete next[serverId];
+        delete (next)[serverId];
         return next;
       });
       // Clear pending if any (though disable shouldn’t have it)
       setPendingToggleServers(prev => {
         const next = { ...prev };
-        delete next[serverId];
+        delete (next)[serverId];
         return next;
       });
       return;
@@ -512,7 +512,7 @@ export function MCPServerListDialog({
     // Remove from connected servers while testing
     setConnectedServers(prev => {
       const next = { ...prev };
-      delete next[serverId];
+      delete (next)[serverId];
       return next;
     })
 
@@ -521,7 +521,7 @@ export function MCPServerListDialog({
     setTimeout(() => {
       setPendingToggleServers(prev => {
         const next = { ...prev };
-        delete next[serverId];
+        delete (next)[serverId];
         console.log(`Pending cleared for ${serverId} after timeout`);
         return next;
       });
@@ -685,7 +685,7 @@ export function MCPServerListDialog({
           </TabsTrigger>
         </TabsList>
 
-        <AnimatePresence mode="wait" custom={getTabIndex(prevTab) < getTabIndex(tab) ? 1 : -1}>
+        <AnimatePresence mode="sync" custom={getTabIndex(prevTab) < getTabIndex(tab) ? 1 : -1}>
           <TabsContent value="connections" asChild>
             <motion.div
               key="connections"
