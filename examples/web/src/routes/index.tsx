@@ -74,7 +74,7 @@ const ChatBotDemo = () => {
   const providerMeta = useMemo(
     () => ({
       name: "OpenRouter",
-      webSearchLabel: "Enable OpenRouter Web Search",
+      webSearchLabel: "OpenRouter Web Search",
       webSearchDescription:
         "Augment responses with OpenRouter's web results for fresher answers.",
       authCTA: (
