@@ -1,43 +1,111 @@
-import { useRef, useState, useCallback } from 'react';
+import { useRef, useState, useCallback, useEffect } from 'react';
 import { motion } from "motion/react"
 import { cn } from "@/lib/utils";
 
 export const AnimatedHeight = ({ children, className, ...props }: { children: React.ReactNode, className?: string }) => {
   const [height, setHeight] = useState<number | 'auto'>('auto');
-  const [prevHeight, setPrevHeight] = useState<number | 'auto'>('auto');
-  const resizeObserverRef = useRef<ResizeObserver | null>(null);
+  const [contentHeight, setContentHeight] = useState<number | null>(null);
+  const [parentHeight, setParentHeight] = useState<number | null>(null);
 
-  const containerRef = useCallback((node: HTMLDivElement) => {
-    if (node !== null) {
-      resizeObserverRef.current = new ResizeObserver((entries) => {
-        // We only have one entry, so we can use entries[0].
-        const observedHeight = entries?.[0]?.contentRect?.height;
-        setHeight((previousHeight) => {
-          setPrevHeight(previousHeight);
-          return observedHeight ?? "auto"
-        });
-      });
-      resizeObserverRef.current.observe(node);
-    } else if (resizeObserverRef.current) {
-      // Disconnect the observer when the node is unmounted to prevent memory leaks
-      resizeObserverRef.current.disconnect();
+  const motionNodeRef = useRef<HTMLDivElement | null>(null);
+  const contentObserverRef = useRef<ResizeObserver | null>(null);
+  const parentObserverRef = useRef<ResizeObserver | null>(null);
+
+  const setMotionRef = useCallback((node: HTMLDivElement | null) => {
+    motionNodeRef.current = node;
+
+    if (parentObserverRef.current) {
+      parentObserverRef.current.disconnect();
+      parentObserverRef.current = null;
     }
+
+    if (!node) {
+      setParentHeight(null);
+      return;
+    }
+
+    const parent = node.parentElement;
+    if (!parent) {
+      setParentHeight(null);
+      return;
+    }
+
+    const updateParentHeight = () => setParentHeight(parent.clientHeight);
+    updateParentHeight();
+
+    parentObserverRef.current = new ResizeObserver(() => {
+      updateParentHeight();
+    });
+    parentObserverRef.current.observe(parent);
+  }, []);
+
+  const setContentRef = useCallback((node: HTMLDivElement | null) => {
+    if (contentObserverRef.current) {
+      contentObserverRef.current.disconnect();
+      contentObserverRef.current = null;
+    }
+
+    if (!node) {
+      setContentHeight(null);
+      return;
+    }
+
+    const updateContentHeight = () => setContentHeight(node.scrollHeight);
+    updateContentHeight();
+
+    contentObserverRef.current = new ResizeObserver(() => {
+      updateContentHeight();
+    });
+    contentObserverRef.current.observe(node);
+  }, []);
+
+  useEffect(() => {
+    if (contentHeight == null) {
+      setHeight((previousHeight) => {
+        if (previousHeight === 'auto') {
+          return previousHeight;
+        }
+        return 'auto';
+      });
+      return;
+    }
+
+    const limit = parentHeight ?? contentHeight;
+    const nextHeight = Math.min(contentHeight, limit);
+
+    setHeight((previousHeight) => {
+      if (typeof previousHeight === 'number' && Math.abs(previousHeight - nextHeight) < 0.5) {
+        return previousHeight;
+      }
+      return nextHeight;
+    });
+  }, [contentHeight, parentHeight]);
+
+  useEffect(() => {
+    return () => {
+      if (contentObserverRef.current) {
+        contentObserverRef.current.disconnect();
+      }
+      if (parentObserverRef.current) {
+        parentObserverRef.current.disconnect();
+      }
+    };
   }, []);
 
   return (
     <motion.div
+      ref={setMotionRef}
       style={{ height }}
-      initial={{ height: prevHeight }}
       animate={{ height }}
       transition={{
         type: "spring",
-        duration: 1.25,
+        duration: 0.3,
         bounce: 0.2,
       }}
       className={cn("overflow-hidden", className)}
       {...props}
     >
-      <div ref={containerRef}>{children}</div>
+      <div ref={setContentRef}>{children}</div>
     </motion.div>
   );
 };

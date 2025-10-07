@@ -659,7 +659,7 @@ export function MCPServerListDialog({
         </TabsTrigger>
       </TabsList>
 
-      <AnimatedHeight className="max-h-[90svh]">
+      <AnimatedHeight className="max-h-[90svh] overflow-y-auto">
         <TabsContent value="connections" className="relative h-full overflow-y-auto grid grid-cols-1 gap-4 pt-4">
           {/* {savedServers.length ? (
           <VisuallyHidden.Root>
