@@ -587,7 +587,7 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
           return (
             <Fragment key={`${message.id}-${index}`}>
               <Message from={message.role}>
-                <MessageContent>
+                <MessageContent variant="flat">
                   <Response>{part.text}</Response>
                 </MessageContent>
               </Message>
@@ -808,6 +808,9 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
               ))}
 
               {status === 'submitted' && <Loader />}
+
+              {/* Spacer */}
+              <div className="h-6" />
             </ConversationContent>
             <ConversationScrollButton />
           </Conversation>
