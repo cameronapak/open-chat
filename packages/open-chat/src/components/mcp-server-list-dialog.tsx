@@ -805,7 +805,7 @@ export function MCPServerListDialog({
                             }}
                           >
                             <ItemMedia>
-                              <Avatar className="rounded-sm shadow">
+                              <Avatar className="rounded-sm shadow h-8 w-8">
                                 <AvatarImage src={getFavicon(connector.remotes[0]?.url ?? '')} className="rounded-sm" />
                                 <AvatarFallback>{connector.name.charAt(0)}</AvatarFallback>
                               </Avatar>
