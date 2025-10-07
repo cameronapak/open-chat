@@ -37,6 +37,7 @@ async function fetchMcpDetails(url: string): Promise<MCPDetails> {
 
   const client = new Client({ name: 'openchat-client', version: '0.1.0' }, { capabilities: {} })
 
+  // @TODO - consider `http-streamable`.
   // Prefer HTTP; fallback to SSE on connect errors (404/405/CORS)
   let transportKind: 'http' | 'sse' = 'http'
   let transport:
