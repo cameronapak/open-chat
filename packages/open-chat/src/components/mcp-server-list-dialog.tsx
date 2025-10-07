@@ -1,3 +1,4 @@
+
 import { Fragment, type ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
@@ -35,7 +36,6 @@ import { getFavicon } from "@/lib/utils";
 import { Switch } from './ui/switch';
 import { mcpServersAtom, mcpServerDetailsAtom } from '@/lib/atoms';
 import { useAtom } from 'jotai';
-import { VisuallyHidden } from 'radix-ui';
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useMcp } from '@/hooks/use-mcp';
 // import MCPServerDetails from './mcp-server-details';
@@ -54,6 +54,7 @@ import {
 } from "@/components/ui/item"
 import { MCPRegistryClient } from 'mcp-registry-spec-sdk'
 import type { ServerListResponse } from 'mcp-registry-spec-sdk'
+import { AnimatePresence, motion, Transition } from 'motion/react';
 
 interface MCPServerListDialogProps {
   open: boolean;
@@ -66,6 +67,11 @@ interface MCPServerListDialogProps {
 }
 
 const SUPPORTED_TRANSPORTS = new Set(['streamable-http', 'sse'] as const);
+
+function getTabIndex(tab: 'connections' | 'custom' | 'explore'): number {
+  const tabs = ['connections', 'explore', 'custom'];
+  return tabs.indexOf(tab);
+}
 
 type RegistryConnector = {
   id: string;
@@ -273,6 +279,7 @@ export function MCPServerListDialog({
 
   // Controlled Tabs so we can switch to "connections" after success
   const [tab, setTab] = useState<'connections' | 'custom' | 'explore'>('connections');
+  const [prevTab, setPrevTab] = useState<'connections' | 'custom' | 'explore'>('connections');
 
   // Testing flow state
   const [testing, setTesting] = useState(false);
@@ -638,11 +645,20 @@ export function MCPServerListDialog({
     />
   );
 
+  const tabTransition = {
+    duration: 0.3,
+    type: "spring",
+    bounce: 0.2,
+  } as Transition;
+
   const tabs = (
     <AnimatedHeight className="max-h-[90svh] overflow-y-auto">
       <Tabs
         value={tab}
-        onValueChange={(v) => setTab(v as 'connections' | 'custom' | 'explore')}
+        onValueChange={(v) => {
+          setPrevTab(tab);
+          setTab(v as 'connections' | 'custom' | 'explore');
+        }}
         className="sticky top-0 h-full overflow-hidden grid grid-rows-[auto_1fr] gap-0"
       >
         <TabsList className="grid grid-cols-3 w-full">
@@ -660,203 +676,209 @@ export function MCPServerListDialog({
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="connections" className="relative grid grid-cols-1 gap-4 pt-4">
-          {/* {savedServers.length ? (
-          <VisuallyHidden.Root>
-            <DrawerHeader id='connections' className="flex flex-col items-center gap-2">
-              <DrawerTitle>Integrations</DrawerTitle>
-              <DrawerDescription>
-                Added integrations will appear here.
-              </DrawerDescription>
-            </DrawerHeader>
-          </VisuallyHidden.Root>
-        ) : (
-          <DrawerHeader id='connections' className="flex flex-col items-center gap-2">
-            <DrawerTitle>Integrations</DrawerTitle>
-            <DrawerDescription>
-              Added integrations will appear here.
-            </DrawerDescription>
-          </DrawerHeader>
-        )} */}
-
-          <IntegrationsAccordionList
-            servers={savedServers}
-            onToggleServer={handleToggleExistingServer}
-            onRemoveServer={(serverId: string) =>
-              setSavedServers(prevServers =>
-                prevServers.filter(server => server.id !== serverId)
-              )
-            }
-            webSearchEnabled={webSearchEnabled}
-            onWebSearchToggle={onWebSearchToggle}
-            webSearchLabel={webSearchLabel}
-            webSearchDescription={webSearchDescription}
-            webSearchAvatar={webSearchAvatar}
-          />
-        </TabsContent>
-
-        <TabsContent value="explore" className="relative grid grid-cols-1 gap-4 pt-4">
-          {/* <DrawerHeader className="flex flex-col items-center gap-2">
-          <DrawerTitle>Explore Connectors</DrawerTitle>
-          <DrawerDescription>
-            Discover connectors from the MCP registry.
-          </DrawerDescription>
-        </DrawerHeader> */}
-          <div>
-            {registryLoading ? (
-              <p className="text-sm text-muted-foreground">Loading connectors…</p>
-            ) : registryError ? (
-              <div className="flex flex-col gap-2">
-                <p className="text-sm text-destructive">{registryError}</p>
-                <Button variant="outline" size="sm" onClick={handleRetryRegistry} className="self-start">
-                  Retry
-                </Button>
-              </div>
-            ) : registryConnectors.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                {JSON.stringify(registryConnectors)}
-                No connectors available right now. Try again later.
-              </p>
-            ) : (
-              <div className="flex flex-col">
-                {registryConnectors.map((connector, index) => (
-                  <Fragment key={connector.id}>
-                    <ItemGroup>
-                      <Item
-                        className="cursor-pointer"
-                        role="button"
-                        tabIndex={0}
-                        onClick={() => handleSelectConnector(connector)}
-                        onKeyDown={(event) => {
-                          if (event.key === 'Enter' || event.key === ' ') {
-                            event.preventDefault();
-                            handleSelectConnector(connector);
-                          }
-                        }}
-                      >
-                        <ItemMedia>
-                          <Avatar className="rounded-sm shadow">
-                            <AvatarImage src={getFavicon(connector.remotes[0]?.url ?? '')} className="rounded-sm" />
-                            <AvatarFallback>{connector.name.charAt(0)}</AvatarFallback>
-                          </Avatar>
-                        </ItemMedia>
-                        <ItemContent className="gap-1">
-                          <ItemTitle className="w-full grid grid-cols-[1fr_auto]">
-                            {connector.requiresAuth ? "🔒 " + connector.name : connector.name}
-                            <span className="ml-2 text-xs font-normal text-muted-foreground">
-                              v{connector.version}
-                            </span>
-                          </ItemTitle>
-                          <ItemDescription>{connector.description}</ItemDescription>
-                        </ItemContent>
-                      </Item>
-                    </ItemGroup>
-                    {index !== registryConnectors.length - 1 && <ItemSeparator />}
-                  </Fragment>
-                ))}
-              </div>
-            )}
-          </div>
-        </TabsContent>
-
-        <TabsContent value="custom" className="px-3 grid grid-cols-1 gap-4 pt-8 pb-6">
-          {/* <div className="flex flex-col gap-2">
-          <DrawerHeader>
-            <DrawerTitle>New Integration</DrawerTitle>
-            <DrawerDescription className='text-balance'>
-              Add a custom Model Context Protocol server.
-            </DrawerDescription>
-          </DrawerHeader>
-        </div> */}
-          <form
-            ref={formRef}
-            onSubmit={handleAddCustomServer}
-            className="flex flex-col gap-4"
-          >
-            <InputWithLabel
-              id="integration-name"
-              required
-              label="Integration name"
-              type="text"
-              autoComplete='off'
-              placeholder="Notion"
-              name="integration-name"
-            />
-            <InputWithLabel
-              id="url"
-              required
-              autoComplete='off'
-              label="URL"
-              type="url"
-              placeholder="https://example.com/mcp"
-              name="url"
-            />
-            <InputWithLabel
-              id="description"
-              autoComplete='off'
-              label="Description (optional)"
-              type="text"
-              placeholder="What does this integration do?"
-              name="description"
-            />
-            {/* Auth configuration */}
-            <div className="grid grid-cols-1 gap-3">
-              <InputWithLabel
-                id="api-key"
-                autoComplete="off"
-                label="API Key (optional)"
-                type="password"
-                placeholder="Enter API key"
-                name="api-key"
-                value={apiKeyInput}
-                onChange={(e: any) => setApiKeyInput(e.target.value)}
-              />
-              <p className="text-xs text-muted-foreground">
-                If provided, API key authentication will be used with X-API-Key. Leave empty to use OAuth (Authorization: Bearer) if requested by the server.
-              </p>
-              <div className="flex items-center gap-2 text-sm">
-                <Checkbox
-                  id="session-only"
-                  checked={sessionOnly}
-                  onCheckedChange={(checked) => setSessionOnly(!!checked)}
-                />
-                <label htmlFor="session-only">Session-only (don’t persist)</label>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                API keys are encrypted at rest with Web Crypto (AES-GCM) when persisted. Avoid untrusted scripts (XSS).
-              </p>
-            </div>
-            <Button
-              size="sm"
-              disabled={Boolean(pendingServer)}
+        <AnimatePresence mode="wait" custom={getTabIndex(prevTab) < getTabIndex(tab) ? 1 : -1}>
+          <TabsContent value="connections" asChild>
+            <motion.div
+              key="connections"
+              custom={getTabIndex(prevTab) < getTabIndex(tab) ? 1 : -1}
+              initial={{ x: getTabIndex(prevTab) < getTabIndex(tab) ? 100 : -100, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: getTabIndex(prevTab) < getTabIndex(tab) ? -100 : 100, opacity: 0 }}
+              transition={tabTransition}
+              className="pt-4"
             >
-              <Plus className="h-4 w-4 mr-1" />
-              {pendingServer
-                ? authRedirectUrl
-                  ? 'Awaiting OAuth...'
-                  : testing
-                    ? 'Adding...'
-                    : 'Adding...'
-                : 'Add'}
-            </Button>
-            {pendingServer && authRedirectUrl ? (
-              <div className="rounded-md border border-dashed border-muted p-3 text-sm text-muted-foreground">
-                <p className="font-medium text-foreground">Authorization required</p>
-                <p className="mt-1">
-                  Complete the OAuth step in the popup window. If it did not open, use the link below.
-                </p>
-                <a
-                  className="mt-2 inline-flex items-center text-sm font-medium text-primary underline underline-offset-4"
-                  href={authRedirectUrl}
-                  target="_blank"
-                  rel="noreferrer noopener"
-                >
-                  Open authorization URL
-                </a>
+              <IntegrationsAccordionList
+                servers={savedServers}
+                onToggleServer={handleToggleExistingServer}
+                onRemoveServer={(serverId: string) =>
+                  setSavedServers(prevServers =>
+                    prevServers.filter(server => server.id !== serverId)
+                  )
+                }
+                webSearchEnabled={webSearchEnabled}
+                onWebSearchToggle={onWebSearchToggle}
+                webSearchLabel={webSearchLabel}
+                webSearchDescription={webSearchDescription}
+                webSearchAvatar={webSearchAvatar}
+              />
+            </motion.div>
+          </TabsContent>
+
+          <TabsContent value="explore" asChild>
+            <motion.div
+              key="explore"
+              custom={getTabIndex(prevTab) < getTabIndex(tab) ? 1 : -1}
+              initial={{ x: getTabIndex(prevTab) < getTabIndex(tab) ? 100 : -100, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: getTabIndex(prevTab) < getTabIndex(tab) ? -100 : 100, opacity: 0 }}
+              transition={tabTransition}
+              className="relative grid grid-cols-1 gap-4 pt-4"
+            >
+              {/* <DrawerHeader className="flex flex-col items-center gap-2">
+                <DrawerTitle>Explore Connectors</DrawerTitle>
+                <DrawerDescription>
+                  Discover connectors from the MCP registry.
+                </DrawerDescription>
+              </DrawerHeader> */}
+              <div>
+                {registryLoading ? (
+                  <p className="text-sm text-muted-foreground">Loading connectors…</p>
+                ) : registryError ? (
+                  <div className="flex flex-col gap-2">
+                    <p className="text-sm text-destructive">{registryError}</p>
+                    <Button variant="outline" size="sm" onClick={handleRetryRegistry} className="self-start">
+                      Retry
+                    </Button>
+                  </div>
+                ) : registryConnectors.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    {JSON.stringify(registryConnectors)}
+                    No connectors available right now. Try again later.
+                  </p>
+                ) : (
+                  <div className="flex flex-col">
+                    {registryConnectors.map((connector, index) => (
+                      <Fragment key={connector.id}>
+                        <ItemGroup>
+                          <Item
+                            className="cursor-pointer"
+                            role="button"
+                            tabIndex={0}
+                            onClick={() => handleSelectConnector(connector)}
+                            onKeyDown={(event) => {
+                              if (event.key === 'Enter' || event.key === ' ') {
+                                event.preventDefault();
+                                handleSelectConnector(connector);
+                              }
+                            }}
+                          >
+                            <ItemMedia>
+                              <Avatar className="rounded-sm shadow">
+                                <AvatarImage src={getFavicon(connector.remotes[0]?.url ?? '')} className="rounded-sm" />
+                                <AvatarFallback>{connector.name.charAt(0)}</AvatarFallback>
+                              </Avatar>
+                            </ItemMedia>
+                            <ItemContent className="gap-1">
+                              <ItemTitle className="w-full grid grid-cols-[1fr_auto]">
+                                {connector.requiresAuth ? "🔒 " + connector.name : connector.name}
+                                <span className="ml-2 text-xs font-normal text-muted-foreground">
+                                  v{connector.version}
+                                </span>
+                              </ItemTitle>
+                              <ItemDescription>{connector.description}</ItemDescription>
+                            </ItemContent>
+                          </Item>
+                        </ItemGroup>
+                        {index !== registryConnectors.length - 1 && <ItemSeparator />}
+                      </Fragment>
+                    ))}
+                  </div>
+                )}
               </div>
-            ) : null}
-          </form>
-        </TabsContent>
+            </motion.div>
+          </TabsContent>
+
+          <TabsContent value="custom" asChild>
+            <motion.div
+              key="custom"
+              custom={getTabIndex(prevTab) < getTabIndex(tab) ? 1 : -1}
+              initial={{ x: getTabIndex(prevTab) < getTabIndex(tab) ? 100 : -100, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: getTabIndex(prevTab) < getTabIndex(tab) ? -100 : 100, opacity: 0 }}
+              transition={tabTransition}
+              className="px-3 grid grid-cols-1 gap-4 pt-8 pb-6"
+            >
+              <form
+                ref={formRef}
+                onSubmit={handleAddCustomServer}
+                className="flex flex-col gap-4"
+              >
+                <InputWithLabel
+                  id="integration-name"
+                  required
+                  label="Integration name"
+                  type="text"
+                  autoComplete='off'
+                  placeholder="Notion"
+                  name="integration-name"
+                />
+                <InputWithLabel
+                  id="url"
+                  required
+                  autoComplete='off'
+                  label="URL"
+                  type="url"
+                  placeholder="https://example.com/mcp"
+                  name="url"
+                />
+                <InputWithLabel
+                  id="description"
+                  autoComplete='off'
+                  label="Description (optional)"
+                  type="text"
+                  placeholder="What does this integration do?"
+                  name="description"
+                />
+                {/* Auth configuration */}
+                <div className="grid grid-cols-1 gap-3">
+                  <InputWithLabel
+                    id="api-key"
+                    autoComplete="off"
+                    label="API Key (optional)"
+                    type="password"
+                    placeholder="Enter API key"
+                    name="api-key"
+                    value={apiKeyInput}
+                    onChange={(e: any) => setApiKeyInput(e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    If provided, API key authentication will be used with X-API-Key. Leave empty to use OAuth (Authorization: Bearer) if requested by the server.
+                  </p>
+                  <div className="flex items-center gap-2 text-sm">
+                    <Checkbox
+                      id="session-only"
+                      checked={sessionOnly}
+                      onCheckedChange={(checked) => setSessionOnly(!!checked)}
+                    />
+                    <label htmlFor="session-only">Session-only (don’t persist)</label>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    API keys are encrypted at rest with Web Crypto (AES-GCM) when persisted. Avoid untrusted scripts (XSS).
+                  </p>
+                </div>
+                <Button
+                  size="sm"
+                  disabled={Boolean(pendingServer)}
+                >
+                  <Plus className="h-4 w-4 mr-1" />
+                  {pendingServer
+                    ? authRedirectUrl
+                      ? 'Awaiting OAuth...'
+                      : testing
+                        ? 'Adding...'
+                        : 'Adding...'
+                    : 'Add'}
+                </Button>
+                {pendingServer && authRedirectUrl ? (
+                  <div className="rounded-md border border-dashed border-muted p-3 text-sm text-muted-foreground">
+                    <p className="font-medium text-foreground">Authorization required</p>
+                    <p className="mt-1">
+                      Complete the OAuth step in the popup window. If it did not open, use the link below.
+                    </p>
+                    <a
+                      className="mt-2 inline-flex items-center text-sm font-medium text-primary underline underline-offset-4"
+                      href={authRedirectUrl}
+                      target="_blank"
+                      rel="noreferrer noopener"
+                    >
+                      Open authorization URL
+                    </a>
+                  </div>
+                ) : null}
+              </form>
+            </motion.div>
+          </TabsContent>
+        </AnimatePresence>
       </Tabs>
     </AnimatedHeight>
   );
