@@ -53,6 +53,7 @@ import { useRef, useEffect, useState, useCallback } from 'react';
 import { useAtom } from 'jotai';
 import { useMcp } from '@/hooks/use-mcp';
 import { saveApiKey, getApiKeyPresenceLabel } from "@/lib/keystore";
+import Loader from './loader';
 
 interface MCPServerListDialogProps {
   open: boolean;
@@ -354,7 +355,9 @@ export function MCPServerListDialog({
     setRegistryError(null);
     try {
       const client = new MCPRegistryClient("https://mcp-registry.val.run");
-      const response = await client.server.listServers() as ServerListResponse;
+      const response = await client.server.listServers({
+        limit: 100,
+      }) as ServerListResponse;
       console.log(response)
       const connectors: RegistryConnector[] = response?.servers.map((server) => {
         console.log(server)
@@ -767,15 +770,11 @@ export function MCPServerListDialog({
               transition={tabTransition}
               className="relative grid grid-cols-1 gap-4 pt-4"
             >
-              {/* <DrawerHeader className="flex flex-col items-center gap-2">
-                <DrawerTitle>Explore Connectors</DrawerTitle>
-                <DrawerDescription>
-                  Discover connectors from the MCP registry.
-                </DrawerDescription>
-              </DrawerHeader> */}
               <div>
                 {registryLoading ? (
-                  <p className="text-sm text-muted-foreground">Loading connectors…</p>
+                  <div className="h-full w-full flex items-center justify-center">
+                    <Loader />
+                  </div>
                 ) : registryError ? (
                   <div className="flex flex-col gap-2">
                     <p className="text-sm text-destructive">{registryError}</p>
