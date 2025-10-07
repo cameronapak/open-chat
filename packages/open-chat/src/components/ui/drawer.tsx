@@ -289,84 +289,6 @@ function ResponsiveDialog({
   )
 }
 
-type ProfileFormProps = {
-  className?: string
-  onSubmit?: (event: React.FormEvent<HTMLFormElement>) => void
-}
-
-function ProfileForm({ className, onSubmit }: ProfileFormProps) {
-  return (
-    <form
-      className={cn("grid gap-4 py-4", className)}
-      onSubmit={(event) => {
-        onSubmit?.(event)
-      }}
-    >
-      <div className="grid gap-2">
-        <Label htmlFor="name">Name</Label>
-        <Input id="name" defaultValue="Pedro Duarte" />
-      </div>
-      <div className="grid gap-2">
-        <Label htmlFor="username">Username</Label>
-        <Input id="username" defaultValue="@peduarte" />
-      </div>
-      <div className="ml-auto">
-        <Button type="submit">Save changes</Button>
-      </div>
-    </form>
-  )
-}
-
-function DrawerDialogDemo() {
-  const [open, setOpen] = React.useState(false)
-
-  const handleSubmit = React.useCallback(
-    (event: React.FormEvent<HTMLFormElement>) => {
-      event.preventDefault()
-      setOpen(false)
-    },
-    []
-  )
-
-  return (
-    <ResponsiveDialog
-      open={open}
-      onOpenChange={setOpen}
-      trigger={<Button variant="outline">Edit Profile</Button>}
-      dialogContentProps={{ className: "sm:max-w-[425px]" }}
-      mobile={
-        <>
-          <DrawerHeader className="text-left">
-            <DrawerTitle>Edit profile</DrawerTitle>
-            <DrawerDescription>
-              Make changes to your profile here. Click save when you&apos;re
-              done.
-            </DrawerDescription>
-          </DrawerHeader>
-          <ProfileForm className="px-4" onSubmit={handleSubmit} />
-          <DrawerFooter className="pt-2">
-            <DrawerClose asChild>
-              <Button variant="outline">Cancel</Button>
-            </DrawerClose>
-          </DrawerFooter>
-        </>
-      }
-      desktop={
-        <>
-          <DialogHeader>
-            <DialogTitle>Edit profile</DialogTitle>
-            <DialogDescription>
-              Make changes to your profile here. Click save when you&apos;re
-              done.
-            </DialogDescription>
-          </DialogHeader>
-          <ProfileForm onSubmit={handleSubmit} />
-        </>
-      }
-    />
-  )
-}
-
 export {
   Drawer,
   DrawerPortal,
@@ -380,5 +302,4 @@ export {
   DrawerTitle,
   DrawerDescription,
   ResponsiveDialog,
-  DrawerDialogDemo,
 }
