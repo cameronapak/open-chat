@@ -864,7 +864,7 @@ export function MCPServerListDialog({
         <DialogTitle className="text-center">Manage Connections</DialogTitle>
       </DialogHeader>
       <div className="h-[70vh] overflow-hidden">
-        <div className="h-full overflow-hidden grid grid-rows-[1fr_auto] gap-4">
+        <div className="h-full overflow-hidden grid grid-rows-[1fr_auto]">
           {tabs}
           {connectorDialog}
         </div>
