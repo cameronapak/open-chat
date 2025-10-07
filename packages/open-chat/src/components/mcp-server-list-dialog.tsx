@@ -658,7 +658,7 @@ export function MCPServerListDialog({
         </TabsTrigger>
       </TabsList>
 
-      <TabsContent value="connections" className="relative h-full overflow-y-auto grid grid-cols-1 gap-4">
+      <TabsContent value="connections" className="relative h-full overflow-y-auto grid grid-cols-1 gap-4 pt-4">
         {/* {savedServers.length ? (
           <VisuallyHidden.Root>
             <DrawerHeader id='connections' className="flex flex-col items-center gap-2">
@@ -693,7 +693,7 @@ export function MCPServerListDialog({
         />
       </TabsContent>
 
-      <TabsContent value="explore" className="relative h-full overflow-y-auto grid grid-cols-1 gap-4">
+      <TabsContent value="explore" className="relative h-full overflow-y-auto grid grid-cols-1 gap-4 pt-4">
         {/* <DrawerHeader className="flex flex-col items-center gap-2">
           <DrawerTitle>Explore Connectors</DrawerTitle>
           <DrawerDescription>
@@ -757,7 +757,7 @@ export function MCPServerListDialog({
         </div>
       </TabsContent>
 
-      <TabsContent value="custom" className="h-full overflow-y-auto px-3 grid grid-cols-1 gap-4">
+      <TabsContent value="custom" className="h-full overflow-y-auto px-3 grid grid-cols-1 gap-4 pt-8">
         {/* <div className="flex flex-col gap-2">
           <DrawerHeader>
             <DrawerTitle>New Integration</DrawerTitle>
@@ -769,7 +769,7 @@ export function MCPServerListDialog({
         <form
           ref={formRef}
           onSubmit={handleAddCustomServer}
-          className="flex flex-col gap-4 pt-6"
+          className="flex flex-col gap-4"
         >
           <InputWithLabel
             id="integration-name"
