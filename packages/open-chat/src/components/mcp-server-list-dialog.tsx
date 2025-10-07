@@ -71,6 +71,46 @@ function getTabIndex(tab: 'connections' | 'custom' | 'explore'): number {
   return tabs.indexOf(tab);
 }
 
+function compareVersions(a: string, b: string): number {
+  const normalize = (value: string) =>
+    value
+      .replace(/^v/i, '')
+      .split(/[\.-]/)
+      .map((part) => {
+        const parsed = Number.parseInt(part, 10);
+        return Number.isNaN(parsed) ? 0 : parsed;
+      });
+
+  const left = normalize(a);
+  const right = normalize(b);
+  const length = Math.max(left.length, right.length);
+
+  for (let index = 0; index < length; index += 1) {
+    const diff = (left[index] ?? 0) - (right[index] ?? 0);
+    if (diff !== 0) {
+      return diff > 0 ? 1 : -1;
+    }
+  }
+
+  return 0;
+}
+
+function pickLatestConnectors(connectors: RegistryConnector[]): RegistryConnector[] {
+  const latest = new Map<string, RegistryConnector>();
+
+  connectors.forEach((connector) => {
+    const key = connector.name;
+    const existing = latest.get(key);
+    if (!existing || compareVersions(connector.version, existing.version) > 0) {
+      latest.set(key, connector);
+    }
+  });
+
+  return Array.from(latest.values()).sort((a, b) =>
+    a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }),
+  );
+}
+
 type RegistryConnector = {
   id: string;
   name: string;
@@ -152,6 +192,10 @@ function IntegrationsAccordionList({
 
       {servers.map((savedServer, index) => {
         const favicon = getFavicon(savedServer.remotes?.[0].url || "");
+
+        if (!savedServer.id) {
+          return null
+        }
 
         return (
           <Fragment key={savedServer.id}>
@@ -287,7 +331,7 @@ export function MCPServerListDialog({
 
   // Optimistic enable testing: track multiple servers being tested concurrently
   const [pendingToggleServers, setPendingToggleServers] = useState<Record<string, SavedMCPServer>>({});
- // Track connected servers info: store serverInfo when available
+  // Track connected servers info: store serverInfo when available
   const [, setConnectedServers] = useState<Record<string, { name?: string; version?: string } | true>>({});
   const formRef = useRef<HTMLFormElement | null>(null);
   // Auth inputs for "Custom" form
@@ -352,7 +396,7 @@ export function MCPServerListDialog({
 
       console.log(connectors)
 
-      setRegistryConnectors(connectors);
+      setRegistryConnectors(pickLatestConnectors(connectors));
       registryFetchedRef.current = true;
     } catch (error: any) {
       setRegistryError(error?.message ?? 'Failed to load connectors.');
@@ -948,10 +992,10 @@ export function MCPServerListDialog({
             const keyPresence = pendingUrl ? getApiKeyPresenceLabel(pendingUrl) : 'none';
             const serverToSave = pendingServer
               ? {
-                  ...pendingServer,
-                  hasStoredKey: keyPresence !== 'none',
-                  enabled: true,
-                }
+                ...pendingServer,
+                hasStoredKey: keyPresence !== 'none',
+                enabled: true,
+              }
               : null;
 
             if (serverToSave) {
