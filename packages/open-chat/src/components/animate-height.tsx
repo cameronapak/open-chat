@@ -1,23 +1,65 @@
-import { useRef, useState, useLayoutEffect } from 'react';
+import { useRef, useState, useLayoutEffect, useCallback } from 'react';
 import { motion } from "motion/react"
+import { cn } from "@/lib/utils";
 
-export const AnimatedHeight = ({ children }: { children: React.ReactNode }) => {
-  const contentRef = useRef<HTMLDivElement | null>(null);
+// export const AnimatedHeight = ({ children, ...props }: { children: React.ReactNode }) => {
+//   const [height, setHeight] = useState<number | 'auto'>('auto');
+//   const contentRef = useRef<HTMLDivElement | null>(null);
+
+//   useLayoutEffect(() => {
+//     if (contentRef.current) {
+//       setHeight(contentRef.current.offsetHeight);
+//     }
+//   }, [children]);
+
+//   return (
+//     <motion.div
+//       style={{ overflow: 'hidden' }}
+//       animate={{ height }}
+//       initial={{ height: "90%" }}
+//       transition={{ duration: 3, ease: 'easeOut' }}
+//     >
+//       <div ref={contentRef}>{children}</div>
+//     </motion.div>
+//   );
+// }
+
+export const AnimatedHeight = ({ children, className, ...props }: { children: React.ReactNode, className?: string }) => {
   const [height, setHeight] = useState<number | 'auto'>('auto');
+  const [prevHeight, setPrevHeight] = useState<number | 'auto'>('auto');
+  const resizeObserverRef = useRef<ResizeObserver | null>(null);
 
-  useLayoutEffect(() => {
-    if (contentRef.current) {
-      setHeight(contentRef.current.offsetHeight);
+  const containerRef = useCallback((node: HTMLDivElement) => {
+    if (node !== null) {
+      resizeObserverRef.current = new ResizeObserver((entries) => {
+        // We only have one entry, so we can use entries[0].
+        const observedHeight = entries?.[0]?.contentRect?.height;
+        setHeight((previousHeight) => {
+          setPrevHeight(previousHeight);
+          return observedHeight ?? "auto"
+        });
+      });
+      resizeObserverRef.current.observe(node);
+    } else if (resizeObserverRef.current) {
+      // Disconnect the observer when the node is unmounted to prevent memory leaks
+      resizeObserverRef.current.disconnect();
     }
-  }, [children]);
+  }, []);
 
   return (
     <motion.div
-      style={{ overflow: 'hidden' }}
+      style={{ height }}
+      initial={{ height: prevHeight }}
       animate={{ height }}
-      transition={{ duration: 0.3 }}
+      transition={{
+        type: "spring",
+        duration: 1.25,
+        bounce: 0.2,
+      }}
+      className={cn("overflow-hidden", className)}
+      {...props}
     >
-      <div ref={contentRef}>{children}</div>
+      <div ref={containerRef}>{children}</div>
     </motion.div>
   );
 };
