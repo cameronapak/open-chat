@@ -1,28 +1,6 @@
-import { useRef, useState, useLayoutEffect, useCallback } from 'react';
+import { useRef, useState, useCallback } from 'react';
 import { motion } from "motion/react"
 import { cn } from "@/lib/utils";
-
-// export const AnimatedHeight = ({ children, ...props }: { children: React.ReactNode }) => {
-//   const [height, setHeight] = useState<number | 'auto'>('auto');
-//   const contentRef = useRef<HTMLDivElement | null>(null);
-
-//   useLayoutEffect(() => {
-//     if (contentRef.current) {
-//       setHeight(contentRef.current.offsetHeight);
-//     }
-//   }, [children]);
-
-//   return (
-//     <motion.div
-//       style={{ overflow: 'hidden' }}
-//       animate={{ height }}
-//       initial={{ height: "90%" }}
-//       transition={{ duration: 3, ease: 'easeOut' }}
-//     >
-//       <div ref={contentRef}>{children}</div>
-//     </motion.div>
-//   );
-// }
 
 export const AnimatedHeight = ({ children, className, ...props }: { children: React.ReactNode, className?: string }) => {
   const [height, setHeight] = useState<number | 'auto'>('auto');
