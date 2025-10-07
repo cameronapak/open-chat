@@ -50,7 +50,7 @@ import { MCPRegistryClient } from 'mcp-registry-spec-sdk'
 import type { ServerListResponse } from 'mcp-registry-spec-sdk'
 import { AnimatePresence, motion, Transition } from 'motion/react';
 import { useRef, useEffect, useState, useCallback } from 'react';
-import { useAtom } from 'jotai';
+import { atom, useAtom, useAtomValue, useSetAtom } from 'jotai';
 import { useMcp } from '@/hooks/use-mcp';
 import { saveApiKey, getApiKeyPresenceLabel } from "@/lib/keystore";
 import Loader from './loader';
@@ -65,6 +65,47 @@ interface MCPServerListDialogProps {
   webSearchDescription?: string;
   webSearchAvatar?: ReactNode;
 }
+
+function atomWithDebounce<T>(initialValue: T, delay = 150) {
+  const currentValueStoreAtom = atom(initialValue);
+  const debouncedValueStoreAtom = atom(initialValue);
+  const timeoutAtom = atom<ReturnType<typeof setTimeout> | null>(null);
+
+  const writeAtom = atom(null, (get, set, nextValue: T) => {
+    const existingTimeout = get(timeoutAtom);
+    if (existingTimeout) {
+      clearTimeout(existingTimeout);
+    }
+
+    set(currentValueStoreAtom, nextValue);
+
+    if (delay <= 0) {
+      set(debouncedValueStoreAtom, nextValue);
+      set(timeoutAtom, null);
+      return;
+    }
+
+    const timeoutId = setTimeout(() => {
+      set(debouncedValueStoreAtom, nextValue);
+      set(timeoutAtom, null);
+    }, delay);
+
+    set(timeoutAtom, timeoutId);
+  });
+
+  const currentValueAtom = atom((get) => get(currentValueStoreAtom));
+  const debouncedValueAtom = atom(
+    (get) => get(debouncedValueStoreAtom),
+    (_get, set, nextValue: T) => set(writeAtom, nextValue),
+  );
+
+  return { currentValueAtom, debouncedValueAtom };
+}
+
+const {
+  currentValueAtom: registrySearchInputAtom,
+  debouncedValueAtom: registrySearchValueAtom,
+} = atomWithDebounce('', 150);
 
 const SUPPORTED_TRANSPORTS = new Set(['streamable-http', 'sse'] as const);
 
@@ -335,6 +376,12 @@ export function MCPServerListDialog({
   const [pendingToggleServers, setPendingToggleServers] = useState<Record<string, SavedMCPServer>>({});
   // Track connected servers info: store serverInfo when available
   const [, setConnectedServers] = useState<Record<string, { name?: string; version?: string } | true>>({});
+  const searchInput = useAtomValue(registrySearchInputAtom);
+  const debouncedSearch = useAtomValue(registrySearchValueAtom);
+  const setSearchInput = useSetAtom(registrySearchValueAtom);
+
+  const trimmedDebouncedSearch = debouncedSearch.trim();
+
   const formRef = useRef<HTMLFormElement | null>(null);
   // Auth inputs for "Custom" form
   const [apiKeyInput, setApiKeyInput] = useState<string>('');
@@ -344,20 +391,20 @@ export function MCPServerListDialog({
   const [registryError, setRegistryError] = useState<string | null>(null);
   const [selectedRegistryConnector, setSelectedRegistryConnector] = useState<RegistryConnector | null>(null);
   const [exploreDialogOpen, setExploreDialogOpen] = useState(false);
-  const registryFetchedRef = useRef(false);
-  const registryLoadingRef = useRef(false);
+  const registryRequestIdRef = useRef(0);
 
-  const fetchRegistryServers = useCallback(async () => {
-    if (registryLoadingRef.current) {
-      return;
-    }
-    registryLoadingRef.current = true;
+  const fetchRegistryServers = useCallback(async (searchValue: string) => {
+    const query = searchValue.trim();
+    const requestId = registryRequestIdRef.current + 1;
+    registryRequestIdRef.current = requestId;
+
     setRegistryLoading(true);
     setRegistryError(null);
     try {
       const client = new MCPRegistryClient("https://mcp-registry.val.run");
       const response = await client.server.listServers({
         limit: 100,
+        ...(query ? { search: query } : {}),
       }) as ServerListResponse;
       console.log(response)
       const connectors: RegistryConnector[] = response?.servers.map((server) => {
@@ -400,25 +447,27 @@ export function MCPServerListDialog({
 
       console.log(connectors)
 
-      setRegistryConnectors(pickLatestConnectors(connectors));
-      registryFetchedRef.current = true;
+      if (registryRequestIdRef.current === requestId) {
+        setRegistryConnectors(pickLatestConnectors(connectors));
+      }
     } catch (error: any) {
-      setRegistryError(error?.message ?? 'Failed to load connectors.');
+      if (registryRequestIdRef.current === requestId) {
+        setRegistryError(error?.message ?? 'Failed to load connectors.');
+        setRegistryConnectors([]);
+      }
     } finally {
-      registryLoadingRef.current = false;
-      setRegistryLoading(false);
+      if (registryRequestIdRef.current === requestId) {
+        setRegistryLoading(false);
+      }
     }
-  }, []);
+  }, [setRegistryConnectors, setRegistryError, setRegistryLoading]);
 
   useEffect(() => {
     if (!open || tab !== 'explore') {
       return;
     }
-    if (registryFetchedRef.current) {
-      return;
-    }
-    fetchRegistryServers();
-  }, [open, tab, fetchRegistryServers]);
+    fetchRegistryServers(debouncedSearch);
+  }, [open, tab, debouncedSearch, fetchRegistryServers]);
 
   useEffect(() => {
     if (!open) {
@@ -428,9 +477,8 @@ export function MCPServerListDialog({
   }, [open]);
 
   const handleRetryRegistry = useCallback(() => {
-    registryFetchedRef.current = false;
-    fetchRegistryServers();
-  }, [fetchRegistryServers]);
+    fetchRegistryServers(debouncedSearch);
+  }, [fetchRegistryServers, debouncedSearch]);
 
   const handleSelectConnector = useCallback((connector: RegistryConnector) => {
     setSelectedRegistryConnector(connector);
@@ -771,62 +819,74 @@ export function MCPServerListDialog({
               transition={tabTransition}
               className="relative grid grid-cols-1 gap-4 pt-4"
             >
-              <div>
-                {registryLoading ? (
-                  <div className="h-full w-full flex items-center justify-center">
-                    <Loader />
-                  </div>
-                ) : registryError ? (
-                  <div className="flex flex-col gap-2">
-                    <p className="text-sm text-destructive">{registryError}</p>
-                    <Button variant="outline" size="sm" onClick={handleRetryRegistry} className="self-start">
-                      Retry
-                    </Button>
-                  </div>
-                ) : registryConnectors.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">
-                    {JSON.stringify(registryConnectors)}
-                    No connectors available right now. Try again later.
-                  </p>
-                ) : (
-                  <div className="flex flex-col">
-                    {registryConnectors.map((connector, index) => (
-                      <Fragment key={connector.id}>
-                        <ItemGroup>
-                          <Item
-                            className="cursor-pointer"
-                            role="button"
-                            tabIndex={0}
-                            onClick={() => handleSelectConnector(connector)}
-                            onKeyDown={(event) => {
-                              if (event.key === 'Enter' || event.key === ' ') {
-                                event.preventDefault();
-                                handleSelectConnector(connector);
-                              }
-                            }}
-                          >
-                            <ItemMedia>
-                              <Avatar className="rounded-sm shadow h-8 w-8">
-                                <AvatarImage loading="lazy" src={getFavicon(connector.remotes[0]?.url ?? '')} className="rounded-sm" />
-                                <AvatarFallback>{connector.name.charAt(0)}</AvatarFallback>
-                              </Avatar>
-                            </ItemMedia>
-                            <ItemContent className="gap-1">
-                              <ItemTitle className="w-full grid grid-cols-[1fr_auto]">
-                                {connector.requiresAuth ? "🔒 " + connector.name : connector.name}
-                                <span className="ml-2 text-xs font-normal text-muted-foreground">
-                                  v{connector.version}
-                                </span>
-                              </ItemTitle>
-                              <ItemDescription>{connector.description}</ItemDescription>
-                            </ItemContent>
-                          </Item>
-                        </ItemGroup>
-                        {index !== registryConnectors.length - 1 && <ItemSeparator />}
-                      </Fragment>
-                    ))}
-                  </div>
-                )}
+              <div className="grid gap-4">
+                <InputWithLabel
+                  id="registry-search"
+                  label="Search registry"
+                  type="search"
+                  placeholder="Search the MCP registry..."
+                  autoComplete="off"
+                  value={searchInput}
+                  onChange={(event) => setSearchInput(event.target.value)}
+                />
+                <div>
+                  {registryLoading ? (
+                    <div className="h-full w-full flex items-center justify-center">
+                      <Loader />
+                    </div>
+                  ) : registryError ? (
+                    <div className="flex flex-col gap-2">
+                      <p className="text-sm text-destructive">{registryError}</p>
+                      <Button variant="outline" size="sm" onClick={handleRetryRegistry} className="self-start">
+                        Retry
+                      </Button>
+                    </div>
+                  ) : registryConnectors.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">
+                      {trimmedDebouncedSearch
+                        ? `No connectors found for “${trimmedDebouncedSearch}”. Try a different search.`
+                        : 'No connectors available right now. Try again later.'}
+                    </p>
+                  ) : (
+                    <div className="flex flex-col">
+                      {registryConnectors.map((connector, index) => (
+                        <Fragment key={connector.id}>
+                          <ItemGroup>
+                            <Item
+                              className="cursor-pointer"
+                              role="button"
+                              tabIndex={0}
+                              onClick={() => handleSelectConnector(connector)}
+                              onKeyDown={(event) => {
+                                if (event.key === 'Enter' || event.key === ' ') {
+                                  event.preventDefault();
+                                  handleSelectConnector(connector);
+                                }
+                              }}
+                            >
+                              <ItemMedia>
+                                <Avatar className="rounded-sm shadow h-8 w-8">
+                                  <AvatarImage loading="lazy" src={getFavicon(connector.remotes[0]?.url ?? '')} className="rounded-sm" />
+                                  <AvatarFallback>{connector.name.charAt(0)}</AvatarFallback>
+                                </Avatar>
+                              </ItemMedia>
+                              <ItemContent className="gap-1">
+                                <ItemTitle className="w-full grid grid-cols-[1fr_auto]">
+                                  {connector.requiresAuth ? "🔒 " + connector.name : connector.name}
+                                  <span className="ml-2 text-xs font-normal text-muted-foreground">
+                                    v{connector.version}
+                                  </span>
+                                </ItemTitle>
+                                <ItemDescription>{connector.description}</ItemDescription>
+                              </ItemContent>
+                            </Item>
+                          </ItemGroup>
+                          {index !== registryConnectors.length - 1 && <ItemSeparator />}
+                        </Fragment>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             </motion.div>
           </TabsContent>
