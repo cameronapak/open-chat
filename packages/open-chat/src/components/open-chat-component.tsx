@@ -839,7 +839,8 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
                   onClick={openMcpDialog}
                   aria-label="Integrations"
                 >
-                  <div>
+                  <div className="flex items-center gap-2">
+                    <Puzzle className="h-4 w-4 text-muted-foreground" />
                     {shouldShowAvatarGroup ? (
                       <IntegrationAvatarGroup
                         enabledServers={enabledServers}
@@ -847,9 +848,7 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
                         webSearchLabel={providerMeta?.webSearchLabel}
                         webSearchAvatar={providerMeta?.brandingAvatar}
                       />
-                    ) : (
-                      <Puzzle className="h-4 w-4 text-muted-foreground" />
-                    )}
+                    ) : null}
                     <span className="sr-only">Integrations</span>
                   </div>
                 </Button>
