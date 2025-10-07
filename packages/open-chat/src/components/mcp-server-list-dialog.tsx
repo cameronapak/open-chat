@@ -11,6 +11,7 @@ import {
   DrawerFooter,
   DrawerHeader,
   DrawerTitle,
+  DrawerContent,
 } from "@/components/ui/drawer"
 import {
   Avatar,
@@ -29,7 +30,7 @@ import { Switch } from './ui/switch';
 import { mcpServersAtom, mcpServerDetailsAtom } from '@/lib/atoms';
 import { useAtom } from 'jotai';
 import { VisuallyHidden } from 'radix-ui';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { useMcp } from '@/hooks/use-mcp';
 // import MCPServerDetails from './mcp-server-details';
 import { saveApiKey, getApiKeyPresenceLabel } from "@/lib/keystore";
@@ -45,6 +46,8 @@ import {
   ItemSeparator,
   ItemTitle,
 } from "@/components/ui/item"
+import { MCPRegistryClient } from 'mcp-registry-spec-sdk'
+import type { ServerListResponse } from 'mcp-registry-spec-sdk'
 
 interface MCPServerListDialogProps {
   open: boolean;
@@ -55,6 +58,21 @@ interface MCPServerListDialogProps {
   webSearchDescription?: string;
   webSearchAvatar?: ReactNode;
 }
+
+const SUPPORTED_TRANSPORTS = new Set(['streamable-http', 'sse'] as const);
+
+type RegistryConnector = {
+  id: string;
+  name: string;
+  description: string;
+  version: string;
+  websiteUrl?: string;
+  status?: string;
+  tags?: string[];
+  requiresAuth: boolean;
+  remotes: NonNullable<SavedMCPServer['remotes']>;
+  source: any;
+};
 
 function IntegrationsAccordionList({
   servers,
@@ -247,7 +265,7 @@ export function MCPServerListDialog({
   // (previously had DOM-bridge lazy-loading state; replaced with React Suspense component)
 
   // Controlled Tabs so we can switch to "integrations" after success
-  const [tab, setTab] = useState<'integrations' | 'custom'>('integrations');
+  const [tab, setTab] = useState<'integrations' | 'custom' | 'explore'>('integrations');
 
   // Testing flow state
   const [testing, setTesting] = useState(false);
@@ -262,6 +280,133 @@ export function MCPServerListDialog({
   // Auth inputs for "Custom" form
   const [apiKeyInput, setApiKeyInput] = useState<string>('');
   const [sessionOnly, setSessionOnly] = useState<boolean>(false);
+  const [registryConnectors, setRegistryConnectors] = useState<RegistryConnector[]>([]);
+  const [registryLoading, setRegistryLoading] = useState(false);
+  const [registryError, setRegistryError] = useState<string | null>(null);
+  const [selectedRegistryConnector, setSelectedRegistryConnector] = useState<RegistryConnector | null>(null);
+  const [exploreDrawerOpen, setExploreDrawerOpen] = useState(false);
+  const registryFetchedRef = useRef(false);
+  const registryLoadingRef = useRef(false);
+
+  const fetchRegistryServers = useCallback(async () => {
+    if (registryLoadingRef.current) {
+      return;
+    }
+    registryLoadingRef.current = true;
+    setRegistryLoading(true);
+    setRegistryError(null);
+    try {
+      const client = new MCPRegistryClient("https://mcp-registry.val.run");
+      const response = await client.server.listServers() as ServerListResponse;
+      console.log(response)
+      const connectors: RegistryConnector[] = response?.servers.map((server) => {
+        console.log(server)
+        const remotes = server.server.remotes?.filter((remote) => {
+          const transport = remote.type;
+          console.log(remote);
+          return transport && SUPPORTED_TRANSPORTS.has(transport as 'streamable-http' | 'sse') && remote?.url;
+        })
+          .map((remote) => ({
+            type: (remote?.type) as 'streamable-http' | 'sse',
+            url: remote.url as string,
+          })) || [];
+
+        console.log({
+          remotes
+        })
+
+        if (!remotes.length) {
+          return [];
+        }
+
+        const connectorId = `${server?.server.name}-${server?.server.version}` as string | undefined;
+        if (!connectorId) {
+          return [];
+        }
+
+        return [{
+          id: connectorId,
+          name: (server?.server.name ?? connectorId) as string,
+          description: (server?.server.description ?? 'No description available.') as string,
+          version: (server?.server.version ?? '0.0.0') as string,
+          websiteUrl: server.server.websiteUrl,
+          status: server._meta?.['io.modelcontextprotocol.registry/official']?.status,
+          remotes,
+          requiresAuth: server.server.remotes?.some((remote) => remote.headers?.some((header) => header.name === 'Authorization' || header.isRequired && header.isSecret)) || false,
+          source: server,
+        } satisfies RegistryConnector];
+      }).flat() || [] as RegistryConnector[];
+
+      console.log(connectors)
+
+      setRegistryConnectors(connectors);
+      registryFetchedRef.current = true;
+    } catch (error: any) {
+      setRegistryError(error?.message ?? 'Failed to load connectors.');
+    } finally {
+      registryLoadingRef.current = false;
+      setRegistryLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!open || tab !== 'explore') {
+      return;
+    }
+    if (registryFetchedRef.current) {
+      return;
+    }
+    fetchRegistryServers();
+  }, [open, tab, fetchRegistryServers]);
+
+  useEffect(() => {
+    if (!open) {
+      setExploreDrawerOpen(false);
+      setSelectedRegistryConnector(null);
+    }
+  }, [open]);
+
+  const handleRetryRegistry = useCallback(() => {
+    registryFetchedRef.current = false;
+    fetchRegistryServers();
+  }, [fetchRegistryServers]);
+
+  const handleSelectConnector = useCallback((connector: RegistryConnector) => {
+    setSelectedRegistryConnector(connector);
+    setExploreDrawerOpen(true);
+  }, []);
+
+  const handleSaveConnector = useCallback((connector: RegistryConnector) => {
+    if (!connector.remotes?.length) {
+      toast.error('Connector is missing a compatible remote endpoint.');
+      return;
+    }
+
+    if (savedServers.some((server) => server.id === connector.id)) {
+      toast.info(`${connector.name} is already saved.`);
+      setExploreDrawerOpen(false);
+      setSelectedRegistryConnector(null);
+      setTab('integrations');
+      return;
+    }
+
+    const savedConnector: SavedMCPServer = {
+      id: connector.id,
+      name: connector.name,
+      description: connector.description,
+      version: connector.version,
+      remotes: connector.remotes,
+      savedAt: new Date().toISOString(),
+      enabled: true,
+      hasStoredKey: false,
+    };
+
+    setSavedServers((prev) => [...prev, savedConnector]);
+    toast.success(`Saved ${connector.name}`);
+    setExploreDrawerOpen(false);
+    setSelectedRegistryConnector(null);
+    setTab('integrations');
+  }, [savedServers, setSavedServers]);
 
   const handleAddCustomServer = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -377,11 +522,15 @@ export function MCPServerListDialog({
     }}>
       <AnimatedDrawerContent aria-describedby='integrations' className="grid grid-rows-[auto_1fr_auto] grid-cols-1 max-w-md mx-auto">
         <section className="h-full overflow-hidden grid grid-cols-1 p-4">
-          <Tabs value={tab} onValueChange={(v) => setTab(v as 'integrations' | 'custom')} className="h-full overflow-hidden grid grid-rows-[1fr_auto] gap-4">
-            <TabsList className="grid grid-cols-2 w-full">
+          <Tabs value={tab} onValueChange={(v) => setTab(v as 'integrations' | 'custom' | 'explore')} className="h-full overflow-hidden grid grid-rows-[1fr_auto] gap-4">
+            <TabsList className="grid grid-cols-3 w-full">
               <TabsTrigger value="integrations">
                 <Puzzle className="h-4 w-4 mr-1 text-muted-foreground" />
                 Integrations
+              </TabsTrigger>
+              <TabsTrigger value="explore">
+                <Globe className="h-4 w-4 mr-1 text-muted-foreground" />
+                Explore
               </TabsTrigger>
               <TabsTrigger value="custom">
                 <Plus className="h-4 w-4 mr-1 text-muted-foreground" />
@@ -424,6 +573,69 @@ export function MCPServerListDialog({
                 webSearchDescription={webSearchDescription}
                 webSearchAvatar={webSearchAvatar}
               />
+            </TabsContent>
+            <TabsContent value="explore" className="relative h-full overflow-y-auto grid grid-cols-1 gap-4">
+              <DrawerHeader className="flex flex-col items-center gap-2">
+                <DrawerTitle>Explore Connectors</DrawerTitle>
+                <DrawerDescription>
+                  Discover connectors from the MCP registry.
+                </DrawerDescription>
+              </DrawerHeader>
+              <div>
+                {registryLoading ? (
+                  <p className="text-sm text-muted-foreground">Loading connectors…</p>
+                ) : registryError ? (
+                  <div className="flex flex-col gap-2">
+                    <p className="text-sm text-destructive">{registryError}</p>
+                    <Button variant="outline" size="sm" onClick={handleRetryRegistry} className="self-start">
+                      Retry
+                    </Button>
+                  </div>
+                ) : registryConnectors.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    {JSON.stringify(registryConnectors)}
+                    No connectors available right now. Try again later.
+                  </p>
+                ) : (
+                  <div className="flex flex-col">
+                    {registryConnectors.map((connector, index) => (
+                      <Fragment key={connector.id}>
+                        <ItemGroup>
+                          <Item
+                            className="cursor-pointer"
+                            role="button"
+                            tabIndex={0}
+                            onClick={() => handleSelectConnector(connector)}
+                            onKeyDown={(event) => {
+                              if (event.key === 'Enter' || event.key === ' ') {
+                                event.preventDefault();
+                                handleSelectConnector(connector);
+                              }
+                            }}
+                          >
+                            <ItemMedia>
+                              <Avatar className="rounded-sm shadow">
+                                <AvatarImage src={getFavicon(connector.remotes[0]?.url ?? '')} className="rounded-sm" />
+                                <AvatarFallback>{connector.name.charAt(0)}</AvatarFallback>
+                              </Avatar>
+                            </ItemMedia>
+                            <ItemContent className="gap-1">
+                              <ItemTitle>
+                                {connector.requiresAuth ? "🔒 " + connector.name : connector.name}
+                                <span className="ml-2 text-xs font-normal text-muted-foreground">
+                                  v{connector.version}
+                                </span>
+                              </ItemTitle>
+                              <ItemDescription>{connector.description}</ItemDescription>
+                            </ItemContent>
+                          </Item>
+                        </ItemGroup>
+                        {index !== registryConnectors.length - 1 && <ItemSeparator />}
+                      </Fragment>
+                    ))}
+                  </div>
+                )}
+              </div>
             </TabsContent>
             <TabsContent value="custom" className="h-full overflow-y-auto px-3 grid grid-cols-1 gap-4">
               <div className="flex flex-col gap-2">
@@ -524,6 +736,78 @@ export function MCPServerListDialog({
               </form>
             </TabsContent>
           </Tabs>
+          <Drawer
+            open={exploreDrawerOpen}
+            onOpenChange={(nextOpen) => {
+              setExploreDrawerOpen(nextOpen);
+              if (!nextOpen) {
+                setSelectedRegistryConnector(null);
+              }
+            }}
+          >
+            <DrawerContent className="max-w-lg mx-auto grid grid-rows-[auto_1fr_auto]">
+              <DrawerHeader>
+                <DrawerTitle>{selectedRegistryConnector?.name}</DrawerTitle>
+                <DrawerDescription>{selectedRegistryConnector?.description}</DrawerDescription>
+              </DrawerHeader>
+              <div className="px-4 pb-4 space-y-4 overflow-y-auto">
+                <div className="space-y-1 text-sm text-muted-foreground">
+                  <div>
+                    <span className="text-foreground font-medium">Version:</span>{' '}
+                    {selectedRegistryConnector?.version ?? 'Unknown'}
+                  </div>
+                  {selectedRegistryConnector?.status ? (
+                    <div>
+                      <span className="text-foreground font-medium">Status:</span>{' '}
+                      {selectedRegistryConnector.status}
+                    </div>
+                  ) : null}
+                  {selectedRegistryConnector?.websiteUrl ? (
+                    <div>
+                      <a
+                        className="text-primary underline underline-offset-4"
+                        href={selectedRegistryConnector.websiteUrl}
+                        target="_blank"
+                        rel="noreferrer noopener"
+                      >
+                        Visit website
+                      </a>
+                    </div>
+                  ) : null}
+                </div>
+                <div>
+                  <h4 className="text-sm font-medium text-foreground">Endpoints</h4>
+                  <ul className="mt-2 space-y-2 text-sm text-muted-foreground">
+                    {selectedRegistryConnector?.remotes.map((remote) => (
+                      <li key={`${remote.type}-${remote.url}`} className="break-all">
+                        <span className="text-foreground font-medium">{remote.type}</span>{' '}
+                        <span>{remote.url}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                {selectedRegistryConnector?.tags?.length ? (
+                  <div>
+                    <h4 className="text-sm font-medium text-foreground">Tags</h4>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      {selectedRegistryConnector.tags.join(', ')}
+                    </p>
+                  </div>
+                ) : null}
+              </div>
+              <DrawerFooter>
+                <Button
+                  disabled={!selectedRegistryConnector}
+                  onClick={() => selectedRegistryConnector && handleSaveConnector(selectedRegistryConnector)}
+                >
+                  Save Connector
+                </Button>
+                <DrawerClose asChild>
+                  <Button variant="outline">Close</Button>
+                </DrawerClose>
+              </DrawerFooter>
+            </DrawerContent>
+          </Drawer>
         </section>
         <DrawerFooter>
           <DrawerClose asChild>

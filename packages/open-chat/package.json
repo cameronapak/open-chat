@@ -64,6 +64,7 @@
     "@tanstack/react-query": "^5.85.5",
     "ai": "^5.0.48",
     "class-variance-authority": "^0.7.1",
+    "mcp-registry-spec-sdk": "^0.2.0",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
     "jotai": "^2.15.0",
