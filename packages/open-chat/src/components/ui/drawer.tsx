@@ -265,7 +265,7 @@ function ResponsiveDialog({
   onOpenChange,
   modal,
 }: ResponsiveDialogProps) {
-  const isDesktop = useMediaQuery("(min-width: 768px)")
+  const isDesktop = useMediaQuery("(min-width: 425px)")
 
   if (isDesktop) {
     return (

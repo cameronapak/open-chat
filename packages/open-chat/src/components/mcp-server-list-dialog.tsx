@@ -641,7 +641,7 @@ export function MCPServerListDialog({
     <Tabs
       value={tab}
       onValueChange={(v) => setTab(v as 'connections' | 'custom' | 'explore')}
-      className="h-full overflow-hidden grid grid-rows-[auto_1fr]"
+      className="h-full overflow-hidden grid grid-rows-[auto_1fr] gap-0"
     >
       <TabsList className="grid grid-cols-3 w-full">
         <TabsTrigger value="connections">
@@ -739,7 +739,7 @@ export function MCPServerListDialog({
                         </Avatar>
                       </ItemMedia>
                       <ItemContent className="gap-1">
-                        <ItemTitle>
+                        <ItemTitle className="w-full grid grid-cols-[1fr_auto]">
                           {connector.requiresAuth ? "🔒 " + connector.name : connector.name}
                           <span className="ml-2 text-xs font-normal text-muted-foreground">
                             v{connector.version}
@@ -769,7 +769,7 @@ export function MCPServerListDialog({
         <form
           ref={formRef}
           onSubmit={handleAddCustomServer}
-          className="flex flex-col gap-4 pt-3"
+          className="flex flex-col gap-4 pt-6"
         >
           <InputWithLabel
             id="integration-name"
