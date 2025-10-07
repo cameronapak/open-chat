@@ -205,7 +205,7 @@ function IntegrationsAccordionList({
               <Item>
                 <ItemMedia>
                   <Avatar className="rounded-sm shadow">
-                    <AvatarImage src={favicon} className="rounded-sm" />
+                    <AvatarImage loading="lazy" src={favicon} className="rounded-sm" />
                     <AvatarFallback>{savedServer.name.charAt(0)}</AvatarFallback>
                   </Avatar>
                 </ItemMedia>
@@ -807,7 +807,7 @@ export function MCPServerListDialog({
                           >
                             <ItemMedia>
                               <Avatar className="rounded-sm shadow h-8 w-8">
-                                <AvatarImage src={getFavicon(connector.remotes[0]?.url ?? '')} className="rounded-sm" />
+                                <AvatarImage loading="lazy" src={getFavicon(connector.remotes[0]?.url ?? '')} className="rounded-sm" />
                                 <AvatarFallback>{connector.name.charAt(0)}</AvatarFallback>
                               </Avatar>
                             </ItemMedia>
