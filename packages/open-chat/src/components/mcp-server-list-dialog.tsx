@@ -4,15 +4,20 @@ import { toast } from 'sonner';
 import { type SavedMCPServer } from '@/lib/mcp-storage';
 import { Plus, Puzzle, Globe, Trash } from 'lucide-react';
 import {
-  Drawer,
-  DrawerClose,
-  AnimatedDrawerContent,
   DrawerDescription,
   DrawerFooter,
   DrawerHeader,
   DrawerTitle,
-  DrawerContent,
+  DrawerClose,
+  ResponsiveDialog
 } from "@/components/ui/drawer"
+import {
+  DialogClose,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import {
   Avatar,
   AvatarFallback,
@@ -165,6 +170,7 @@ function IntegrationsAccordionList({
                       e.stopPropagation();
                       handleRemoveServer(savedServer.id, savedServer.name);
                     }}
+                    className="text-muted-foreground"
                   >
                     <Trash />
                   </Button>
@@ -284,7 +290,7 @@ export function MCPServerListDialog({
   const [registryLoading, setRegistryLoading] = useState(false);
   const [registryError, setRegistryError] = useState<string | null>(null);
   const [selectedRegistryConnector, setSelectedRegistryConnector] = useState<RegistryConnector | null>(null);
-  const [exploreDrawerOpen, setExploreDrawerOpen] = useState(false);
+  const [exploreDialogOpen, setExploreDialogOpen] = useState(false);
   const registryFetchedRef = useRef(false);
   const registryLoadingRef = useRef(false);
 
@@ -361,7 +367,7 @@ export function MCPServerListDialog({
 
   useEffect(() => {
     if (!open) {
-      setExploreDrawerOpen(false);
+      setExploreDialogOpen(false);
       setSelectedRegistryConnector(null);
     }
   }, [open]);
@@ -373,7 +379,7 @@ export function MCPServerListDialog({
 
   const handleSelectConnector = useCallback((connector: RegistryConnector) => {
     setSelectedRegistryConnector(connector);
-    setExploreDrawerOpen(true);
+    setExploreDialogOpen(true);
   }, []);
 
   const handleSaveConnector = useCallback((connector: RegistryConnector) => {
@@ -384,7 +390,7 @@ export function MCPServerListDialog({
 
     if (savedServers.some((server) => server.id === connector.id)) {
       toast.info(`${connector.name} is already saved.`);
-      setExploreDrawerOpen(false);
+      setExploreDialogOpen(false);
       setSelectedRegistryConnector(null);
       setTab('integrations');
       return;
@@ -403,7 +409,7 @@ export function MCPServerListDialog({
 
     setSavedServers((prev) => [...prev, savedConnector]);
     toast.success(`Saved ${connector.name}`);
-    setExploreDrawerOpen(false);
+    setExploreDialogOpen(false);
     setSelectedRegistryConnector(null);
     setTab('integrations');
   }, [savedServers, setSavedServers]);
@@ -475,7 +481,7 @@ export function MCPServerListDialog({
         delete next[serverId];
         return next;
       });
-      // Clear pending if any (though disable shouldn't have it)
+      // Clear pending if any (though disable shouldn’t have it)
       setPendingToggleServers(prev => {
         const next = { ...prev };
         delete next[serverId];
@@ -509,363 +515,441 @@ export function MCPServerListDialog({
     }, 1000);
   };
 
+  const handleRootOpenChange = useCallback((isOpen: boolean) => {
+    if (!isOpen) {
+      setTab('integrations');
+    }
+    onOpenChange(isOpen);
+  }, [onOpenChange]);
+
   const pendingUrl = pendingServer?.remotes?.find(r => r.type === 'streamable-http' || r.type === 'http+sse')?.url || '';
 
-  console.log('pendingUrl:', pendingUrl); // Log pendingUrl
+  const connectorDetailBody = selectedRegistryConnector ? (
+    <div className="space-y-4 text-sm text-muted-foreground">
+      <div>
+        <span className="text-foreground font-medium">Version:</span>{' '}
+        {selectedRegistryConnector.version ?? 'Unknown'}
+      </div>
+      {selectedRegistryConnector.status ? (
+        <div>
+          <span className="text-foreground font-medium">Status:</span>{' '}
+          {selectedRegistryConnector.status}
+        </div>
+      ) : null}
+      {selectedRegistryConnector.websiteUrl ? (
+        <div>
+          <a
+            className="text-primary underline underline-offset-4"
+            href={selectedRegistryConnector.websiteUrl}
+            target="_blank"
+            rel="noreferrer noopener"
+          >
+            Visit website
+          </a>
+        </div>
+      ) : null}
+      <div>
+        <h4 className="text-sm font-medium text-foreground">Endpoints</h4>
+        <ul className="mt-2 space-y-2 break-all">
+          {selectedRegistryConnector.remotes.map((remote) => (
+            <li key={`${remote.type}-${remote.url}`}>
+              <span className="text-foreground font-medium">{remote.type}</span>{' '}
+              <span>{remote.url}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+      {selectedRegistryConnector.tags?.length ? (
+        <div>
+          <h4 className="text-sm font-medium text-foreground">Tags</h4>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {selectedRegistryConnector.tags.join(', ')}
+          </p>
+        </div>
+      ) : null}
+    </div>
+  ) : (
+    <p className="text-sm text-muted-foreground">
+      Select a connector from the list to view details.
+    </p>
+  );
+
+  const connectorDialog = (
+    <ResponsiveDialog
+      open={exploreDialogOpen}
+      onOpenChange={(nextOpen) => {
+        setExploreDialogOpen(nextOpen);
+        if (!nextOpen) {
+          setSelectedRegistryConnector(null);
+        }
+      }}
+      trigger={<span aria-hidden className="hidden" />}
+      dialogContentProps={{ className: "sm:max-w-md" }}
+      drawerContentProps={{ className: "max-w-md mx-auto grid grid-rows-[auto_1fr_auto]" }}
+      desktop={
+        <>
+          <DialogHeader>
+            <DialogTitle>{selectedRegistryConnector?.name ?? 'Connector details'}</DialogTitle>
+            <DialogDescription>{selectedRegistryConnector?.description}</DialogDescription>
+          </DialogHeader>
+          <div className="px-6 pb-6 overflow-y-auto max-h-[60vh]">
+            {connectorDetailBody}
+          </div>
+          <DialogFooter>
+            <Button
+              disabled={!selectedRegistryConnector}
+              onClick={() =>
+                selectedRegistryConnector && handleSaveConnector(selectedRegistryConnector)
+              }
+            >
+              Save Connector
+            </Button>
+            <DialogClose asChild>
+              <Button variant="outline">Close</Button>
+            </DialogClose>
+          </DialogFooter>
+        </>
+      }
+      mobile={
+        <>
+          <DrawerHeader>
+            <DrawerTitle>{selectedRegistryConnector?.name ?? 'Connector details'}</DrawerTitle>
+            <DrawerDescription>{selectedRegistryConnector?.description}</DrawerDescription>
+          </DrawerHeader>
+          <div className="px-4 pb-4 overflow-y-auto">
+            {connectorDetailBody}
+          </div>
+          <DrawerFooter>
+            <Button
+              disabled={!selectedRegistryConnector}
+              onClick={() =>
+                selectedRegistryConnector && handleSaveConnector(selectedRegistryConnector)
+              }
+            >
+              Save Connector
+            </Button>
+            <DrawerClose asChild>
+              <Button variant="outline">Close</Button>
+            </DrawerClose>
+          </DrawerFooter>
+        </>
+      }
+    />
+  );
+
+  const tabs = (
+    <Tabs
+      value={tab}
+      onValueChange={(v) => setTab(v as 'integrations' | 'custom' | 'explore')}
+      className="h-full overflow-hidden grid grid-rows-[auto_1fr] gap-4"
+    >
+      <TabsList className="grid grid-cols-3 w-full">
+        <TabsTrigger value="integrations">
+          <Puzzle className="h-4 w-4 mr-1 text-muted-foreground" />
+          Integrations
+        </TabsTrigger>
+        <TabsTrigger value="explore">
+          <Globe className="h-4 w-4 mr-1 text-muted-foreground" />
+          Explore
+        </TabsTrigger>
+        <TabsTrigger value="custom">
+          <Plus className="h-4 w-4 mr-1 text-muted-foreground" />
+          Custom
+        </TabsTrigger>
+      </TabsList>
+
+      <TabsContent value="integrations" className="relative h-full overflow-y-auto grid grid-cols-1 gap-4">
+        {/* {savedServers.length ? (
+          <VisuallyHidden.Root>
+            <DrawerHeader id='integrations' className="flex flex-col items-center gap-2">
+              <DrawerTitle>Integrations</DrawerTitle>
+              <DrawerDescription>
+                Added integrations will appear here.
+              </DrawerDescription>
+            </DrawerHeader>
+          </VisuallyHidden.Root>
+        ) : (
+          <DrawerHeader id='integrations' className="flex flex-col items-center gap-2">
+            <DrawerTitle>Integrations</DrawerTitle>
+            <DrawerDescription>
+              Added integrations will appear here.
+            </DrawerDescription>
+          </DrawerHeader>
+        )} */}
+
+        <IntegrationsAccordionList
+          servers={savedServers}
+          onToggleServer={handleToggleExistingServer}
+          onRemoveServer={(serverId: string) =>
+            setSavedServers(prevServers =>
+              prevServers.filter(server => server.id !== serverId)
+            )
+          }
+          webSearchEnabled={webSearchEnabled}
+          onWebSearchToggle={onWebSearchToggle}
+          webSearchLabel={webSearchLabel}
+          webSearchDescription={webSearchDescription}
+          webSearchAvatar={webSearchAvatar}
+        />
+      </TabsContent>
+
+      <TabsContent value="explore" className="relative h-full overflow-y-auto grid grid-cols-1 gap-4">
+        {/* <DrawerHeader className="flex flex-col items-center gap-2">
+          <DrawerTitle>Explore Connectors</DrawerTitle>
+          <DrawerDescription>
+            Discover connectors from the MCP registry.
+          </DrawerDescription>
+        </DrawerHeader> */}
+        <div>
+          {registryLoading ? (
+            <p className="text-sm text-muted-foreground">Loading connectors…</p>
+          ) : registryError ? (
+            <div className="flex flex-col gap-2">
+              <p className="text-sm text-destructive">{registryError}</p>
+              <Button variant="outline" size="sm" onClick={handleRetryRegistry} className="self-start">
+                Retry
+              </Button>
+            </div>
+          ) : registryConnectors.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              {JSON.stringify(registryConnectors)}
+              No connectors available right now. Try again later.
+            </p>
+          ) : (
+            <div className="flex flex-col">
+              {registryConnectors.map((connector, index) => (
+                <Fragment key={connector.id}>
+                  <ItemGroup>
+                    <Item
+                      className="cursor-pointer"
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => handleSelectConnector(connector)}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter' || event.key === ' ') {
+                          event.preventDefault();
+                          handleSelectConnector(connector);
+                        }
+                      }}
+                    >
+                      <ItemMedia>
+                        <Avatar className="rounded-sm shadow">
+                          <AvatarImage src={getFavicon(connector.remotes[0]?.url ?? '')} className="rounded-sm" />
+                          <AvatarFallback>{connector.name.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                      </ItemMedia>
+                      <ItemContent className="gap-1">
+                        <ItemTitle>
+                          {connector.requiresAuth ? "🔒 " + connector.name : connector.name}
+                          <span className="ml-2 text-xs font-normal text-muted-foreground">
+                            v{connector.version}
+                          </span>
+                        </ItemTitle>
+                        <ItemDescription>{connector.description}</ItemDescription>
+                      </ItemContent>
+                    </Item>
+                  </ItemGroup>
+                  {index !== registryConnectors.length - 1 && <ItemSeparator />}
+                </Fragment>
+              ))}
+            </div>
+          )}
+        </div>
+      </TabsContent>
+
+      <TabsContent value="custom" className="h-full overflow-y-auto px-3 grid grid-cols-1 gap-4">
+        {/* <div className="flex flex-col gap-2">
+          <DrawerHeader>
+            <DrawerTitle>New Integration</DrawerTitle>
+            <DrawerDescription className='text-balance'>
+              Add a custom Model Context Protocol server.
+            </DrawerDescription>
+          </DrawerHeader>
+        </div> */}
+        <form
+          ref={formRef}
+          onSubmit={handleAddCustomServer}
+          className="flex flex-col gap-4 pt-3"
+        >
+          <InputWithLabel
+            id="integration-name"
+            required
+            label="Integration name"
+            type="text"
+            autoComplete='off'
+            placeholder="Notion"
+            name="integration-name"
+          />
+          <InputWithLabel
+            id="url"
+            required
+            autoComplete='off'
+            label="URL"
+            type="url"
+            placeholder="https://example.com/mcp"
+            name="url"
+          />
+          <InputWithLabel
+            id="description"
+            autoComplete='off'
+            label="Description (optional)"
+            type="text"
+            placeholder="What does this integration do?"
+            name="description"
+          />
+          {/* Auth configuration */}
+          <div className="grid grid-cols-1 gap-3">
+            <InputWithLabel
+              id="api-key"
+              autoComplete="off"
+              label="API Key (optional)"
+              type="password"
+              placeholder="Enter API key"
+              name="api-key"
+              value={apiKeyInput}
+              onChange={(e: any) => setApiKeyInput(e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">
+              If provided, API key authentication will be used with X-API-Key. Leave empty to use OAuth (Authorization: Bearer) if requested by the server.
+            </p>
+            <div className="flex items-center gap-2 text-sm">
+              <Checkbox
+                id="session-only"
+                checked={sessionOnly}
+                onCheckedChange={(checked) => setSessionOnly(!!checked)}
+              />
+              <label htmlFor="session-only">Session-only (don’t persist)</label>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              API keys are encrypted at rest with Web Crypto (AES-GCM) when persisted. Avoid untrusted scripts (XSS).
+            </p>
+          </div>
+          <Button
+            size="sm"
+            disabled={Boolean(pendingServer)}
+          >
+            <Plus className="h-4 w-4 mr-1" />
+            {pendingServer
+              ? authRedirectUrl
+                ? 'Awaiting OAuth...'
+                : testing
+                  ? 'Adding...'
+                  : 'Adding...'
+              : 'Add'}
+          </Button>
+          {pendingServer && authRedirectUrl ? (
+            <div className="rounded-md border border-dashed border-muted p-3 text-sm text-muted-foreground">
+              <p className="font-medium text-foreground">Authorization required</p>
+              <p className="mt-1">
+                Complete the OAuth step in the popup window. If it did not open, use the link below.
+              </p>
+              <a
+                className="mt-2 inline-flex items-center text-sm font-medium text-primary underline underline-offset-4"
+                href={authRedirectUrl}
+                target="_blank"
+                rel="noreferrer noopener"
+              >
+                Open authorization URL
+              </a>
+            </div>
+          ) : null}
+        </form>
+      </TabsContent>
+    </Tabs>
+  );
+
+  const desktopContent = (
+    <>
+      <DialogHeader>
+        <DialogTitle className="text-center">Manage Connections</DialogTitle>
+        <DialogDescription className="text-center">
+          Connect, explore, or add custom Model Context Protocol servers.
+        </DialogDescription>
+      </DialogHeader>
+      <div className="h-[70vh] overflow-hidden">
+        <div className="h-full overflow-hidden grid grid-rows-[1fr_auto] gap-4">
+          {tabs}
+          {connectorDialog}
+        </div>
+      </div>
+    </>
+  );
+
+  const mobileContent = (
+    <>
+      <DrawerHeader className="flex flex-col items-center gap-2">
+        <DrawerTitle>Manage MCP Integrations</DrawerTitle>
+        <DrawerDescription>
+          Connect, explore, or add custom servers.
+        </DrawerDescription>
+      </DrawerHeader>
+      <section className="h-full overflow-hidden grid grid-cols-1 px-4 pb-4">
+        {tabs}
+        {connectorDialog}
+      </section>
+      <DrawerFooter>
+        <DrawerClose asChild>
+          <Button variant="outline">Close</Button>
+        </DrawerClose>
+      </DrawerFooter>
+    </>
+  );
 
   return (
-    <Drawer open={open} onOpenChange={(isOpen: boolean) => {
-      if (!isOpen) {
-        setTab('integrations');
-      }
-      onOpenChange(isOpen);
-    }}>
-      <AnimatedDrawerContent aria-describedby='integrations' className="grid grid-rows-[auto_1fr_auto] grid-cols-1 max-w-md mx-auto">
-        <section className="h-full overflow-hidden grid grid-cols-1 p-4">
-          <Tabs value={tab} onValueChange={(v) => setTab(v as 'integrations' | 'custom' | 'explore')} className="h-full overflow-hidden grid grid-rows-[1fr_auto] gap-4">
-            <TabsList className="grid grid-cols-3 w-full">
-              <TabsTrigger value="integrations">
-                <Puzzle className="h-4 w-4 mr-1 text-muted-foreground" />
-                Integrations
-              </TabsTrigger>
-              <TabsTrigger value="explore">
-                <Globe className="h-4 w-4 mr-1 text-muted-foreground" />
-                Explore
-              </TabsTrigger>
-              <TabsTrigger value="custom">
-                <Plus className="h-4 w-4 mr-1 text-muted-foreground" />
-                Custom
-              </TabsTrigger>
-            </TabsList>
+    <>
+      <ResponsiveDialog
+        open={open}
+        onOpenChange={handleRootOpenChange}
+        trigger={<span aria-hidden className="hidden" />}
+        dialogContentProps={{ className: "sm:max-w-md" }}
+        drawerContentProps={{ className: "grid grid-rows-[auto_1fr_auto]" }}
+        desktop={desktopContent}
+        mobile={mobileContent}
+      />
 
-            <TabsContent value="integrations" className="relative h-full overflow-y-auto grid grid-cols-1 gap-4">
-              {savedServers.length ? (
-                // Fixes: "`DialogContent` requires a `DialogTitle` for
-                // the component to be accessible for screen reader users."
-                <VisuallyHidden.Root>
-                  <DrawerHeader id='integrations' className="flex flex-col items-center gap-2">
-                    <DrawerTitle>Integrations</DrawerTitle>
-                    <DrawerDescription>
-                      Added integrations will appear here.
-                    </DrawerDescription>
-                  </DrawerHeader>
-                </VisuallyHidden.Root>
-              ) : (
-                <DrawerHeader id='integrations' className="flex flex-col items-center gap-2">
-                  <DrawerTitle>Integrations</DrawerTitle>
-                  <DrawerDescription>
-                    Added integrations will appear here.
-                  </DrawerDescription>
-                </DrawerHeader>
-              )}
-
-              <IntegrationsAccordionList
-                servers={savedServers}
-                onToggleServer={handleToggleExistingServer}
-                onRemoveServer={(serverId: string) =>
-                  setSavedServers(prevServers =>
-                    prevServers.filter(server => server.id !== serverId)
-                  )
-                }
-                webSearchEnabled={webSearchEnabled}
-                onWebSearchToggle={onWebSearchToggle}
-                webSearchLabel={webSearchLabel}
-                webSearchDescription={webSearchDescription}
-                webSearchAvatar={webSearchAvatar}
-              />
-            </TabsContent>
-            <TabsContent value="explore" className="relative h-full overflow-y-auto grid grid-cols-1 gap-4">
-              <DrawerHeader className="flex flex-col items-center gap-2">
-                <DrawerTitle>Explore Connectors</DrawerTitle>
-                <DrawerDescription>
-                  Discover connectors from the MCP registry.
-                </DrawerDescription>
-              </DrawerHeader>
-              <div>
-                {registryLoading ? (
-                  <p className="text-sm text-muted-foreground">Loading connectors…</p>
-                ) : registryError ? (
-                  <div className="flex flex-col gap-2">
-                    <p className="text-sm text-destructive">{registryError}</p>
-                    <Button variant="outline" size="sm" onClick={handleRetryRegistry} className="self-start">
-                      Retry
-                    </Button>
-                  </div>
-                ) : registryConnectors.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">
-                    {JSON.stringify(registryConnectors)}
-                    No connectors available right now. Try again later.
-                  </p>
-                ) : (
-                  <div className="flex flex-col">
-                    {registryConnectors.map((connector, index) => (
-                      <Fragment key={connector.id}>
-                        <ItemGroup>
-                          <Item
-                            className="cursor-pointer"
-                            role="button"
-                            tabIndex={0}
-                            onClick={() => handleSelectConnector(connector)}
-                            onKeyDown={(event) => {
-                              if (event.key === 'Enter' || event.key === ' ') {
-                                event.preventDefault();
-                                handleSelectConnector(connector);
-                              }
-                            }}
-                          >
-                            <ItemMedia>
-                              <Avatar className="rounded-sm shadow">
-                                <AvatarImage src={getFavicon(connector.remotes[0]?.url ?? '')} className="rounded-sm" />
-                                <AvatarFallback>{connector.name.charAt(0)}</AvatarFallback>
-                              </Avatar>
-                            </ItemMedia>
-                            <ItemContent className="gap-1">
-                              <ItemTitle>
-                                {connector.requiresAuth ? "🔒 " + connector.name : connector.name}
-                                <span className="ml-2 text-xs font-normal text-muted-foreground">
-                                  v{connector.version}
-                                </span>
-                              </ItemTitle>
-                              <ItemDescription>{connector.description}</ItemDescription>
-                            </ItemContent>
-                          </Item>
-                        </ItemGroup>
-                        {index !== registryConnectors.length - 1 && <ItemSeparator />}
-                      </Fragment>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </TabsContent>
-            <TabsContent value="custom" className="h-full overflow-y-auto px-3 grid grid-cols-1 gap-4">
-              <div className="flex flex-col gap-2">
-                <DrawerHeader>
-                  <DrawerTitle>New Integration</DrawerTitle>
-                  <DrawerDescription className='text-balance'>
-                    Add a custom Model Context Protocol server.
-                  </DrawerDescription>
-                </DrawerHeader>
-              </div>
-              <form
-                ref={formRef}
-                onSubmit={handleAddCustomServer}
-                className="flex flex-col gap-4"
-              >
-                <InputWithLabel
-                  id="integration-name"
-                  required
-                  label="Integration name"
-                  type="text"
-                  autoComplete='off'
-                  placeholder="Notion"
-                  name="integration-name"
-                />
-                <InputWithLabel
-                  id="url"
-                  required
-                  autoComplete='off'
-                  label="URL"
-                  type="url"
-                  placeholder="https://example.com/mcp"
-                  name="url"
-                />
-                <InputWithLabel
-                  id="description"
-                  autoComplete='off'
-                  label="Description (optional)"
-                  type="text"
-                  placeholder="What does this integration do?"
-                  name="description"
-                />
-                {/* Auth configuration */}
-                <div className="grid grid-cols-1 gap-3">
-                  <InputWithLabel
-                    id="api-key"
-                    autoComplete="off"
-                    label="API Key (optional)"
-                    type="password"
-                    placeholder="Enter API key"
-                    name="api-key"
-                    value={apiKeyInput}
-                    onChange={(e: any) => setApiKeyInput(e.target.value)}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    If provided, API key authentication will be used with X-API-Key. Leave empty to use OAuth (Authorization: Bearer) if requested by the server.
-                  </p>
-                  <div className="flex items-center gap-2 text-sm">
-                    <Checkbox
-                      id="session-only"
-                      checked={sessionOnly}
-                      onCheckedChange={(checked) => setSessionOnly(!!checked)}
-                    />
-                    <label htmlFor="session-only">Session-only (don’t persist)</label>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    API keys are encrypted at rest with Web Crypto (AES-GCM) when persisted. Avoid untrusted scripts (XSS).
-                  </p>
-                </div>
-                <Button
-                  size="sm"
-                  disabled={Boolean(pendingServer)}
-                >
-                  <Plus className="h-4 w-4 mr-1" />
-                  {pendingServer
-                    ? authRedirectUrl
-                      ? 'Awaiting OAuth...'
-                      : testing
-                        ? 'Adding...'
-                        : 'Adding...'
-                    : 'Add'}
-                </Button>
-                {pendingServer && authRedirectUrl ? (
-                  <div className="rounded-md border border-dashed border-muted p-3 text-sm text-muted-foreground">
-                    <p className="font-medium text-foreground">Authorization required</p>
-                    <p className="mt-1">
-                      Complete the OAuth step in the popup window. If it did not open, use the link below.
-                    </p>
-                    <a
-                      className="mt-2 inline-flex items-center text-sm font-medium text-primary underline underline-offset-4"
-                      href={authRedirectUrl}
-                      target="_blank"
-                      rel="noreferrer noopener"
-                    >
-                      Open authorization URL
-                    </a>
-                  </div>
-                ) : null}
-              </form>
-            </TabsContent>
-          </Tabs>
-          <Drawer
-            open={exploreDrawerOpen}
-            onOpenChange={(nextOpen) => {
-              setExploreDrawerOpen(nextOpen);
-              if (!nextOpen) {
-                setSelectedRegistryConnector(null);
+      {pendingServer ? (
+        <McpConnectionTester
+          url={pendingUrl}
+          onReady={async () => {
+            try {
+              if (pendingUrl && apiKeyInput.trim()) {
+                await saveApiKey(pendingUrl, apiKeyInput.trim(), !sessionOnly);
               }
-            }}
-          >
-            <DrawerContent className="max-w-lg mx-auto grid grid-rows-[auto_1fr_auto]">
-              <DrawerHeader>
-                <DrawerTitle>{selectedRegistryConnector?.name}</DrawerTitle>
-                <DrawerDescription>{selectedRegistryConnector?.description}</DrawerDescription>
-              </DrawerHeader>
-              <div className="px-4 pb-4 space-y-4 overflow-y-auto">
-                <div className="space-y-1 text-sm text-muted-foreground">
-                  <div>
-                    <span className="text-foreground font-medium">Version:</span>{' '}
-                    {selectedRegistryConnector?.version ?? 'Unknown'}
-                  </div>
-                  {selectedRegistryConnector?.status ? (
-                    <div>
-                      <span className="text-foreground font-medium">Status:</span>{' '}
-                      {selectedRegistryConnector.status}
-                    </div>
-                  ) : null}
-                  {selectedRegistryConnector?.websiteUrl ? (
-                    <div>
-                      <a
-                        className="text-primary underline underline-offset-4"
-                        href={selectedRegistryConnector.websiteUrl}
-                        target="_blank"
-                        rel="noreferrer noopener"
-                      >
-                        Visit website
-                      </a>
-                    </div>
-                  ) : null}
-                </div>
-                <div>
-                  <h4 className="text-sm font-medium text-foreground">Endpoints</h4>
-                  <ul className="mt-2 space-y-2 text-sm text-muted-foreground">
-                    {selectedRegistryConnector?.remotes.map((remote) => (
-                      <li key={`${remote.type}-${remote.url}`} className="break-all">
-                        <span className="text-foreground font-medium">{remote.type}</span>{' '}
-                        <span>{remote.url}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-                {selectedRegistryConnector?.tags?.length ? (
-                  <div>
-                    <h4 className="text-sm font-medium text-foreground">Tags</h4>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      {selectedRegistryConnector.tags.join(', ')}
-                    </p>
-                  </div>
-                ) : null}
-              </div>
-              <DrawerFooter>
-                <Button
-                  disabled={!selectedRegistryConnector}
-                  onClick={() => selectedRegistryConnector && handleSaveConnector(selectedRegistryConnector)}
-                >
-                  Save Connector
-                </Button>
-                <DrawerClose asChild>
-                  <Button variant="outline">Close</Button>
-                </DrawerClose>
-              </DrawerFooter>
-            </DrawerContent>
-          </Drawer>
-        </section>
-        <DrawerFooter>
-          <DrawerClose asChild>
-            <Button variant="outline">Close</Button>
-          </DrawerClose>
-        </DrawerFooter>
-
-        {/* details fetching is now handled by MCPServerDetails via Suspense/use() */}
-
-        {/* Hidden tester mounts when testing starts */}
-        {pendingServer ? (
-          <McpConnectionTester
-            url={pendingUrl}
-            onReady={async () => {
-              // Save API key (if configured) now that connection is ready
-              try {
-                if (pendingUrl && apiKeyInput.trim()) {
-                  await saveApiKey(pendingUrl, apiKeyInput.trim(), !sessionOnly);
-                }
-              } catch {
-                // swallow; user can retry saving key later
-              }
-              // Save server with hasStoredKey indicator (session or stored)
-              const keyPresence = pendingUrl ? getApiKeyPresenceLabel(pendingUrl) : 'none';
-              const withKeyFlag: SavedMCPServer = {
-                ...pendingServer,
-                hasStoredKey: keyPresence !== 'none',
-              };
-              setSavedServers(prev => [...prev, withKeyFlag]);
-              toast.success('Custom server added and connected');
-              formRef.current?.reset?.()
-              // Reset auth UI state (keep sensible defaults)
-              setApiKeyInput('')
-              setSessionOnly(false)
-              setTab('integrations')
-              setTesting(false)
-              setAuthRedirectUrl(undefined)
-              setPendingServer(null)
-            }}
-            onFailed={(err) => {
-              toast.error(err || 'Failed to connect to server')
-              setTesting(false)
-              setAuthRedirectUrl(undefined)
-              setPendingServer(null)
-            }}
-            onAuthRedirect={(manualUrl) => {
-              console.log('authRedirectUrl set to:', manualUrl); // Log authRedirectUrl
-              setTesting(false)
-              setAuthRedirectUrl(manualUrl)
-              toast.info(
-                manualUrl
-                  ? 'Complete OAuth in the popup or open the authorization link provided.'
-                  : 'Complete OAuth in the authorization popup to finish adding this server.',
-              )
-            }}
-          />
-        ) : null}
-      </AnimatedDrawerContent>
-    </Drawer>
+            } catch {
+            }
+            const keyPresence = pendingUrl ? getApiKeyPresenceLabel(pendingUrl) : 'none';
+            const withKeyFlag: SavedMCPServer = {
+              ...pendingServer,
+              hasStoredKey: keyPresence !== 'none',
+            };
+            setSavedServers(prev => [...prev, withKeyFlag]);
+            toast.success('Custom server added and connected');
+            formRef.current?.reset?.()
+            setApiKeyInput('')
+            setSessionOnly(false)
+            setTab('integrations')
+            setTesting(false)
+            setAuthRedirectUrl(undefined)
+            setPendingServer(null)
+          }}
+          onFailed={(err) => {
+            toast.error(err || 'Failed to connect to server')
+            setTesting(false)
+            setAuthRedirectUrl(undefined)
+            setPendingServer(null)
+          }}
+          onAuthRedirect={(manualUrl) => {
+            console.log('authRedirectUrl set to:', manualUrl);
+            setTesting(false)
+            setAuthRedirectUrl(manualUrl)
+            toast.info(
+              manualUrl
+                ? 'Complete OAuth in the popup or open the authorization link provided.'
+                : 'Complete OAuth in the authorization popup to finish adding this server.',
+            )
+          }}
+        />
+      ) : null}
+    </>
   );
 }
