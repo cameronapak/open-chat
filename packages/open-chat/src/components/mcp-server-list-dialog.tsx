@@ -54,6 +54,7 @@ import { useAtom } from 'jotai';
 import { useMcp } from '@/hooks/use-mcp';
 import { saveApiKey, getApiKeyPresenceLabel } from "@/lib/keystore";
 import Loader from './loader';
+import { VisuallyHidden } from "radix-ui";
 
 interface MCPServerListDialogProps {
   open: boolean;
@@ -951,6 +952,11 @@ export function MCPServerListDialog({
 
   const mobileContent = (
     <>
+      <VisuallyHidden.Root>
+        <DialogHeader>
+          <DialogTitle className="text-center">Manage Connections</DialogTitle>
+        </DialogHeader>
+      </VisuallyHidden.Root>
       <section className="mt-4 h-full overflow-hidden grid grid-cols-1 px-4 pb-4">
         {tabs}
         {connectorDialog}
