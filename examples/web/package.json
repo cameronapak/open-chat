@@ -4,13 +4,12 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite --port=3001",
-    "build": "vite build",
-    "serve": "vite preview",
-    "start": "vite",
+    "dev": "bunx --bun vite --port=3001",
+    "build": "bunx --bun vite build",
+    "serve": "bunx --bun vite preview",
+    "start": "bunx --bun vite",
     "check-types": "tsc --noEmit",
-    "generate-pwa-assets": "pwa-assets-generator",
-    "deploy": "vercel deploy --prebuilt"
+    "generate-pwa-assets": "pwa-assets-generator"
   },
   "dependencies": {
     "@ai-sdk/react": "^2.0.48",
@@ -79,7 +78,6 @@
     "postcss": "^8.5.3",
     "tailwindcss": "^4.0.15",
     "typescript": "^5.8.3",
-    "vite": "^6.2.2",
-    "vite-plugin-vercel": "^9.0.7"
+    "vite": "^6.2.2"
   }
 }
