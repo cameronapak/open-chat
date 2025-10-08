@@ -3,11 +3,9 @@
   "main": "src/index.ts",
   "type": "module",
   "scripts": {
-    "build": "tsdown",
     "check-types": "tsc -b",
-    "compile": "bun build --compile --minify --sourcemap --bytecode ./src/index.ts --outfile server",
-    "dev": "tsx watch src/index.ts",
-    "start": "node dist/index.js"
+    "dev": "bun run src/index.ts",
+    "start": "bun run src/index.ts"
   },
   "dependencies": {
     "mcp-registry-spec-sdk": "^0.2.0",
