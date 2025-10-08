@@ -5,9 +5,9 @@ import OpenChatComponent, {
   useOpenRouterModelOptions,
   useOpenRouterAuth,
   normalizeOpenRouterBaseUrl,
-} from '@faith-tools/open-chat';
+} from '@openchatkit/chat';
 import type { UIMessage, UseChatOptions } from "@ai-sdk/react";
-import "@faith-tools/open-chat/styles.css";
+import "@openchatkit/chat/styles.css";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 const queryClient = new QueryClient();
@@ -74,7 +74,7 @@ const ChatBotDemo = () => {
   const providerMeta = useMemo(
     () => ({
       name: "OpenRouter",
-      webSearchLabel: "Enable OpenRouter Web Search",
+      webSearchLabel: "OpenRouter Web Search",
       webSearchDescription:
         "Augment responses with OpenRouter's web results for fresher answers.",
       authCTA: (
@@ -94,6 +94,8 @@ const ChatBotDemo = () => {
   return (
     <section className="grid grid-cols-1 h-dvh">
       <OpenChatComponent
+        mcpRegistryUrl={import.meta.env.DEV ? "https://mcp-registry.val.run" : "https://registry.modelcontextprotocol.io"}
+        // mcpRegistryUrl="https://mcp-subregistry-toolbase-test.gavinching.workers.dev"
         modelId={defaultModel}
         api={apiUrl}
         requireAuth={true}

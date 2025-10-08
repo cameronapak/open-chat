@@ -27,5 +27,6 @@
     "typescript": "^5.8.2",
     "tsx": "^4.19.2",
     "@types/node": "^22.13.11"
-  }
+  },
+  "packageManager": "bun@1.2.21"
 }

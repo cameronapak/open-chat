@@ -232,6 +232,7 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
     onNewMessage,
     onError,
     onSend,
+    mcpRegistryUrl,
     renderMessage,
     theme = 'light',
     requireAuth = false,
@@ -587,7 +588,7 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
           return (
             <Fragment key={`${message.id}-${index}`}>
               <Message from={message.role}>
-                <MessageContent>
+                <MessageContent variant="flat">
                   <Response>{part.text}</Response>
                 </MessageContent>
               </Message>
@@ -732,6 +733,7 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
       </Dialog>
 
       <MCPServerListDialog
+        mcpRegistryUrl={mcpRegistryUrl}
         open={mcpDialogOpen}
         onOpenChange={setMcpDialogOpen}
         webSearchEnabled={canUseWebSearch ? webSearchActive : undefined}
@@ -808,6 +810,9 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
               ))}
 
               {status === 'submitted' && <Loader />}
+
+              {/* Spacer */}
+              <div className="h-6" />
             </ConversationContent>
             <ConversationScrollButton />
           </Conversation>
@@ -836,7 +841,8 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
                   onClick={openMcpDialog}
                   aria-label="Integrations"
                 >
-                  <div>
+                  <div className="flex items-center gap-2">
+                    <Puzzle className="h-4 w-4 text-muted-foreground" />
                     {shouldShowAvatarGroup ? (
                       <IntegrationAvatarGroup
                         enabledServers={enabledServers}
@@ -844,9 +850,7 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
                         webSearchLabel={providerMeta?.webSearchLabel}
                         webSearchAvatar={providerMeta?.brandingAvatar}
                       />
-                    ) : (
-                      <Puzzle className="h-4 w-4 text-muted-foreground" />
-                    )}
+                    ) : null}
                     <span className="sr-only">Integrations</span>
                   </div>
                 </Button>

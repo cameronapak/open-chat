@@ -6,6 +6,11 @@ import { motion } from "motion/react"
 import useMeasure from "react-use-measure"
 
 import { cn } from "@/lib/utils"
+import {
+  Dialog,
+  DialogContent,
+  DialogTrigger,
+} from "@/components/ui/dialog"
 
 function Drawer({
   ...props
@@ -59,8 +64,8 @@ function DrawerContent({
         data-slot="drawer-content"
         className={cn(
           "group/drawer-content bg-background fixed z-50 flex h-auto flex-col",
-          "data-[vaul-drawer-direction=top]:inset-x-0 data-[vaul-drawer-direction=top]:top-0 data-[vaul-drawer-direction=top]:mb-24 data-[vaul-drawer-direction=top]:max-h-[80vh] data-[vaul-drawer-direction=top]:rounded-b-lg data-[vaul-drawer-direction=top]:border-b",
-          "data-[vaul-drawer-direction=bottom]:inset-x-0 data-[vaul-drawer-direction=bottom]:bottom-0 data-[vaul-drawer-direction=bottom]:mt-24 data-[vaul-drawer-direction=bottom]:max-h-[80vh] data-[vaul-drawer-direction=bottom]:rounded-t-lg data-[vaul-drawer-direction=bottom]:border-t",
+          "data-[vaul-drawer-direction=top]:inset-x-0 data-[vaul-drawer-direction=top]:top-0 data-[vaul-drawer-direction=top]:mb-24 data-[vaul-drawer-direction=top]:max-h-[90svh] data-[vaul-drawer-direction=top]:rounded-b-lg data-[vaul-drawer-direction=top]:border-b",
+          "data-[vaul-drawer-direction=bottom]:inset-x-0 data-[vaul-drawer-direction=bottom]:bottom-0 data-[vaul-drawer-direction=bottom]:mt-24 data-[vaul-drawer-direction=bottom]:max-h-[90svh] data-[vaul-drawer-direction=bottom]:rounded-t-lg data-[vaul-drawer-direction=bottom]:border-t",
           "data-[vaul-drawer-direction=right]:inset-y-0 data-[vaul-drawer-direction=right]:right-0 data-[vaul-drawer-direction=right]:w-3/4 data-[vaul-drawer-direction=right]:border-l data-[vaul-drawer-direction=right]:sm:max-w-sm",
           "data-[vaul-drawer-direction=left]:inset-y-0 data-[vaul-drawer-direction=left]:left-0 data-[vaul-drawer-direction=left]:w-3/4 data-[vaul-drawer-direction=left]:border-r data-[vaul-drawer-direction=left]:sm:max-w-sm",
           className
@@ -206,6 +211,78 @@ function DrawerDescription({
   )
 }
 
+function useMediaQuery(query: string) {
+  const defaultMatches =
+    typeof window === "undefined" ? false : window.matchMedia(query).matches
+
+  const [matches, setMatches] = React.useState(defaultMatches)
+
+  React.useEffect(() => {
+    if (typeof window === "undefined") {
+      return
+    }
+
+    const mediaQueryList = window.matchMedia(query)
+    const updateMatch = (event: MediaQueryListEvent) => setMatches(event.matches)
+
+    setMatches(mediaQueryList.matches)
+    mediaQueryList.addEventListener("change", updateMatch)
+
+    return () => {
+      mediaQueryList.removeEventListener("change", updateMatch)
+    }
+  }, [query])
+
+  return matches
+}
+
+type ResponsiveDialogProps = {
+  trigger: React.ReactNode
+  desktop: React.ReactNode
+  mobile: React.ReactNode
+  dialogContentProps?: React.ComponentProps<typeof DialogContent>
+  drawerContentProps?: React.ComponentProps<typeof DrawerContent>
+  open?: boolean
+  defaultOpen?: boolean
+  onOpenChange?: (open: boolean) => void
+  modal?: boolean
+}
+
+function ResponsiveDialog({
+  trigger,
+  desktop,
+  mobile,
+  dialogContentProps,
+  drawerContentProps,
+  open,
+  defaultOpen,
+  onOpenChange,
+  modal,
+}: ResponsiveDialogProps) {
+  const isDesktop = useMediaQuery("(min-width: 768px)")
+
+  if (isDesktop) {
+    return (
+      <Dialog
+        open={open}
+        defaultOpen={defaultOpen}
+        onOpenChange={onOpenChange}
+        modal={modal}
+      >
+        <DialogTrigger asChild>{trigger}</DialogTrigger>
+        <DialogContent {...dialogContentProps}>{desktop}</DialogContent>
+      </Dialog>
+    )
+  }
+
+  return (
+    <Drawer open={open} defaultOpen={defaultOpen} onOpenChange={onOpenChange}>
+      <DrawerTrigger asChild>{trigger}</DrawerTrigger>
+      <DrawerContent {...drawerContentProps}>{mobile}</DrawerContent>
+    </Drawer>
+  )
+}
+
 export {
   Drawer,
   DrawerPortal,
@@ -218,4 +295,5 @@ export {
   DrawerFooter,
   DrawerTitle,
   DrawerDescription,
+  ResponsiveDialog,
 }

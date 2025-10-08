@@ -7,7 +7,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
-import { BrainIcon, ChevronDownIcon } from "lucide-react";
+import { ChevronDownIcon, LightbulbIcon } from "lucide-react";
 import type { ComponentProps } from "react";
 import { createContext, memo, useContext, useEffect, useState } from "react";
 import { Response } from "./response";
@@ -98,7 +98,7 @@ export const Reasoning = memo(
         value={{ isStreaming, isOpen, setIsOpen, duration }}
       >
         <Collapsible
-          className={cn("not-prose mb-4", className)}
+          className={cn("not-prose mb-2 mt-4", className)}
           onOpenChange={handleOpenChange}
           open={isOpen}
           {...props}
@@ -119,7 +119,7 @@ const getThinkingMessage = (isStreaming: boolean, duration?: number) => {
   if (duration === undefined) {
     return <p>Thought for a few seconds</p>;
   }
-  return <p>Thought for {duration} seconds</p>;
+  return <p>Thought for {duration} second{duration === 1 ? '' : 's'}</p>;
 };
 
 export const ReasoningTrigger = memo(
@@ -136,7 +136,7 @@ export const ReasoningTrigger = memo(
       >
         {children ?? (
           <>
-            <BrainIcon className="size-4" />
+            <LightbulbIcon className="size-4" />
             {getThinkingMessage(isStreaming, duration)}
             <ChevronDownIcon
               className={cn(

@@ -6,7 +6,10 @@ import path from "node:path";
 import { defineConfig } from "vite";
 
 export default defineConfig({
-	plugins: [tailwindcss(), tanstackRouter({}), react(), 
+  plugins: [
+    tailwindcss(),
+    tanstackRouter({}),
+    react(),
     // VitePWA({
     //   registerType: "autoUpdate",
     //   manifest: {
@@ -19,9 +22,15 @@ export default defineConfig({
     //   devOptions: { enabled: true },
     // })
   ],
-	resolve: {
-		alias: {
-			"@": path.resolve(__dirname, "./src"),
-		},
-	},
+  server: {
+    // Using LocalCan to expose localhost:3001
+    // to my local internet but with HTTPS.
+    // This is an NGROK tunnel alternative.
+    allowedHosts: ["open-chat.local"]
+  },
+  resolve: {
+    alias: {
+      "@": path.resolve(__dirname, "./src"),
+    },
+  }
 });

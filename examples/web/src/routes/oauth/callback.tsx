@@ -2,7 +2,7 @@
 
 import { createFileRoute } from '@tanstack/react-router';
 import { useEffect, useRef, useState } from 'react';
-import { onMcpAuthorization } from '@faith-tools/open-chat';
+import { onMcpAuthorization } from '@openchatkit/chat';
 
 const OAuthCallback = () => {
   const calledRef = useRef(false);

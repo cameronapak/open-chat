@@ -4,14 +4,21 @@ import { toast } from 'sonner';
 import { type SavedMCPServer } from '@/lib/mcp-storage';
 import { Plus, Puzzle, Globe, Trash } from 'lucide-react';
 import {
-  Drawer,
-  DrawerClose,
-  AnimatedDrawerContent,
   DrawerDescription,
   DrawerFooter,
   DrawerHeader,
   DrawerTitle,
+  DrawerClose,
+  ResponsiveDialog
 } from "@/components/ui/drawer"
+import { AnimatedHeight } from '@/components/animate-height';
+import {
+  DialogClose,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import {
   Avatar,
   AvatarFallback,
@@ -27,13 +34,7 @@ import { InputWithLabel } from './ui/input';
 import { getFavicon } from "@/lib/utils";
 import { Switch } from './ui/switch';
 import { mcpServersAtom, mcpServerDetailsAtom } from '@/lib/atoms';
-import { useAtom } from 'jotai';
-import { VisuallyHidden } from 'radix-ui';
-import { useEffect, useRef, useState } from 'react';
-import { useMcp } from '@/hooks/use-mcp';
-// import MCPServerDetails from './mcp-server-details';
-import { saveApiKey, getApiKeyPresenceLabel } from "@/lib/keystore";
-import type { HeaderScheme as StorageHeaderScheme } from '@/lib/mcp-storage';
+import { type HeaderScheme as StorageHeaderScheme } from '@/lib/mcp-storage';
 import { Checkbox } from './ui/checkbox';
 import {
   Item,
@@ -45,8 +46,18 @@ import {
   ItemSeparator,
   ItemTitle,
 } from "@/components/ui/item"
+import { MCPRegistryClient } from 'mcp-registry-spec-sdk'
+import type { ServerListResponse } from 'mcp-registry-spec-sdk'
+import { AnimatePresence, motion, Transition } from 'motion/react';
+import { useRef, useEffect, useState, useCallback } from 'react';
+import { atom, useAtom, useAtomValue, useSetAtom } from 'jotai';
+import { useMcp } from '@/hooks/use-mcp';
+import { saveApiKey, getApiKeyPresenceLabel } from "@/lib/keystore";
+import Loader from './loader';
+import { VisuallyHidden } from "radix-ui";
 
 interface MCPServerListDialogProps {
+  mcpRegistryUrl?: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   webSearchEnabled?: boolean;
@@ -55,6 +66,107 @@ interface MCPServerListDialogProps {
   webSearchDescription?: string;
   webSearchAvatar?: ReactNode;
 }
+
+function atomWithDebounce<T>(initialValue: T, delay = 150) {
+  const currentValueStoreAtom = atom(initialValue);
+  const debouncedValueStoreAtom = atom(initialValue);
+  const timeoutAtom = atom<ReturnType<typeof setTimeout> | null>(null);
+
+  const writeAtom = atom(null, (get, set, nextValue: T) => {
+    const existingTimeout = get(timeoutAtom);
+    if (existingTimeout) {
+      clearTimeout(existingTimeout);
+    }
+
+    set(currentValueStoreAtom, nextValue);
+
+    if (delay <= 0) {
+      set(debouncedValueStoreAtom, nextValue);
+      set(timeoutAtom, null);
+      return;
+    }
+
+    const timeoutId = setTimeout(() => {
+      set(debouncedValueStoreAtom, nextValue);
+      set(timeoutAtom, null);
+    }, delay);
+
+    set(timeoutAtom, timeoutId);
+  });
+
+  const currentValueAtom = atom((get) => get(currentValueStoreAtom));
+  const debouncedValueAtom = atom(
+    (get) => get(debouncedValueStoreAtom),
+    (_get, set, nextValue: T) => set(writeAtom, nextValue),
+  );
+
+  return { currentValueAtom, debouncedValueAtom };
+}
+
+const {
+  currentValueAtom: registrySearchInputAtom,
+  debouncedValueAtom: registrySearchValueAtom,
+} = atomWithDebounce('', 150);
+
+const SUPPORTED_TRANSPORTS = new Set(['streamable-http', 'sse'] as const);
+
+function getTabIndex(tab: 'connections' | 'custom' | 'explore'): number {
+  const tabs = ['connections', 'explore', 'custom'];
+  return tabs.indexOf(tab);
+}
+
+function compareVersions(a: string, b: string): number {
+  const normalize = (value: string) =>
+    value
+      .replace(/^v/i, '')
+      .split(/[\.-]/)
+      .map((part) => {
+        const parsed = Number.parseInt(part, 10);
+        return Number.isNaN(parsed) ? 0 : parsed;
+      });
+
+  const left = normalize(a);
+  const right = normalize(b);
+  const length = Math.max(left.length, right.length);
+
+  for (let index = 0; index < length; index += 1) {
+    const diff = (left[index] ?? 0) - (right[index] ?? 0);
+    if (diff !== 0) {
+      return diff > 0 ? 1 : -1;
+    }
+  }
+
+  return 0;
+}
+
+function pickLatestConnectors(connectors: RegistryConnector[]): RegistryConnector[] {
+  const latest = new Map<string, RegistryConnector>();
+
+  connectors.forEach((connector) => {
+    const key = connector.name;
+    const existing = latest.get(key);
+    if (!existing || compareVersions(connector.version, existing.version) > 0) {
+      latest.set(key, connector);
+    }
+  });
+
+  return Array.from(latest.values()).sort((a, b) =>
+    a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }),
+  );
+}
+
+type RegistryConnector = {
+  id: string;
+  name: string;
+  description: string;
+  version: string;
+  websiteUrl?: string;
+  status?: string;
+  tags?: string[];
+  requiresAuth: boolean;
+  remotes: NonNullable<SavedMCPServer['remotes']>;
+  source: any;
+};
 
 function IntegrationsAccordionList({
   servers,
@@ -125,13 +237,17 @@ function IntegrationsAccordionList({
       {servers.map((savedServer, index) => {
         const favicon = getFavicon(savedServer.remotes?.[0].url || "");
 
+        if (!savedServer.id) {
+          return null
+        }
+
         return (
           <Fragment key={savedServer.id}>
             <ItemGroup>
               <Item>
                 <ItemMedia>
                   <Avatar className="rounded-sm shadow">
-                    <AvatarImage src={favicon} className="rounded-sm" />
+                    <AvatarImage loading="lazy" src={favicon} className="rounded-sm" />
                     <AvatarFallback>{savedServer.name.charAt(0)}</AvatarFallback>
                   </Avatar>
                 </ItemMedia>
@@ -147,6 +263,7 @@ function IntegrationsAccordionList({
                       e.stopPropagation();
                       handleRemoveServer(savedServer.id, savedServer.name);
                     }}
+                    className="text-muted-foreground"
                   >
                     <Trash />
                   </Button>
@@ -233,6 +350,7 @@ function McpConnectionTester({
 }
 
 export function MCPServerListDialog({
+  mcpRegistryUrl = 'https://registry.modelcontextprotocol.io',
   open,
   onOpenChange,
   webSearchEnabled,
@@ -246,22 +364,197 @@ export function MCPServerListDialog({
 
   // (previously had DOM-bridge lazy-loading state; replaced with React Suspense component)
 
-  // Controlled Tabs so we can switch to "integrations" after success
-  const [tab, setTab] = useState<'integrations' | 'custom'>('integrations');
+  // Controlled Tabs so we can switch to "connections" after success
+  const [tab, setTab] = useState<'connections' | 'custom' | 'explore'>('connections');
+  const [prevTab, setPrevTab] = useState<'connections' | 'custom' | 'explore'>('connections');
 
   // Testing flow state
   const [testing, setTesting] = useState(false);
   const [pendingServer, setPendingServer] = useState<SavedMCPServer | null>(null);
   const [authRedirectUrl, setAuthRedirectUrl] = useState<string | undefined>(undefined);
+  const [pendingSource, setPendingSource] = useState<'custom' | 'explore' | null>(null);
 
   // Optimistic enable testing: track multiple servers being tested concurrently
   const [pendingToggleServers, setPendingToggleServers] = useState<Record<string, SavedMCPServer>>({});
   // Track connected servers info: store serverInfo when available
   const [, setConnectedServers] = useState<Record<string, { name?: string; version?: string } | true>>({});
+  const searchInput = useAtomValue(registrySearchInputAtom);
+  const debouncedSearch = useAtomValue(registrySearchValueAtom);
+  const setSearchInput = useSetAtom(registrySearchValueAtom);
+
+  const trimmedDebouncedSearch = debouncedSearch.trim();
+
   const formRef = useRef<HTMLFormElement | null>(null);
   // Auth inputs for "Custom" form
   const [apiKeyInput, setApiKeyInput] = useState<string>('');
   const [sessionOnly, setSessionOnly] = useState<boolean>(false);
+  const [registryConnectors, setRegistryConnectors] = useState<RegistryConnector[]>([]);
+  const [registryLoading, setRegistryLoading] = useState(false);
+  const [registryError, setRegistryError] = useState<string | null>(null);
+  const [registryNextCursor, setRegistryNextCursor] = useState<string | null>(null);
+  const [registryAppending, setRegistryAppending] = useState(false);
+  const [selectedRegistryConnector, setSelectedRegistryConnector] = useState<RegistryConnector | null>(null);
+  const [exploreDialogOpen, setExploreDialogOpen] = useState(false);
+  const registryRequestIdRef = useRef(0);
+
+  const fetchRegistryServers = useCallback(async (searchValue: string, cursor?: string) => {
+    const query = searchValue.trim();
+    const requestId = registryRequestIdRef.current + 1;
+    registryRequestIdRef.current = requestId;
+    const isAppend = Boolean(cursor);
+
+    if (isAppend) {
+      setRegistryAppending(true);
+    } else {
+      setRegistryLoading(true);
+      setRegistryError(null);
+      setRegistryNextCursor(null);
+    }
+
+    try {
+      const client = new MCPRegistryClient(mcpRegistryUrl);
+      const response = await client.server.listServers({
+        limit: 100,
+        ...(query ? { search: query } : {}),
+        ...(cursor ? { cursor } : {}),
+      }) as ServerListResponse;
+
+      const connectors: RegistryConnector[] =
+        response?.servers
+          .filter(server => server._meta?.['io.modelcontextprotocol.registry/official']?.status === 'active')
+          .map((server) => {
+            const remotes =
+              server.server.remotes
+                ?.filter((remote) => {
+                  const transport = remote.type;
+                  return (
+                    transport &&
+                    SUPPORTED_TRANSPORTS.has(
+                      transport as 'streamable-http' | 'sse',
+                    ) &&
+                    remote?.url
+                  );
+                })
+                .map((remote) => ({
+                  type: remote?.type as 'streamable-http' | 'sse',
+                  url: remote.url as string,
+                })) || [];
+
+            if (!remotes.length) {
+              return [];
+            }
+
+            const connectorId = `${server?.server.name}-${server?.server.version}` as
+              | string
+              | undefined;
+            if (!connectorId) {
+              return [];
+            }
+
+            return [
+              {
+                id: connectorId,
+                name: (server?.server.name ?? connectorId) as string,
+                description: (server?.server.description ?? 'No description available.') as string,
+                version: (server?.server.version ?? '0.0.0') as string,
+                websiteUrl: server.server.websiteUrl,
+                status: server._meta?.['io.modelcontextprotocol.registry/official']?.status,
+                remotes,
+                requiresAuth:
+                  server.server.remotes?.some((remote) =>
+                    remote.headers?.some(
+                      (header) =>
+                        header.name === 'Authorization' ||
+                        (header.isRequired && header.isSecret),
+                    ),
+                  ) || false,
+                source: server,
+              } satisfies RegistryConnector,
+            ];
+          })
+          .flat() || [];
+
+      if (registryRequestIdRef.current === requestId) {
+        setRegistryNextCursor(response?.metadata?.nextCursor ?? null);
+        setRegistryConnectors((prev) =>
+          pickLatestConnectors(isAppend ? [...prev, ...connectors] : connectors),
+        );
+      }
+    } catch (error: any) {
+      const message = error?.message ?? 'Failed to load connectors.';
+      if (isAppend) {
+        toast.error(message);
+      } else if (registryRequestIdRef.current === requestId) {
+        setRegistryError(message);
+        setRegistryConnectors([]);
+      }
+    } finally {
+      if (isAppend) {
+        setRegistryAppending(false);
+      } else if (registryRequestIdRef.current === requestId) {
+        setRegistryLoading(false);
+      }
+    }
+  }, [mcpRegistryUrl]);
+
+  useEffect(() => {
+    if (!open || tab !== 'explore') {
+      return;
+    }
+    fetchRegistryServers(debouncedSearch);
+  }, [open, tab, debouncedSearch, fetchRegistryServers]);
+
+  useEffect(() => {
+    if (!open) {
+      setExploreDialogOpen(false);
+      setSelectedRegistryConnector(null);
+    }
+  }, [open]);
+
+  const handleRetryRegistry = useCallback(() => {
+    fetchRegistryServers(debouncedSearch);
+  }, [fetchRegistryServers, debouncedSearch]);
+
+  const handleSelectConnector = useCallback((connector: RegistryConnector) => {
+    setSelectedRegistryConnector(connector);
+    setExploreDialogOpen(true);
+  }, []);
+
+  const handleSaveConnector = useCallback((connector: RegistryConnector) => {
+    console.log('[handleSaveConnector] connector:', connector);
+    if (!connector.remotes?.length) {
+      toast.error('Connector is missing a compatible remote endpoint.');
+      return;
+    }
+
+    if (savedServers.some((server) => server.id === connector.id)) {
+      toast.info(`${connector.name} is already saved.`);
+      setExploreDialogOpen(false);
+      setSelectedRegistryConnector(null);
+      setTab('connections');
+      return;
+    }
+
+    const savedConnector: SavedMCPServer = {
+      id: connector.id,
+      name: connector.name,
+      description: connector.description,
+      version: connector.version,
+      remotes: connector.remotes,
+      savedAt: new Date().toISOString(),
+      enabled: true,
+      hasStoredKey: false,
+    };
+
+    console.log('[handleSaveConnector] prepared savedConnector:', savedConnector);
+    setExploreDialogOpen(false);
+    setSelectedRegistryConnector(null);
+    setPendingServer(savedConnector);
+    setPendingSource('explore');
+    setTesting(true);
+    setAuthRedirectUrl(undefined);
+    toast.info(`Connecting to ${connector.name}...`);
+  }, [savedServers, setTab]);
 
   const handleAddCustomServer = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -280,6 +573,7 @@ export function MCPServerListDialog({
 
       const computedHeaderScheme: StorageHeaderScheme =
         apiKeyInput.trim() ? 'x-api-key' : 'authorization-bearer';
+      console.log('handleAddCustomServer: computedHeaderScheme:', computedHeaderScheme);
 
       const customServer: SavedMCPServer = {
         id: serverId,
@@ -296,11 +590,12 @@ export function MCPServerListDialog({
         headerScheme: computedHeaderScheme,
         hasStoredKey: !!apiKeyInput.trim(),
       };
+      console.log('handleAddCustomServer: customServer:', customServer);
 
       // Start connection test via useMcp
       setPendingServer(customServer);
+      setPendingSource('custom');
       setTesting(true);
-      setTab('custom');
       setAuthRedirectUrl(undefined);
       toast.info('Connecting to server (OAuth popup may open)...');
       // Do NOT save yet; we only save on successful connection
@@ -327,13 +622,13 @@ export function MCPServerListDialog({
       // Remove from connected servers when disabled
       setConnectedServers(prev => {
         const next = { ...prev };
-        delete next[serverId];
+        delete (next)[serverId];
         return next;
       });
-      // Clear pending if any (though disable shouldn't have it)
+      // Clear pending if any (though disable shouldn’t have it)
       setPendingToggleServers(prev => {
         const next = { ...prev };
-        delete next[serverId];
+        delete (next)[serverId];
         return next;
       });
       return;
@@ -348,7 +643,7 @@ export function MCPServerListDialog({
     // Remove from connected servers while testing
     setConnectedServers(prev => {
       const next = { ...prev };
-      delete next[serverId];
+      delete (next)[serverId];
       return next;
     })
 
@@ -357,59 +652,181 @@ export function MCPServerListDialog({
     setTimeout(() => {
       setPendingToggleServers(prev => {
         const next = { ...prev };
-        delete next[serverId];
+        delete (next)[serverId];
         console.log(`Pending cleared for ${serverId} after timeout`);
         return next;
       });
     }, 1000);
   };
 
-  const pendingUrl = pendingServer?.remotes?.find(r => r.type === 'streamable-http' || r.type === 'http+sse')?.url || '';
+  const handleRootOpenChange = useCallback((isOpen: boolean) => {
+    if (!isOpen) {
+      setTab('connections');
+    }
+    onOpenChange(isOpen);
+  }, [onOpenChange]);
 
-  console.log('pendingUrl:', pendingUrl); // Log pendingUrl
+  const pendingUrl = (() => {
+    const priority = ['streamable-http', 'http+sse', 'sse'];
+    const remote = pendingServer?.remotes?.find((r) => priority.includes(r.type));
+    return remote?.url ?? '';
+  })();
 
-  return (
-    <Drawer open={open} onOpenChange={(isOpen: boolean) => {
-      if (!isOpen) {
-        setTab('integrations');
+  const connectorDetailBody = selectedRegistryConnector ? (
+    <div className="space-y-4 text-sm text-muted-foreground">
+      <div>
+        <span className="text-foreground font-medium">Version:</span>{' '}
+        {selectedRegistryConnector.version ?? 'Unknown'}
+      </div>
+      {selectedRegistryConnector.status ? (
+        <div>
+          <span className="text-foreground font-medium">Status:</span>{' '}
+          {selectedRegistryConnector.status}
+        </div>
+      ) : null}
+      {selectedRegistryConnector.websiteUrl ? (
+        <div>
+          <a
+            className="text-primary underline underline-offset-4"
+            href={selectedRegistryConnector.websiteUrl}
+            target="_blank"
+            rel="noreferrer noopener"
+          >
+            Visit website
+          </a>
+        </div>
+      ) : null}
+      <div>
+        <h4 className="text-sm font-medium text-foreground">Endpoints</h4>
+        <ul className="mt-2 space-y-2 break-all">
+          {selectedRegistryConnector.remotes.map((remote) => (
+            <li key={`${remote.type}-${remote.url}`}>
+              <span className="text-foreground font-medium">{remote.type}</span>{' '}
+              <span>{remote.url}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+      {selectedRegistryConnector.tags?.length ? (
+        <div>
+          <h4 className="text-sm font-medium text-foreground">Tags</h4>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {selectedRegistryConnector.tags.join(', ')}
+          </p>
+        </div>
+      ) : null}
+    </div>
+  ) : (
+    <p className="text-sm text-muted-foreground">
+      Select a connector from the list to view details.
+    </p>
+  );
+
+  const connectorDialog = (
+    <ResponsiveDialog
+      open={exploreDialogOpen}
+      onOpenChange={(nextOpen) => {
+        setExploreDialogOpen(nextOpen);
+        if (!nextOpen) {
+          setSelectedRegistryConnector(null);
+        }
+      }}
+      trigger={<span aria-hidden className="hidden" />}
+      dialogContentProps={{ className: "sm:max-w-md" }}
+      drawerContentProps={{ className: "max-w-md mx-auto grid grid-rows-[auto_1fr_auto]" }}
+      desktop={
+        <>
+          <DialogHeader>
+            <DialogTitle>{selectedRegistryConnector?.name ?? 'Connector details'}</DialogTitle>
+            <DialogDescription>{selectedRegistryConnector?.description}</DialogDescription>
+          </DialogHeader>
+          <div className="px-6 pb-6 overflow-y-auto max-h-[60vh]">
+            {connectorDetailBody}
+          </div>
+          <DialogFooter>
+            <Button
+              disabled={!selectedRegistryConnector}
+              onClick={() =>
+                selectedRegistryConnector && handleSaveConnector(selectedRegistryConnector)
+              }
+            >
+              Save Connector
+            </Button>
+            <DialogClose asChild>
+              <Button variant="outline">Close</Button>
+            </DialogClose>
+          </DialogFooter>
+        </>
       }
-      onOpenChange(isOpen);
-    }}>
-      <AnimatedDrawerContent aria-describedby='integrations' className="grid grid-rows-[auto_1fr_auto] grid-cols-1 max-w-md mx-auto">
-        <section className="h-full overflow-hidden grid grid-cols-1 p-4">
-          <Tabs value={tab} onValueChange={(v) => setTab(v as 'integrations' | 'custom')} className="h-full overflow-hidden grid grid-rows-[1fr_auto] gap-4">
-            <TabsList className="grid grid-cols-2 w-full">
-              <TabsTrigger value="integrations">
-                <Puzzle className="h-4 w-4 mr-1 text-muted-foreground" />
-                Integrations
-              </TabsTrigger>
-              <TabsTrigger value="custom">
-                <Plus className="h-4 w-4 mr-1 text-muted-foreground" />
-                Custom
-              </TabsTrigger>
-            </TabsList>
+      mobile={
+        <>
+          <DrawerHeader>
+            <DrawerTitle>{selectedRegistryConnector?.name ?? 'Connector details'}</DrawerTitle>
+            <DrawerDescription>{selectedRegistryConnector?.description}</DrawerDescription>
+          </DrawerHeader>
+          <div className="px-4 pb-4 overflow-y-auto">
+            {connectorDetailBody}
+          </div>
+          <DrawerFooter>
+            <Button
+              disabled={!selectedRegistryConnector}
+              onClick={() =>
+                selectedRegistryConnector && handleSaveConnector(selectedRegistryConnector)
+              }
+            >
+              Save Connector
+            </Button>
+            <DrawerClose asChild>
+              <Button variant="outline">Close</Button>
+            </DrawerClose>
+          </DrawerFooter>
+        </>
+      }
+    />
+  );
 
-            <TabsContent value="integrations" className="relative h-full overflow-y-auto grid grid-cols-1 gap-4">
-              {savedServers.length ? (
-                // Fixes: "`DialogContent` requires a `DialogTitle` for
-                // the component to be accessible for screen reader users."
-                <VisuallyHidden.Root>
-                  <DrawerHeader id='integrations' className="flex flex-col items-center gap-2">
-                    <DrawerTitle>Integrations</DrawerTitle>
-                    <DrawerDescription>
-                      Added integrations will appear here.
-                    </DrawerDescription>
-                  </DrawerHeader>
-                </VisuallyHidden.Root>
-              ) : (
-                <DrawerHeader id='integrations' className="flex flex-col items-center gap-2">
-                  <DrawerTitle>Integrations</DrawerTitle>
-                  <DrawerDescription>
-                    Added integrations will appear here.
-                  </DrawerDescription>
-                </DrawerHeader>
-              )}
+  const tabTransition: Transition = {
+    duration: 0.3,
+    type: "spring",
+    bounce: 0.2,
+  };
 
+  const tabs = (
+    <AnimatedHeight className="max-h-[90svh] overflow-y-auto">
+      <Tabs
+        value={tab}
+        onValueChange={(v) => {
+          setPrevTab(tab);
+          setTab(v as 'connections' | 'custom' | 'explore');
+        }}
+        className="sticky top-0 h-full overflow-hidden grid grid-rows-[auto_1fr] gap-0"
+      >
+        <TabsList className="grid grid-cols-3 w-full">
+          <TabsTrigger value="connections">
+            <Puzzle className="h-4 w-4 mr-1 text-muted-foreground" />
+            Connections
+          </TabsTrigger>
+          <TabsTrigger value="explore">
+            <Globe className="h-4 w-4 mr-1 text-muted-foreground" />
+            Explore
+          </TabsTrigger>
+          <TabsTrigger value="custom">
+            <Plus className="h-4 w-4 mr-1 text-muted-foreground" />
+            Custom
+          </TabsTrigger>
+        </TabsList>
+
+        <AnimatePresence mode="sync" custom={getTabIndex(prevTab) < getTabIndex(tab) ? 1 : -1}>
+          <TabsContent value="connections" asChild>
+            <motion.div
+              key="connections"
+              custom={getTabIndex(prevTab) < getTabIndex(tab) ? 1 : -1}
+              initial={{ x: getTabIndex(prevTab) < getTabIndex(tab) ? 100 : -100, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: getTabIndex(prevTab) < getTabIndex(tab) ? -100 : 100, opacity: 0 }}
+              transition={tabTransition}
+              className="pt-4"
+            >
               <IntegrationsAccordionList
                 servers={savedServers}
                 onToggleServer={handleToggleExistingServer}
@@ -424,16 +841,113 @@ export function MCPServerListDialog({
                 webSearchDescription={webSearchDescription}
                 webSearchAvatar={webSearchAvatar}
               />
-            </TabsContent>
-            <TabsContent value="custom" className="h-full overflow-y-auto px-3 grid grid-cols-1 gap-4">
-              <div className="flex flex-col gap-2">
-                <DrawerHeader>
-                  <DrawerTitle>New Integration</DrawerTitle>
-                  <DrawerDescription className='text-balance'>
-                    Add a custom Model Context Protocol server.
-                  </DrawerDescription>
-                </DrawerHeader>
+            </motion.div>
+          </TabsContent>
+
+          <TabsContent value="explore" asChild>
+            <motion.div
+              key="explore"
+              custom={getTabIndex(prevTab) < getTabIndex(tab) ? 1 : -1}
+              initial={{ x: getTabIndex(prevTab) < getTabIndex(tab) ? 100 : -100, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: getTabIndex(prevTab) < getTabIndex(tab) ? -100 : 100, opacity: 0 }}
+              transition={tabTransition}
+              className="relative grid grid-cols-1 gap-4 pt-4"
+            >
+              <div className="grid gap-4 mt-4">
+                <InputWithLabel
+                  id="registry-search"
+                  label="Search registry"
+                  type="search"
+                  placeholder="Search the MCP registry..."
+                  autoComplete="off"
+                  value={searchInput}
+                  onChange={(event) => setSearchInput(event.target.value)}
+                />
+                <div>
+                  {registryLoading ? (
+                    <div className="h-full w-full flex items-center justify-center">
+                      <Loader />
+                    </div>
+                  ) : registryError ? (
+                    <div className="flex flex-col gap-2">
+                      <p className="text-sm text-destructive">{registryError}</p>
+                      <Button variant="outline" size="sm" onClick={handleRetryRegistry} className="self-start">
+                        Retry
+                      </Button>
+                    </div>
+                  ) : registryConnectors.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">
+                      {trimmedDebouncedSearch
+                        ? `No connectors found for “${trimmedDebouncedSearch}”. Try a different search.`
+                        : 'No connectors available right now. Try again later.'}
+                    </p>
+                  ) : (
+                    <div className="flex flex-col">
+                      {registryConnectors.map((connector, index) => (
+                        <Fragment key={connector.id}>
+                          <ItemGroup>
+                            <Item
+                              className="cursor-pointer"
+                              role="button"
+                              tabIndex={0}
+                              onClick={() => handleSelectConnector(connector)}
+                              onKeyDown={(event) => {
+                                if (event.key === 'Enter' || event.key === ' ') {
+                                  event.preventDefault();
+                                  handleSelectConnector(connector);
+                                }
+                              }}
+                            >
+                              <ItemMedia>
+                                <Avatar className="rounded-sm shadow h-8 w-8">
+                                  <AvatarImage loading="lazy" src={getFavicon(connector.remotes[0]?.url ?? '')} className="rounded-sm" />
+                                  <AvatarFallback>{connector.name.charAt(0)}</AvatarFallback>
+                                </Avatar>
+                              </ItemMedia>
+                              <ItemContent className="gap-1">
+                                <ItemTitle className="w-full grid grid-cols-[1fr_auto]">
+                                  {connector.requiresAuth ? "🔒 " + connector.name : connector.name}
+                                  <span className="ml-2 text-xs font-normal text-muted-foreground">
+                                    v{connector.version}
+                                  </span>
+                                </ItemTitle>
+                                <ItemDescription>{connector.description}</ItemDescription>
+                              </ItemContent>
+                            </Item>
+                          </ItemGroup>
+                          {index !== registryConnectors.length - 1 && <ItemSeparator />}
+                        </Fragment>
+                      ))}
+                      {registryNextCursor ? (
+                        <div className="flex justify-center pt-4">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={registryLoading || registryAppending}
+                            onClick={() => registryNextCursor && fetchRegistryServers(debouncedSearch, registryNextCursor)}
+                          >
+                            {registryAppending ? 'Loading…' : 'Load 100 more'}
+                          </Button>
+                        </div>
+                      ) : null}
+                    </div>
+                  )}
+                </div>
               </div>
+            </motion.div>
+          </TabsContent>
+
+          <TabsContent value="custom" asChild>
+            <motion.div
+              key="custom"
+              custom={getTabIndex(prevTab) < getTabIndex(tab) ? 1 : -1}
+              initial={{ x: getTabIndex(prevTab) < getTabIndex(tab) ? 100 : -100, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: getTabIndex(prevTab) < getTabIndex(tab) ? -100 : 100, opacity: 0 }}
+              transition={tabTransition}
+              className="px-3 grid grid-cols-1 gap-4 pt-8 pb-6"
+            >
               <form
                 ref={formRef}
                 onSubmit={handleAddCustomServer}
@@ -522,66 +1036,136 @@ export function MCPServerListDialog({
                   </div>
                 ) : null}
               </form>
-            </TabsContent>
-          </Tabs>
-        </section>
-        <DrawerFooter>
-          <DrawerClose asChild>
-            <Button variant="outline">Close</Button>
-          </DrawerClose>
-        </DrawerFooter>
+            </motion.div>
+          </TabsContent>
+        </AnimatePresence>
+      </Tabs>
+    </AnimatedHeight>
+  );
 
-        {/* details fetching is now handled by MCPServerDetails via Suspense/use() */}
+  const desktopContent = (
+    <>
+      <DialogHeader>
+        <DialogTitle className="text-center">Manage Connections</DialogTitle>
+      </DialogHeader>
+      <div className="h-[70vh] overflow-hidden">
+        <div className="h-full overflow-hidden grid grid-rows-[1fr_auto]">
+          {tabs}
+          {connectorDialog}
+        </div>
+      </div>
+    </>
+  );
 
-        {/* Hidden tester mounts when testing starts */}
-        {pendingServer ? (
-          <McpConnectionTester
-            url={pendingUrl}
-            onReady={async () => {
-              // Save API key (if configured) now that connection is ready
-              try {
-                if (pendingUrl && apiKeyInput.trim()) {
-                  await saveApiKey(pendingUrl, apiKeyInput.trim(), !sessionOnly);
-                }
-              } catch {
-                // swallow; user can retry saving key later
+  const mobileContent = (
+    <>
+      <VisuallyHidden.Root>
+        <DialogHeader>
+          <DialogTitle className="text-center">Manage Connections</DialogTitle>
+        </DialogHeader>
+      </VisuallyHidden.Root>
+      <section className="mt-4 h-full overflow-hidden grid grid-cols-1 px-4 pb-4">
+        {tabs}
+        {connectorDialog}
+      </section>
+      <DrawerFooter>
+        <DrawerClose asChild>
+          <Button variant="outline">Close</Button>
+        </DrawerClose>
+      </DrawerFooter>
+    </>
+  );
+
+  return (
+    <>
+      <ResponsiveDialog
+        open={open}
+        onOpenChange={handleRootOpenChange}
+        trigger={<span aria-hidden className="hidden" />}
+        dialogContentProps={{ className: "sm:max-w-md" }}
+        drawerContentProps={{ className: "grid grid-rows-[auto_1fr_auto]" }}
+        desktop={desktopContent}
+        mobile={mobileContent}
+      />
+
+      {pendingServer ? (
+        <McpConnectionTester
+          url={pendingUrl}
+          onReady={async (details) => {
+            const serverName = pendingServer?.name ?? 'Server';
+            try {
+              if (pendingSource === 'custom' && pendingUrl && apiKeyInput.trim()) {
+                await saveApiKey(pendingUrl, apiKeyInput.trim(), !sessionOnly);
               }
-              // Save server with hasStoredKey indicator (session or stored)
-              const keyPresence = pendingUrl ? getApiKeyPresenceLabel(pendingUrl) : 'none';
-              const withKeyFlag: SavedMCPServer = {
+            } catch {
+              console.warn('[McpConnectionTester] Failed to persist API key for', pendingUrl);
+            }
+
+            const keyPresence = pendingUrl ? getApiKeyPresenceLabel(pendingUrl) : 'none';
+            const serverToSave = pendingServer
+              ? {
                 ...pendingServer,
                 hasStoredKey: keyPresence !== 'none',
-              };
-              setSavedServers(prev => [...prev, withKeyFlag]);
-              toast.success('Custom server added and connected');
-              formRef.current?.reset?.()
-              // Reset auth UI state (keep sensible defaults)
-              setApiKeyInput('')
-              setSessionOnly(false)
-              setTab('integrations')
-              setTesting(false)
-              setAuthRedirectUrl(undefined)
-              setPendingServer(null)
-            }}
-            onFailed={(err) => {
-              toast.error(err || 'Failed to connect to server')
-              setTesting(false)
-              setAuthRedirectUrl(undefined)
-              setPendingServer(null)
-            }}
-            onAuthRedirect={(manualUrl) => {
-              console.log('authRedirectUrl set to:', manualUrl); // Log authRedirectUrl
-              setTesting(false)
-              setAuthRedirectUrl(manualUrl)
-              toast.info(
-                manualUrl
-                  ? 'Complete OAuth in the popup or open the authorization link provided.'
-                  : 'Complete OAuth in the authorization popup to finish adding this server.',
-              )
-            }}
-          />
-        ) : null}
-      </AnimatedDrawerContent>
-    </Drawer>
+                enabled: true,
+              }
+              : null;
+
+            if (serverToSave) {
+              _setMcpDetails((prev) => ({
+                ...prev,
+                [serverToSave.id]: {
+                  tools: details.tools ?? [],
+                  resources: details.resources ?? [],
+                  resourceTemplates: details.resourceTemplates ?? [],
+                  prompts: details.prompts ?? [],
+                  serverInfo: details.serverInfo ?? null,
+                  lastSeen: new Date().toISOString(),
+                },
+              }));
+
+              setSavedServers((prev) => {
+                const existingIndex = prev.findIndex((s) => s.id === serverToSave.id);
+                if (existingIndex >= 0) {
+                  const next = [...prev];
+                  next[existingIndex] = serverToSave;
+                  return next;
+                }
+                return [...prev, serverToSave];
+              });
+            }
+
+            toast.success(`${serverName} connected and saved`);
+            if (pendingSource === 'custom') {
+              formRef.current?.reset?.();
+              setApiKeyInput('');
+              setSessionOnly(false);
+            }
+            setTab('connections');
+            setTesting(false);
+            setAuthRedirectUrl(undefined);
+            setPendingServer(null);
+            setPendingSource(null);
+          }}
+          onFailed={(err) => {
+            const failedName = pendingServer?.name ?? 'Server';
+            toast.error(err ? `${failedName} connection failed: ${err}` : 'Failed to connect to server');
+            setTesting(false);
+            setAuthRedirectUrl(undefined);
+            setPendingServer(null);
+            setPendingSource(null);
+          }}
+          onAuthRedirect={(manualUrl) => {
+            console.log('authRedirectUrl set to:', manualUrl);
+            setTesting(false);
+            setAuthRedirectUrl(manualUrl);
+            toast.info(
+              manualUrl
+                ? 'Complete OAuth in the popup or open the authorization link provided.'
+                : 'Complete OAuth in the authorization popup to finish adding this server.',
+            );
+          }}
+        />
+      ) : null}
+    </>
   );
 }

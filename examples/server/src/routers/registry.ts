@@ -54,8 +54,8 @@ registryApp.get('/servers', zValidator('query', z.object({
 
     // Filter to only remote servers as the frontend expects
     const remoteServers = response.servers.filter(server =>
-      server.remotes && server.remotes.length > 0
-      && server.remotes.find(r => r.transportType === "streamable-http" || r.transportType === "http+sse")
+      server.server.remotes && server.server.remotes.length > 0
+      && server.server.remotes.find(r => r.transportType === "streamable-http" || r.transportType === "http+sse")
     )
 
     // Add caching headers for serverless deployment

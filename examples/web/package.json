@@ -4,16 +4,16 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite --port=3001",
-    "build": "vite build",
-    "serve": "vite preview",
-    "start": "vite",
+    "dev": "bunx --bun vite --port=3001",
+    "build": "bunx --bun vite build",
+    "serve": "bunx --bun vite preview",
+    "start": "bunx --bun vite",
     "check-types": "tsc --noEmit",
     "generate-pwa-assets": "pwa-assets-generator"
   },
   "dependencies": {
-    "@faith-tools/open-chat": "workspace:*",
     "@ai-sdk/react": "^2.0.48",
+    "@openchatkit/chat": "workspace:*",
     "@fontsource-variable/geist": "^5.2.8",
     "@hookform/resolvers": "^5.1.1",
     "@mcp-ui/client": "^5.12.0",
@@ -66,18 +66,18 @@
     "zod": "^4.0.2"
   },
   "devDependencies": {
-    "@types/psl": "^1.11.0",
+    "@tanstack/react-query-devtools": "^5.85.5",
     "@tanstack/react-router-devtools": "^1.114.27",
     "@tanstack/router-plugin": "^1.114.27",
     "@types/node": "^22.13.13",
+    "@types/psl": "^1.11.0",
     "@types/react": "~19.1.10",
     "@types/react-dom": "^19.0.4",
+    "@vite-pwa/assets-generator": "^1.0.0",
     "@vitejs/plugin-react": "^4.3.4",
     "postcss": "^8.5.3",
-    "typescript": "^5.8.3",
     "tailwindcss": "^4.0.15",
-    "vite": "^6.2.2",
-    "@tanstack/react-query-devtools": "^5.85.5",
-    "@vite-pwa/assets-generator": "^1.0.0"
+    "typescript": "^5.8.3",
+    "vite": "^6.2.2"
   }
 }
