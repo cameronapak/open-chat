@@ -5,9 +5,9 @@ import OpenChatComponent, {
   useOpenRouterModelOptions,
   useOpenRouterAuth,
   normalizeOpenRouterBaseUrl,
-} from '@faith-tools/open-chat';
+} from '@openchatkit/chat';
 import type { UIMessage, UseChatOptions } from "@ai-sdk/react";
-import "@faith-tools/open-chat/styles.css";
+import "@openchatkit/chat/styles.css";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 const queryClient = new QueryClient();

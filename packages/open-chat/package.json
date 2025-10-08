@@ -1,5 +1,5 @@
 {
-  "name": "@faith-tools/open-chat",
+  "name": "@openchatkit/chat",
   "version": "0.0.1",
   "type": "module",
   "description": "Reusable OpenChat component bundle for React apps.",
