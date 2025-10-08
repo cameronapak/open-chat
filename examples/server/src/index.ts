@@ -22,4 +22,10 @@ app.get("/", (c) => {
 	return c.text("OK");
 });
 
-export default app;
+export default {
+	// Railway assigns a random port to expose for each deployment, 
+	// which can be accessed via the PORT environment variable.
+  port: Number(process.env.PORT) || 3000,
+  fetch: app.fetch
+}
+
