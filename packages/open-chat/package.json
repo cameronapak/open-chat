@@ -32,7 +32,8 @@
     "build:ts": "tsup --config tsup.config.ts",
     "build": "bun run build:ts && bun run build:css",
     "check-types": "tsc --project tsconfig.json --noEmit",
-    "prepublishOnly": "bun run build"
+    "prepublishOnly": "bun run build",
+    "publish": "npm publish --access public"
   },
   "peerDependencies": {
     "react": "^18.0.0 || ^19.0.0",
