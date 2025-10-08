@@ -232,6 +232,7 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
     onNewMessage,
     onError,
     onSend,
+    mcpRegistryUrl,
     renderMessage,
     theme = 'light',
     requireAuth = false,
@@ -732,6 +733,7 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
       </Dialog>
 
       <MCPServerListDialog
+        mcpRegistryUrl={mcpRegistryUrl}
         open={mcpDialogOpen}
         onOpenChange={setMcpDialogOpen}
         webSearchEnabled={canUseWebSearch ? webSearchActive : undefined}

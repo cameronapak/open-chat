@@ -94,6 +94,8 @@ const ChatBotDemo = () => {
   return (
     <section className="grid grid-cols-1 h-dvh">
       <OpenChatComponent
+        mcpRegistryUrl={import.meta.env.DEV ? "https://mcp-registry.val.run" : "https://registry.modelcontextprotocol.io"}
+        // mcpRegistryUrl="https://mcp-subregistry-toolbase-test.gavinching.workers.dev"
         modelId={defaultModel}
         api={apiUrl}
         requireAuth={true}

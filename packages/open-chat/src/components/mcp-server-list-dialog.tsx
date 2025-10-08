@@ -57,6 +57,7 @@ import Loader from './loader';
 import { VisuallyHidden } from "radix-ui";
 
 interface MCPServerListDialogProps {
+  mcpRegistryUrl?: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   webSearchEnabled?: boolean;
@@ -349,6 +350,7 @@ function McpConnectionTester({
 }
 
 export function MCPServerListDialog({
+  mcpRegistryUrl = 'https://registry.modelcontextprotocol.io',
   open,
   onOpenChange,
   webSearchEnabled,
@@ -401,7 +403,7 @@ export function MCPServerListDialog({
     setRegistryLoading(true);
     setRegistryError(null);
     try {
-      const client = new MCPRegistryClient("https://mcp-registry.val.run");
+      const client = new MCPRegistryClient(mcpRegistryUrl);
       const response = await client.server.listServers({
         limit: 100,
         ...(query ? { search: query } : {}),
@@ -819,7 +821,7 @@ export function MCPServerListDialog({
               transition={tabTransition}
               className="relative grid grid-cols-1 gap-4 pt-4"
             >
-              <div className="grid gap-4">
+              <div className="grid gap-4 mt-4">
                 <InputWithLabel
                   id="registry-search"
                   label="Search registry"
