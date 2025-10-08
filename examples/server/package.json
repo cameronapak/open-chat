@@ -4,8 +4,9 @@
   "type": "module",
   "scripts": {
     "check-types": "tsc -b",
-    "dev": "bun run src/index.ts",
-    "start": "bun run src/index.ts"
+    "build": "bun build --compile --minify --sourcemap --bytecode ./src/index.ts --outfile server",
+    "dev": "tsx watch src/index.ts",
+    "start": "node server.js"
   },
   "private": false,
   "dependencies": {

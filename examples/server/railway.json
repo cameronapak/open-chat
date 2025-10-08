@@ -5,6 +5,7 @@
     "watchPatterns": [
       "/examples/server/**"
     ],
+    "buildCommand": "bun run build",
     "buildEnvironment": "V3"
   },
   "deploy": {
