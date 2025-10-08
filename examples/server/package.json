@@ -6,7 +6,7 @@
     "check-types": "tsc -b",
     "build": "bun build --compile --minify --sourcemap --bytecode ./src/index.ts --outfile server",
     "dev": "tsx watch src/index.ts",
-    "start": "node server.js"
+    "start": "node dist/server.js"
   },
   "private": false,
   "dependencies": {
