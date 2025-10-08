@@ -391,78 +391,111 @@ export function MCPServerListDialog({
   const [registryConnectors, setRegistryConnectors] = useState<RegistryConnector[]>([]);
   const [registryLoading, setRegistryLoading] = useState(false);
   const [registryError, setRegistryError] = useState<string | null>(null);
+  const [registryNextCursor, setRegistryNextCursor] = useState<string | null>(null);
+  const [registryAppending, setRegistryAppending] = useState(false);
   const [selectedRegistryConnector, setSelectedRegistryConnector] = useState<RegistryConnector | null>(null);
   const [exploreDialogOpen, setExploreDialogOpen] = useState(false);
   const registryRequestIdRef = useRef(0);
 
-  const fetchRegistryServers = useCallback(async (searchValue: string) => {
+  const fetchRegistryServers = useCallback(async (searchValue: string, cursor?: string) => {
     const query = searchValue.trim();
     const requestId = registryRequestIdRef.current + 1;
     registryRequestIdRef.current = requestId;
+    const isAppend = Boolean(cursor);
 
-    setRegistryLoading(true);
-    setRegistryError(null);
+    if (isAppend) {
+      setRegistryAppending(true);
+    } else {
+      setRegistryLoading(true);
+      setRegistryError(null);
+      setRegistryNextCursor(null);
+    }
+
     try {
       const client = new MCPRegistryClient(mcpRegistryUrl);
       const response = await client.server.listServers({
         limit: 100,
         ...(query ? { search: query } : {}),
+        ...(cursor ? { cursor } : {}),
       }) as ServerListResponse;
-      console.log(response)
-      const connectors: RegistryConnector[] = response?.servers.map((server) => {
-        console.log(server)
-        const remotes = server.server.remotes?.filter((remote) => {
-          const transport = remote.type;
-          console.log(remote);
-          return transport && SUPPORTED_TRANSPORTS.has(transport as 'streamable-http' | 'sse') && remote?.url;
-        })
-          .map((remote) => ({
-            type: (remote?.type) as 'streamable-http' | 'sse',
-            url: remote.url as string,
-          })) || [];
 
-        console.log({
-          remotes
-        })
+      const connectors: RegistryConnector[] =
+        response?.servers
+          .filter(server => server._meta?.['io.modelcontextprotocol.registry/official']?.status === 'active')
+          .map((server) => {
+            const remotes =
+              server.server.remotes
+                ?.filter((remote) => {
+                  const transport = remote.type;
+                  return (
+                    transport &&
+                    SUPPORTED_TRANSPORTS.has(
+                      transport as 'streamable-http' | 'sse',
+                    ) &&
+                    remote?.url
+                  );
+                })
+                .map((remote) => ({
+                  type: remote?.type as 'streamable-http' | 'sse',
+                  url: remote.url as string,
+                })) || [];
 
-        if (!remotes.length) {
-          return [];
-        }
+            if (!remotes.length) {
+              return [];
+            }
 
-        const connectorId = `${server?.server.name}-${server?.server.version}` as string | undefined;
-        if (!connectorId) {
-          return [];
-        }
+            const connectorId = `${server?.server.name}-${server?.server.version}` as
+              | string
+              | undefined;
+            if (!connectorId) {
+              return [];
+            }
 
-        return [{
-          id: connectorId,
-          name: (server?.server.name ?? connectorId) as string,
-          description: (server?.server.description ?? 'No description available.') as string,
-          version: (server?.server.version ?? '0.0.0') as string,
-          websiteUrl: server.server.websiteUrl,
-          status: server._meta?.['io.modelcontextprotocol.registry/official']?.status,
-          remotes,
-          requiresAuth: server.server.remotes?.some((remote) => remote.headers?.some((header) => header.name === 'Authorization' || header.isRequired && header.isSecret)) || false,
-          source: server,
-        } satisfies RegistryConnector];
-      }).flat() || [] as RegistryConnector[];
-
-      console.log(connectors)
+            return [
+              {
+                id: connectorId,
+                name: (server?.server.name ?? connectorId) as string,
+                description: (server?.server.description ?? 'No description available.') as string,
+                version: (server?.server.version ?? '0.0.0') as string,
+                websiteUrl: server.server.websiteUrl,
+                status: server._meta?.['io.modelcontextprotocol.registry/official']?.status,
+                remotes,
+                requiresAuth:
+                  server.server.remotes?.some((remote) =>
+                    remote.headers?.some(
+                      (header) =>
+                        header.name === 'Authorization' ||
+                        (header.isRequired && header.isSecret),
+                    ),
+                  ) || false,
+                source: server,
+              } satisfies RegistryConnector,
+            ];
+          })
+          .flat() || [];
 
       if (registryRequestIdRef.current === requestId) {
-        setRegistryConnectors(pickLatestConnectors(connectors));
+        setRegistryNextCursor(response?.metadata?.nextCursor ?? null);
+        setRegistryConnectors((prev) =>
+          pickLatestConnectors(isAppend ? [...prev, ...connectors] : connectors),
+        );
       }
     } catch (error: any) {
-      if (registryRequestIdRef.current === requestId) {
-        setRegistryError(error?.message ?? 'Failed to load connectors.');
+      const message = error?.message ?? 'Failed to load connectors.';
+      if (isAppend) {
+        toast.error(message);
+      } else if (registryRequestIdRef.current === requestId) {
+        setRegistryError(message);
         setRegistryConnectors([]);
       }
     } finally {
-      if (registryRequestIdRef.current === requestId) {
+      if (isAppend) {
+        setRegistryAppending(false);
+      } else if (registryRequestIdRef.current === requestId) {
         setRegistryLoading(false);
       }
     }
-  }, [setRegistryConnectors, setRegistryError, setRegistryLoading]);
+  }, [mcpRegistryUrl]);
 
   useEffect(() => {
     if (!open || tab !== 'explore') {
@@ -886,6 +919,18 @@ export function MCPServerListDialog({
                           {index !== registryConnectors.length - 1 && <ItemSeparator />}
                         </Fragment>
                       ))}
+                      {registryNextCursor ? (
+                        <div className="flex justify-center pt-4">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={registryLoading || registryAppending}
+                            onClick={() => registryNextCursor && fetchRegistryServers(debouncedSearch, registryNextCursor)}
+                          >
+                            {registryAppending ? 'Loading…' : 'Load 100 more'}
+                          </Button>
+                        </div>
+                      ) : null}
                     </div>
                   )}
                 </div>
