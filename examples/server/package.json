@@ -6,10 +6,10 @@
     "check-types": "tsc -b",
     "build": "bun build --compile --minify --sourcemap --bytecode ./src/index.ts --outfile server",
     "dev": "tsx watch src/index.ts",
-    "start": "node dist/server.js"
+    "start": "node dist/server.js",
+    "check": "oxlint"
   },
   "dependencies": {
-    "mcp-registry-spec-sdk": "^0.2.0",
     "@ai-sdk/openai": "^2.0.32",
     "@hono/node-server": "^1.14.4",
     "@hono/zod-validator": "^0.7.3",
@@ -19,13 +19,14 @@
     "arktype": "^2.1.22",
     "dotenv": "^17.2.1",
     "hono": "^4.8.2",
+    "mcp-registry-spec-sdk": "^0.2.0",
     "zod": "^4.1.11"
   },
   "devDependencies": {
+    "@types/node": "^22.13.11",
+    "oxlint": "^1.12.0",
     "tsdown": "^0.15.1",
-    "typescript": "^5.8.2",
     "tsx": "^4.19.2",
-    "@types/node": "^22.13.11"
-  },
-  "packageManager": "bun@1.2.21"
+    "typescript": "^5.8.2"
+  }
 }

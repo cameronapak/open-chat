@@ -1,11 +1,3 @@
 {
-  "mcpServers": {
-    "railway-mcp-server": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "@railway/mcp-server"
-      ]
-    }
-  }
+  "mcpServers": {}
 }

@@ -3,10 +3,6 @@
   "workspaces": {
     "": {
       "name": "open-chat",
-      "devDependencies": {
-        "oxlint": "^1.12.0",
-        "typescript": "^5.8.3",
-      },
     },
     "examples/server": {
       "name": "server",
@@ -25,6 +21,7 @@
       },
       "devDependencies": {
         "@types/node": "^22.13.11",
+        "oxlint": "^1.12.0",
         "tsdown": "^0.15.1",
         "tsx": "^4.19.2",
         "typescript": "^5.8.2",
@@ -97,6 +94,7 @@
         "@types/react-dom": "^19.0.4",
         "@vite-pwa/assets-generator": "^1.0.0",
         "@vitejs/plugin-react": "^4.3.4",
+        "oxlint": "^1.12.0",
         "postcss": "^8.5.3",
         "tailwindcss": "^4.0.15",
         "typescript": "^5.8.3",
@@ -158,6 +156,7 @@
         "@tailwindcss/cli": "^4.1.13",
         "@types/react": "^19.2.0",
         "@types/react-dom": "^19.2.0",
+        "oxlint": "^1.12.0",
         "tailwindcss": "^4",
         "tsup": "^8.3.0",
         "typescript": "^5.8.3",
@@ -2472,8 +2471,6 @@
     "refractor/prismjs": ["prismjs@1.27.0", "", {}, "sha512-t13BGPUlFDR7wRB5kQDG4jjl7XeuH6jbJGt11JHPL96qwsEHNX2+68tFXqc1/k+/jALsbSWJKUOT/hcYAZ5LkA=="],
 
     "rolldown/@rolldown/pluginutils": ["@rolldown/pluginutils@1.0.0-beta.42", "", {}, "sha512-N7pQzk9CyE7q0bBN/q0J8s6Db279r5kUZc6d7/wWRe9/zXqC52HQovVyu6iXPIDY4BEzzgbVLhVFXrOuGJ22ZQ=="],
-
-    "server/typescript": ["typescript@5.9.2", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-CWBzXQrc/qOkhidw1OzBTQuYRbfyxDXJMVJ1XNwUHGROVmuaeiEm3OslpZ1RV96d7SKKjZKrSJu3+t/xlw3R9A=="],
 
     "sharp/detect-libc": ["detect-libc@2.1.1", "", {}, "sha512-ecqj/sy1jcK1uWrwpR67UhYrIFQ+5WlGxth34WquCbamhFA6hkkwiu37o6J5xCHdo1oixJRfVRw+ywV+Hq/0Aw=="],
 
