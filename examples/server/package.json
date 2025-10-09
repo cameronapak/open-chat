@@ -8,7 +8,6 @@
     "dev": "tsx watch src/index.ts",
     "start": "node dist/server.js"
   },
-  "private": false,
   "dependencies": {
     "mcp-registry-spec-sdk": "^0.2.0",
     "@ai-sdk/openai": "^2.0.32",

@@ -119,7 +119,7 @@ function compareVersions(a: string, b: string): number {
   const normalize = (value: string) =>
     value
       .replace(/^v/i, '')
-      .split(/[\.-]/)
+      .split(/[.-]/)
       .map((part) => {
         const parsed = Number.parseInt(part, 10);
         return Number.isNaN(parsed) ? 0 : parsed;

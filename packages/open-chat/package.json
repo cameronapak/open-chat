@@ -1,7 +1,6 @@
 {
   "name": "@openchatkit/chat",
   "version": "0.0.2",
-  "private": false,
   "type": "module",
   "description": "Reusable OpenChat component bundle for React apps.",
   "main": "./dist/index.js",
