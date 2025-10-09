@@ -7,8 +7,8 @@ import { defineConfig } from "vite";
 
 export default defineConfig({
   plugins: [
+    tanstackRouter(),
     tailwindcss(),
-    tanstackRouter({}),
     react(),
     // VitePWA({
     //   registerType: "autoUpdate",
@@ -23,10 +23,12 @@ export default defineConfig({
     // })
   ],
   server: {
-    // Using LocalCan to expose localhost:3001
-    // to my local internet but with HTTPS.
-    // This is an NGROK tunnel alternative.
-    allowedHosts: ["open-chat.local"]
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+      },
+    },
   },
   resolve: {
     alias: {

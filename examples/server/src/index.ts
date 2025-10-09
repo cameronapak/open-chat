@@ -8,7 +8,7 @@ const app = new Hono();
 
 app.use(logger());
 app.use(
-	"/*",
+	'*',
 	cors({
 		origin: process.env.CORS_ORIGIN || "",
 		allowMethods: ["GET", "POST", "OPTIONS"],
