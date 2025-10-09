@@ -13,8 +13,8 @@
     "check-types": "bun run --filter '*' check-types"
   },
   "devDependencies": {
-    "@types/react-syntax-highlighter": "^15.5.13",
-    "oxlint": "^1.12.0"
+    "oxlint": "^1.12.0",
+    "typescript": "^5.8.3"
   },
   "packageManager": "bun@1.2.21"
 }
