@@ -28,5 +28,6 @@
     "tsdown": "^0.15.1",
     "tsx": "^4.19.2",
     "typescript": "^5.8.2"
-  }
+  },
+  "packageManager": "bun@1.2.21"
 }
