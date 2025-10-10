@@ -6,19 +6,6 @@ Roll your own chat with just a few lines of code. Use any model / provider. Buil
 
 Use any AI SDK-compatible transport. (Comes with helpers to easily integrate OpenRouter, letting users control their own models and token usage.)
 
-## Features
-
-- **[TypeScript](https://www.typescriptlang.org/)** - For type safety and improved developer experience
-- **[TanStack Router](https://tanstack.com/router/latest/docs/framework/react/overview)** - File-based routing with full type safety
-- **[Tailwind v4](https://tailwindcss.com/)** - Utility-first CSS for rapid UI development
-- **[shadcn/ui](https://ui.shadcn.com/)** - Reusable UI components
-- **[ai-sdk](https://ai-sdk.dev/)** - AI Toolkit for TypeScript
-- **[ai-elements](https://ai-sdk.dev/elements/overview)** - AI Chatbot elements
-- **use-mcp** hook (fork) — "A lightweight React hook for connecting to Model Context Protocol (MCP) servers. Simplifies authentication and tool calling for AI systems implementing the MCP standard."
-- **[Hono](https://hono.dev)** - Lightweight, performant server framework
-- **[Node.js](https://nodejs.org/en)** - JavaScript runtime environment
-- **[Bun](https://bun.sh)** - JavaScript package Manager
-
 ### Installation (coming soon)
 
 The npm package is coming soon.
