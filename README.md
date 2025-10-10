@@ -8,7 +8,7 @@ Use any AI SDK-compatible transport. (Comes with helpers to easily integrate Ope
 
 ### Installation (coming soon)
 
-The npm package is coming soon.
+The npm package is coming soon. I'm thinking of it being `@faith-tools/open-chat`
 
 ### Basic Usage
 
