@@ -927,7 +927,7 @@ export function MCPServerListDialog({
                             disabled={registryLoading || registryAppending}
                             onClick={() => registryNextCursor && fetchRegistryServers(debouncedSearch, registryNextCursor)}
                           >
-                            {registryAppending ? 'Loading…' : 'Load 100 more'}
+                            {registryAppending ? 'Loading…' : 'Load More'}
                           </Button>
                         </div>
                       ) : null}

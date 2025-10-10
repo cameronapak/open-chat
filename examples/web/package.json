@@ -15,7 +15,7 @@
     "@ai-sdk/react": "^2.0.48",
     "@fontsource-variable/geist": "^5.2.8",
     "@hookform/resolvers": "^5.1.1",
-    "@mcp-ui/client": "^5.12.0",
+    "@mcp-ui/client": "^5.12.1",
     "@modelcontextprotocol/sdk": "^1.18.2",
     "@openchatkit/chat": "workspace:*",
     "@openrouter/ai-sdk-provider": "^1.2.0",
@@ -80,5 +80,6 @@
     "tailwindcss": "^4.0.15",
     "typescript": "^5.8.3",
     "vite": "^6.2.2"
-  }
+  },
+  "packageManager": "bun@1.2.21"
 }
