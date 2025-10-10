@@ -91,6 +91,7 @@
   },
   "devDependencies": {
     "@tailwindcss/cli": "^4.1.13",
+    "@types/node": "^24.7.1",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
     "@types/react-syntax-highlighter": "^15.5.13",
