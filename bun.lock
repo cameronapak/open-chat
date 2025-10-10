@@ -34,7 +34,7 @@
         "@ai-sdk/react": "^2.0.48",
         "@fontsource-variable/geist": "^5.2.8",
         "@hookform/resolvers": "^5.1.1",
-        "@mcp-ui/client": "^5.12.0",
+        "@mcp-ui/client": "^5.12.1",
         "@modelcontextprotocol/sdk": "^1.18.2",
         "@openchatkit/chat": "workspace:*",
         "@openrouter/ai-sdk-provider": "^1.2.0",
@@ -528,7 +528,7 @@
 
     "@jridgewell/trace-mapping": ["@jridgewell/trace-mapping@0.3.31", "", { "dependencies": { "@jridgewell/resolve-uri": "^3.1.0", "@jridgewell/sourcemap-codec": "^1.4.14" } }, "sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw=="],
 
-    "@mcp-ui/client": ["@mcp-ui/client@5.12.0", "", { "dependencies": { "@modelcontextprotocol/sdk": "*", "@quilted/threads": "^3.1.3", "@r2wc/react-to-web-component": "^2.0.4", "@remote-dom/core": "^1.8.0", "@remote-dom/react": "^1.2.2" }, "peerDependencies": { "react": "^18 || ^19", "react-dom": "^18 || ^19" } }, "sha512-dbMU3QaBR7w3YqYVozonVrwgMFAj9XdPhVKHTRZBEiiDUNyvUL6VQATBwxcBbZwll/0mLdw4v+rnQGp3ZWQQGA=="],
+    "@mcp-ui/client": ["@mcp-ui/client@5.12.1", "", { "dependencies": { "@modelcontextprotocol/sdk": "*", "@quilted/threads": "^3.1.3", "@r2wc/react-to-web-component": "^2.0.4", "@remote-dom/core": "^1.8.0", "@remote-dom/react": "^1.2.2" }, "peerDependencies": { "react": "^18 || ^19", "react-dom": "^18 || ^19" } }, "sha512-xCHFIpuDxlLNDdNPJs6N3MkV/8oLWJ6XsG54pm+5TNF3PRPUpNDwPjF9T+hYzy4WOVcmR+kumaKgyuLMuLwkVQ=="],
 
     "@mermaid-js/parser": ["@mermaid-js/parser@0.6.2", "", { "dependencies": { "langium": "3.3.1" } }, "sha512-+PO02uGF6L6Cs0Bw8RpGhikVvMWEysfAyl27qTlroUB8jSWr1lL0Sf6zi78ZxlSnmgSY2AMMKVgghnN9jTtwkQ=="],
 

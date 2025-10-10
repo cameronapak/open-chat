@@ -84,6 +84,24 @@ import { sanitizeUrl } from 'strict-url-sanitise';
 import { loadApiKey } from '../lib/keystore';
 import { ModelCombobox } from './ai-elements/model-combobox';
 import { useAtom } from 'jotai';
+import {
+  UIResourceRenderer,
+  isUIResource
+} from '@mcp-ui/client';
+
+function getUIResourceFromResult(rawResult: any): any | null {
+  if (!rawResult) return null;
+
+  const content = (rawResult as any)?.content;
+  if (Array.isArray(content)) {
+    for (const item of content) {
+      if (isUIResource(item)) {
+        return item.resource;
+      }
+    }
+  }
+  return null;
+}
 
 type ChatOptions = Parameters<typeof useChat>[0];
 
@@ -627,6 +645,33 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
 
         case 'dynamic-tool': {
           const toolPart = part as DynamicToolUIPart;
+          const resource = getUIResourceFromResult(part);
+
+          if (resource) {
+            return (
+              <div className="mb-4">
+                <Tool key={`${message.id}-${index}`}>
+                  <ToolHeader title={toolPart.toolName} state={toolPart.state} />
+                  <ToolContent>
+                    <ToolInput input={toolPart.input} />
+                    <ToolOutput errorText={toolPart.errorText} output={toolPart.output} />
+                  </ToolContent>
+                </Tool>
+
+                <UIResourceRenderer
+                  resource={resource}
+                  onUIAction={undefined}
+                  htmlProps={{
+                    autoResizeIframe: {
+                      height: true,
+                      width: false, // set to false to allow for responsive design
+                    },
+                  }}
+                />
+              </div>
+            )
+          }
+
           return (
             <Tool key={`${message.id}-${index}`}>
               <ToolHeader title={toolPart.toolName} state={toolPart.state} />
