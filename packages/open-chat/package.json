@@ -1,8 +1,8 @@
 {
-  "name": "@openchatkit/chat",
-  "version": "0.0.2",
+  "name": "@faith-tools/open-chat",
+  "version": "0.0.1",
   "type": "module",
-  "description": "Reusable OpenChat component bundle for React apps.",
+  "description": "Roll your own chat with just a few lines of code. Use any model / provider. Built upon AI Elements from Vercel, AI SDK. Supports MCP, MCP-UI, and the MCP Registry out of the box.",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -102,6 +102,6 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/cameronapak/open-chat"
+    "url": "https://github.com/faith-tools/open-chat"
   }
 }
