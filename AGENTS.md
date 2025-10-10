@@ -43,7 +43,7 @@ Copy the provided `.env.example` files in `examples/web/` and `examples/server/`
 - [`README.md`](README.md) — Public-facing overview, usage examples, and roadmap items you can reuse when explaining features.
 
 ## Development workflow
-1. **Install & configure**: `bun install`, then copy `.env.example` files into `.env.local` for both web and server examples.
+1. **Install & configure**: `bun install`, then copy `.env.example` files into `.env.test` or `.env.development` for both web and server examples.
 2. **Run locally**: 
    - `bun dev` for full-stack testing.
    - Use `bun dev:web` / `bun dev:server` when you need to focus on a single side.
