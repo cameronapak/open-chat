@@ -92,14 +92,15 @@ import {
 function getUIResourceFromResult(rawResult: any): any | null {
   if (!rawResult) return null;
 
-  const content = (rawResult as any)?.content;
-  if (Array.isArray(content)) {
-    for (const item of content) {
+  const output = (rawResult as any)?.output;
+  if (output && Array.isArray(output.content)) {
+    for (const item of output.content) {
       if (isUIResource(item)) {
         return item.resource;
       }
     }
   }
+
   return null;
 }
 
@@ -546,6 +547,8 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
 
   const { messages: rawMessages, sendMessage, stop, status: rawStatus } =
     useChat(mergedChatOptions);
+
+  console.log(rawMessages);
 
   const status = rawStatus;
 
