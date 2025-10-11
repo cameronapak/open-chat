@@ -10,7 +10,8 @@
     "check": "oxlint",
     "dev": "bun run --filter '*' dev",
     "build": "bun run --filter './packages/*' build && bun run --filter './examples/*' build",
-    "check-types": "bun run --filter '*' check-types"
+    "check-types": "bun run --filter '*' check-types",
+    "clean": "rm -rf node_modules examples/server/node_modules examples/web/node_modules"
   },
   "packageManager": "bun@1.3.0",
   "devDependencies": {
