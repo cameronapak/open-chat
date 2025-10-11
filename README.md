@@ -14,9 +14,11 @@ Run the following commands when starting fresh at the top-level of this repo.
 bun install
 ```
 
+Now, let's set up your environment variables. I chose `.env` versus `.env.local` because of the way [Bun reads environment variables](https://bun.com/guides/runtime/set-env).
+
 ```bash
-cp examples/web/.env.example examples/web/.env.development
-cp examples/server/.env.example examples/server/.env.development
+cp examples/web/.env.example examples/web/.env
+cp examples/server/.env.example examples/server/.env
 ```
 
 ```bash
