@@ -2,26 +2,40 @@
 
 ![OpenChat](./open-chat-banner.png)
 
-Own your chat. Self-host your own MCP client in your existing apps.
-
-OpenChat is a truly open AI chatbot.
-
-Not locked down to any given LLM provider. 
+Roll your own chat with just a few lines of code. Use any model / provider. Built upon AI Elements from Vercel, AI SDK. Supports MCP, MCP-UI, and the MCP Registry out of the box.
 
 Use any AI SDK-compatible transport. (Comes with helpers to easily integrate OpenRouter, letting users control their own models and token usage.)
 
-Easily import into your existing apps (Coming soon).
+## Testing Example App
 
-## OpenChatComponent - Drop-in AI Chat
-
-The OpenChatComponent is a fully-featured, reusable chat component that can be easily integrated into any React application.
-
-### Installation
+Run the following commands when starting fresh at the top-level of this repo.
 
 ```bash
-# Coming soon: npm package
-# For now, copy the component from apps/web/src/components/open-chat-component.tsx
+bun install
 ```
+
+Now, let's set up your environment variables. I chose `.env` versus `.env.local` because of the way [Bun reads environment variables](https://bun.com/guides/runtime/set-env).
+
+```bash
+cp examples/web/.env.example examples/web/.env
+cp examples/server/.env.example examples/server/.env
+```
+
+Build the OpenChat component and then the example app.
+
+```bash
+bun run build
+```
+
+Let's run the example app.
+
+```bash
+bun run dev
+```
+
+### Installation (coming soon)
+
+The npm package is coming soon. I'm thinking of it being `@faith-tools/open-chat`
 
 ### Basic Usage
 
@@ -298,20 +312,6 @@ Key props include:
 - `renderMessage` - Custom message rendering
 - `theme` - Light/dark theme support
 
-## Features
-
-- **[TypeScript](https://www.typescriptlang.org/)** - For type safety and improved developer experience
-- **[TanStack Router](https://tanstack.com/router/latest/docs/framework/react/overview)** - File-based routing with full type safety
-- **[Tailwind v4](https://tailwindcss.com/)** - Utility-first CSS for rapid UI development
-- **[shadcn/ui](https://ui.shadcn.com/)** - Reusable UI components
-- **[ai-sdk](https://ai-sdk.dev/)** - AI Toolkit for TypeScript
-- **[ai-elements](https://ai-sdk.dev/elements/overview)** - AI Chatbot elements
-- **use-mcp** hook (fork) — "A lightweight React hook for connecting to Model Context Protocol (MCP) servers. Simplifies authentication and tool calling for AI systems implementing the MCP standard."
-- **[Hono](https://hono.dev)** - Lightweight, performant server framework
-- **[Node.js](https://nodejs.org/en)** - JavaScript runtime environment
-- **[Bun](https://bun.sh)** - JavaScript package Manager
-- **PWA** - Progressive Web App support
-
 ## Roadmap 🗺️
 
 - [x] Open Router support
@@ -322,57 +322,17 @@ Key props include:
   - [ ] MCP Resources
 - [ ] Host this app
 - [ ] Add info about [Open Inference](https://www.openinference.xyz/) into the settings dialog
-- [ ] Allow theme CSS variables for the component
-- [ ] One-click MCP install
+- [x] Allow theme CSS variables for the component
+- [x] One-click MCP install
 - [x] Add your own MCP server
 - [x] MCP UI support
-- [ ] [Built-in AI support](https://ai-sdk.dev/providers/community-providers/built-in-ai) (Transformers JS + AI SDK + [built-in-ai](https://github.com/jakobhoeg/built-in-ai)) 
+- [ ] [Local LLM AI support](https://ai-sdk.dev/providers/community-providers/built-in-ai) (Transformers JS + AI SDK + [built-in-ai](https://github.com/jakobhoeg/built-in-ai)) 
   - Examples
     - https://huggingface.co/spaces/ibm-granite/Granite-4.0-WebGPU/blob/main/src/worker.js
     - https://huggingface.co/spaces/LiquidAI/LFM2-WebGPU/blob/main/src/App.tsx
 - [ ] Personality Profile (tailor LLM to your preferences)
 - [ ] Web component chatbot export
 - [ ] Make it onto [the official MCP Clients list](https://modelcontextprotocol.io/clients)
-- [ ] Make `dialogAsDrawer: boolean` prop for apps that don't want a drawer and would just benefit from a dialog popup for the connectors panel.
-
-## Getting Started
-
-First, install the dependencies:
-
-```bash
-bun install
-```
-
-Then, run the development server:
-
-```bash
-bun dev
-```
-
-Open [http://localhost:3001](http://localhost:3001) in your browser to see the web application.
-The API is running at [http://localhost:3000](http://localhost:3000).
-
-## Project Structure
-
-```
-open-chat/
-├── apps/
-│   ├── web/         # Frontend application (React + TanStack Router)
-│   └── server/      # Backend API (Hono)
-```
-
-## Available Scripts
-
-- `bun dev`: Start all applications in development mode
-- `bun build`: Build all applications
-- `bun dev:web`: Start only the web application
-- `bun dev:server`: Start only the server
-- `bun check-types`: Check TypeScript types across all apps
-- `cd apps/web && bun generate-pwa-assets`: Generate PWA assets
-
-## Sources
-
-This project was created with [Better-T-Stack](https://github.com/AmanVarshney01/create-better-t-stack).
 
 ## MCP Registries
 
@@ -383,6 +343,10 @@ Here are some top-tier MCP registries I've been keeping my eyes on:
 - [Smithery](https://smithery.ai/)
 - [Pica](https://www.picaos.com/)
 - [Rube](https://rube.app/)
+
+## Sources
+
+This project was created with [Better-T-Stack](https://github.com/AmanVarshney01/create-better-t-stack).
 
 ## Contributing
 

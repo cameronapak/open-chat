@@ -36,10 +36,7 @@ import {
 } from './ai-elements/prompt-input';
 import { Response } from './ai-elements/response';
 import { Loader } from './ai-elements/loader';
-import { Actions, Action } from './ai-elements/actions';
 import {
-  CopyIcon,
-  RefreshCcwIcon,
   Puzzle,
   Globe,
   KeyRound,
@@ -613,19 +610,6 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
                   <Response>{part.text}</Response>
                 </MessageContent>
               </Message>
-              {message.role === 'assistant' && index === rawMessages.length - 1 && (
-                <Actions className="mt-2">
-                  <Action onClick={() => { }} label="Retry">
-                    <RefreshCcwIcon className="size-3" />
-                  </Action>
-                  <Action
-                    onClick={() => navigator.clipboard.writeText(part.text)}
-                    label="Copy"
-                  >
-                    <CopyIcon className="size-3" />
-                  </Action>
-                </Actions>
-              )}
             </Fragment>
           );
 

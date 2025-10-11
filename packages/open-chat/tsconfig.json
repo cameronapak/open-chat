@@ -16,7 +16,7 @@
     "paths": {
       "@/*": ["./*"]
     },
-    "types": ["react", "react-dom"],
+    "types": ["react", "react-dom", "node"],
     "lib": ["DOM", "DOM.Iterable", "ESNext"],
     "outDir": "./dist",
     "declaration": true,
