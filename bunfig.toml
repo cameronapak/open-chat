@@ -1,0 +1,3 @@
+[install]
+# Protecting against supply chain attacks - 7 days in seconds
+minimumReleaseAge = 604800
