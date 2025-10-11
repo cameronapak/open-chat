@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { Hono } from "hono";
+import { Hono, type Context } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 import { appRouter } from './routers';
@@ -20,7 +20,7 @@ app.use(
 
 app.route('/api', appRouter);
 
-app.get("/", (c) => {
+app.get("/", (c: Context) => {
 	return c.text("OK");
 });
 
