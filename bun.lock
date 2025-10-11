@@ -3,6 +3,9 @@
   "workspaces": {
     "": {
       "name": "open-chat",
+      "devDependencies": {
+        "oxlint": "^1.22.0",
+      },
     },
     "examples/server": {
       "name": "server",
