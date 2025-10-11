@@ -15,8 +15,8 @@ bun install
 ```
 
 ```bash
-cd examples/web && cp .env.example .env.local
-cd examples/server && cp .env.example .env.local
+cp examples/web/.env.example examples/web/.env.development
+cp examples/server/.env.example examples/server/.env.development
 ```
 
 ```bash
