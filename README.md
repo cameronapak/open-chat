@@ -6,6 +6,27 @@ Roll your own chat with just a few lines of code. Use any model / provider. Buil
 
 Use any AI SDK-compatible transport. (Comes with helpers to easily integrate OpenRouter, letting users control their own models and token usage.)
 
+## Testing Example App
+
+Run the following commands when starting fresh at the top-level of this repo.
+
+```bash
+bun install
+```
+
+```bash
+cd examples/web && cp .env.example .env.local
+cd examples/server && cp .env.example .env.local
+```
+
+```bash
+bun run build
+```
+
+```bash
+bun run dev
+```
+
 ### Installation (coming soon)
 
 The npm package is coming soon. I'm thinking of it being `@faith-tools/open-chat`
