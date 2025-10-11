@@ -21,9 +21,13 @@ cp examples/web/.env.example examples/web/.env
 cp examples/server/.env.example examples/server/.env
 ```
 
+Build the OpenChat component and then the example app.
+
 ```bash
 bun run build
 ```
+
+Let's run the example app.
 
 ```bash
 bun run dev
