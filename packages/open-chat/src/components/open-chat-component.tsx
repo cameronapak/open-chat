@@ -85,6 +85,7 @@ import {
   UIResourceRenderer,
   isUIResource
 } from '@mcp-ui/client';
+import { AnimatedHeight } from "./animate-height";
 
 function getUIResourceFromResult(rawResult: any): any | null {
   if (!rawResult) return null;
@@ -99,6 +100,30 @@ function getUIResourceFromResult(rawResult: any): any | null {
   }
 
   return null;
+}
+
+function McpUi({ resource }: { resource: any }) {
+  const [show, setShow] = useState(false);
+
+  return (
+    <AnimatedHeight show={show} shouldBlurIn={true}>
+      <UIResourceRenderer
+        resource={resource}
+        htmlProps={{
+          autoResizeIframe: {
+            height: true,
+            width: false, // set to false to allow for responsive design
+          },
+          iframeProps: {
+            onLoad: () => {
+              setShow(true)
+            },
+            className: "rounded-xl border overflow-hidden"
+          }
+        }}
+      />
+    </AnimatedHeight>
+  )
 }
 
 type ChatOptions = Parameters<typeof useChat>[0];
@@ -800,7 +825,7 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
                         const toolPart = part as DynamicToolUIPart;
                         const resource = getUIResourceFromResult(part);
                         const mcpServer = mcpServers.find((server: SavedMCPServer) => mcpServerDetails[server.id]?.tools?.find((tool: any) => tool.name === toolPart.toolName) !== undefined)
-                        
+
                         if (resource) {
                           return (
                             <div className="flex flex-col gap-6">
@@ -812,24 +837,12 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
                                 />
                                 <p className="text-muted-foreground">{mcpServer?.name}</p>
                               </div>
-                              
-                              <UIResourceRenderer
-                                resource={resource}
-                                onUIAction={undefined}
-                                htmlProps={{
-                                  autoResizeIframe: {
-                                    height: true,
-                                    width: false, // set to false to allow for responsive design
-                                  },
-                                  iframeProps: {
-                                    className: "rounded-xl border overflow-hidden"
-                                  }
-                                }}
-                              />
+
+                              <McpUi resource={resource} />
                             </div>
                           )
                         }
-                        
+
                         return (
                           <div className="flex items-center gap-2">
                             <McpServerAvatar
