@@ -703,7 +703,7 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
       <div className={className} style={{ height }}>
         <div className="flex flex-col h-full">
           <Conversation className="h-full">
-            <ConversationContent className="h-full">
+            <ConversationContent className="h-full flex flex-col gap-12">
               {rawMessages.length === 0 && (
                 <section className="grid grid-rows-1 h-full grid-cols-1 justify-center items-center gap-4">
                   <Empty>
@@ -739,7 +739,7 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
               )}
 
               {rawMessages.map((message) => (
-                <div key={message.id}>
+                <div key={message.id} className="flex flex-col gap-6">
                   {message.role === 'assistant' &&
                     message.parts.filter((part: any) => part.type === 'source-url')
                       .length > 0 && (
@@ -770,7 +770,7 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
                       case 'text':
                         return (
                           <Fragment key={`${message.id}-${index}`}>
-                            <Message from={message.role}>
+                            <Message className="p-0" from={message.role}>
                               <MessageContent variant="flat">
                                 <Response>{part.text}</Response>
                               </MessageContent>
@@ -802,7 +802,7 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
 
                         if (resource) {
                           return (
-                            <div className="flex flex-col gap-4">
+                            <div className="flex flex-col gap-6">
                               <div className="flex items-center gap-2">
                                 <McpServerAvatar
                                   key={`${message.id}-${index}`}
@@ -821,7 +821,7 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
                                     width: false, // set to false to allow for responsive design
                                   },
                                   iframeProps: {
-                                    className: "rounded-xl border"
+                                    className: "rounded-xl border overflow-hidden"
                                   }
                                 }}
                               />
