@@ -863,6 +863,9 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
                   <Loader />
                 </div>
               ) : null}
+
+              {/* Spacer */}
+              <div className="!h-[1px] w-full shrink-0" />
             </ConversationContent>
             <ConversationScrollButton />
           </Conversation>
