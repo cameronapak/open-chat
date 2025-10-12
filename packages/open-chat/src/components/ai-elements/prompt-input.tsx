@@ -61,6 +61,8 @@ import {
   useRef,
   useState,
 } from "react";
+import { useAtomValue, useSetAtom } from "jotai";
+import { mcpServersAtom } from "@/lib/atoms";
 // ============================================================================
 // Provider Context & Types
 // ============================================================================
@@ -722,7 +724,7 @@ export const PromptInput = ({
           // Sync function completed without throwing, clear attachments
           clear();
           if (usingProvider) {
-            controller.textInput.clear();
+                controller.textInput.clear();
           }
         }
       } catch (error) {
@@ -785,6 +787,43 @@ export const PromptInputTextarea = ({
 }: PromptInputTextareaProps) => {
   const controller = useOptionalPromptInputController();
   const attachments = usePromptInputAttachments();
+  const savedServers = useAtomValue(mcpServersAtom);
+  const setSavedServers = useSetAtom(mcpServersAtom);
+
+  // Function to check if the word before cursor matches an MCP server name
+  const checkForMcpServerName = useCallback((textarea: HTMLTextAreaElement): string | null => {
+    const text = textarea.value;
+    const cursorPos = textarea.selectionStart;
+    
+    // Find the start of the word before the cursor
+    let wordStart = cursorPos - 1;
+    while (wordStart >= 0 && text[wordStart] !== ' ' && text[wordStart] !== '\n') {
+      wordStart--;
+    }
+    wordStart++; // Move to the first character of the word
+    
+    // Extract the word
+    const word = text.substring(wordStart, cursorPos);
+    
+    if (!word) return null;
+    
+    // Check if this word matches any saved MCP server name (case-insensitive)
+    const matchingServer = savedServers.find(server => 
+      server.name.toLowerCase() === word.toLowerCase() && !server.enabled
+    );
+    
+    return matchingServer ? matchingServer.id : null;
+  }, [savedServers]);
+
+  // Function to enable an MCP server by ID
+  const enableMcpServer = useCallback((serverId: string) => {
+    const server = savedServers.find(s => s.id === serverId);
+    if (!server) return;
+    
+    setSavedServers(prev => 
+      prev.map(s => s.id === serverId ? { ...s, enabled: true } : s)
+    );
+  }, [savedServers, setSavedServers]);
 
   const handleKeyDown: KeyboardEventHandler<HTMLTextAreaElement> = (e) => {
     if (e.key === "Enter") {
@@ -792,6 +831,32 @@ export const PromptInputTextarea = ({
       if (e.shiftKey) return;
       e.preventDefault();
       e.currentTarget.form?.requestSubmit();
+    } else if (e.key === " ") {
+      // Check if the word before the cursor matches an MCP server name
+      const textarea = e.currentTarget;
+      const serverId = checkForMcpServerName(textarea);
+      
+      if (serverId) {
+        e.preventDefault();
+        enableMcpServer(serverId);
+        // Add the space after enabling the server
+        const cursorPos = textarea.selectionStart;
+        const text = textarea.value;
+        const newText = text.slice(0, cursorPos) + " " + text.slice(cursorPos);
+        
+        // Update the textarea value
+        if (controller) {
+          controller.textInput.setInput(newText);
+        } else {
+          textarea.value = newText;
+          onChange?.(e as any);
+        }
+        
+        // Move cursor to after the space
+        setTimeout(() => {
+          textarea.selectionStart = textarea.selectionEnd = cursorPos + 1;
+        }, 0);
+      }
     }
   };
 
