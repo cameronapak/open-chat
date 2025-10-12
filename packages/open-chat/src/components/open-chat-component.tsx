@@ -858,10 +858,11 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
                 </div>
               ))}
 
-              {status === 'submitted' && <Loader />}
-
-              {/* Spacer */}
-              <div className="h-6" />
+              {status === 'submitted' ? (
+                <div className="w-full">
+                  <Loader />
+                </div>
+              ) : null}
             </ConversationContent>
             <ConversationScrollButton />
           </Conversation>
