@@ -9,6 +9,7 @@ import OpenChatComponent, {
 import type { UIMessage, UseChatOptions } from "@ai-sdk/react";
 import "@faith-tools/open-chat/styles.css";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ModeToggle } from "@/components/mode-toggle";
 
 const queryClient = new QueryClient();
 
@@ -92,7 +93,10 @@ const ChatBotDemo = () => {
   );
 
   return (
-    <section className="grid grid-cols-1 h-dvh">
+    <section className="relative grid grid-cols-1 h-dvh">
+      <div className="absolute right-3 top-3">
+        <ModeToggle />
+      </div>
       <OpenChatComponent
         mcpRegistryUrl={import.meta.env.DEV ? "https://mcp-registry.val.run" : "https://registry.modelcontextprotocol.io"}
         // mcpRegistryUrl="https://mcp-subregistry-toolbase-test.gavinching.workers.dev"
