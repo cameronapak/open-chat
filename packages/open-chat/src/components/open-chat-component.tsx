@@ -250,7 +250,7 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
     threadId,
     initialMessages = [],
     placeholder = 'Ask OpenChat...',
-    className = 'max-w-md mx-auto w-full p-6 relative max-h-dvh',
+    className = 'max-w-md mx-auto w-full p-4 relative max-h-dvh',
     height = '100%',
     onNewMessage,
     onError,
