@@ -53,7 +53,7 @@ import {
 import { MCPServerListDialog } from './mcp-server-list-dialog';
 import { type SavedMCPServer } from '../lib/mcp-storage';
 import { getFavicon } from '../lib/utils';
-import { enabledMcpServersAtom, mcpServerDetailsAtom, modelAtom } from '../lib/atoms';
+import { mcpServersAtom, enabledMcpServersAtom, mcpServerDetailsAtom, modelAtom } from '../lib/atoms';
 import { useAtomValue } from 'jotai';
 import { ModeToggle } from './mode-toggle';
 import { type ChatModelOption, type OpenChatComponentProps } from '../types/open-chat-component';
@@ -276,6 +276,7 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
   const [mcpDialogOpen, setMcpDialogOpen] = useState(false);
   const [model, setModel] = useAtom(modelAtom);
   const [modelMenuOpen, setModelMenuOpen] = useState(false);
+  const mcpServers = useAtomValue(mcpServersAtom);
   const enabledServers = useAtomValue(enabledMcpServersAtom);
   const mcpServerDetails = useAtomValue(mcpServerDetailsAtom);
   const authReady = authState?.ready ?? true;
@@ -798,8 +799,8 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
                       case 'dynamic-tool': {
                         const toolPart = part as DynamicToolUIPart;
                         const resource = getUIResourceFromResult(part);
-                        const mcpServer = enabledServers.find(server => mcpServerDetails[server.id]?.tools?.find(tool => tool.name === toolPart.toolName) !== undefined)
-
+                        const mcpServer = mcpServers.find((server: SavedMCPServer) => mcpServerDetails[server.id]?.tools?.find((tool: any) => tool.name === toolPart.toolName) !== undefined)
+                        
                         if (resource) {
                           return (
                             <div className="flex flex-col gap-6">
@@ -811,7 +812,7 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
                                 />
                                 <p className="text-muted-foreground">{mcpServer?.name}</p>
                               </div>
-
+                              
                               <UIResourceRenderer
                                 resource={resource}
                                 onUIAction={undefined}
@@ -828,7 +829,7 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
                             </div>
                           )
                         }
-
+                        
                         return (
                           <div className="flex items-center gap-2">
                             <McpServerAvatar
