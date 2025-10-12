@@ -789,6 +789,7 @@ export const PromptInputTextarea = ({
   const attachments = usePromptInputAttachments();
   const savedServers = useAtomValue(mcpServersAtom);
   const setSavedServers = useSetAtom(mcpServersAtom);
+  const previousTextRef = useRef<string>("");
 
   // Function to check if the word before cursor matches an MCP server name
   const checkForMcpServerName = useCallback((textarea: HTMLTextAreaElement): string | null => {
@@ -815,6 +816,23 @@ export const PromptInputTextarea = ({
     return matchingServer ? matchingServer.id : null;
   }, [savedServers]);
 
+  // Function to find all MCP server names in text
+  const findMcpServersInText = useCallback((text: string): string[] => {
+    const words = text.split(/\s+/).filter(word => word.length > 0);
+    const serverIds: string[] = [];
+    
+    words.forEach(word => {
+      const matchingServer = savedServers.find(server => 
+        server.name.toLowerCase() === word.toLowerCase()
+      );
+      if (matchingServer) {
+        serverIds.push(matchingServer.id);
+      }
+    });
+    
+    return serverIds;
+  }, [savedServers]);
+
   // Function to enable an MCP server by ID
   const enableMcpServer = useCallback((serverId: string) => {
     const server = savedServers.find(s => s.id === serverId);
@@ -824,6 +842,34 @@ export const PromptInputTextarea = ({
       prev.map(s => s.id === serverId ? { ...s, enabled: true } : s)
     );
   }, [savedServers, setSavedServers]);
+
+  // Function to disable an MCP server by ID
+  const disableMcpServer = useCallback((serverId: string) => {
+    const server = savedServers.find(s => s.id === serverId);
+    if (!server) return;
+    
+    setSavedServers(prev => 
+      prev.map(s => s.id === serverId ? { ...s, enabled: false } : s)
+    );
+  }, [savedServers, setSavedServers]);
+
+  // Function to sync server enabled states with text content
+  const syncServerStatesWithText = useCallback((newText: string) => {
+    const previousText = previousTextRef.current;
+    const previousServerIds = findMcpServersInText(previousText);
+    const currentServerIds = findMcpServersInText(newText);
+    
+    // Find servers that were in previous text but not in current text
+    const removedServerIds = previousServerIds.filter(id => !currentServerIds.includes(id));
+    
+    // Disable servers that were removed from the text
+    removedServerIds.forEach(serverId => {
+      disableMcpServer(serverId);
+    });
+    
+    // Update the previous text reference
+    previousTextRef.current = newText;
+  }, [findMcpServersInText, disableMcpServer]);
 
   const handleKeyDown: KeyboardEventHandler<HTMLTextAreaElement> = (e) => {
     if (e.key === "Enter") {
@@ -888,13 +934,27 @@ export const PromptInputTextarea = ({
     ? {
         value: controller.textInput.value,
         onChange: (e: ChangeEvent<HTMLTextAreaElement>) => {
-          controller.textInput.setInput(e.currentTarget.value);
+          const newText = e.currentTarget.value;
+          syncServerStatesWithText(newText);
+          controller.textInput.setInput(newText);
           onChange?.(e);
         },
       }
     : {
-        onChange,
+        onChange: (e: ChangeEvent<HTMLTextAreaElement>) => {
+          const newText = e.currentTarget.value;
+          syncServerStatesWithText(newText);
+          onChange?.(e);
+        },
       };
+
+  // Initialize the previous text ref on mount
+  useEffect(() => {
+    if (controller) {
+      const initialText = controller.textInput.value;
+      previousTextRef.current = initialText;
+    }
+  }, [controller]);
 
   return (
     <InputGroupTextarea
@@ -925,7 +985,7 @@ export const PromptInputToolbar = ({
   />
 );
 
-export type PromptInputToolsProps = HTMLAttributes<HTMLDivElement>;
+export type PromptInputToolsProps =HTMLAttributes<HTMLDivElement>;
 
 export const PromptInputTools = ({
   className,
