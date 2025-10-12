@@ -53,7 +53,7 @@ import {
 import { MCPServerListDialog } from './mcp-server-list-dialog';
 import { type SavedMCPServer } from '../lib/mcp-storage';
 import { getFavicon } from '../lib/utils';
-import { enabledMcpServersAtom, modelAtom } from '../lib/atoms';
+import { mcpServersAtom, enabledMcpServersAtom, mcpServerDetailsAtom, modelAtom } from '../lib/atoms';
 import { useAtomValue } from 'jotai';
 import { ModeToggle } from './mode-toggle';
 import { type ChatModelOption, type OpenChatComponentProps } from '../types/open-chat-component';
@@ -85,6 +85,7 @@ import {
   UIResourceRenderer,
   isUIResource
 } from '@mcp-ui/client';
+import { AnimatedHeight } from "./animate-height";
 
 function getUIResourceFromResult(rawResult: any): any | null {
   if (!rawResult) return null;
@@ -99,6 +100,30 @@ function getUIResourceFromResult(rawResult: any): any | null {
   }
 
   return null;
+}
+
+function McpUi({ resource }: { resource: any }) {
+  const [show, setShow] = useState(false);
+
+  return (
+    <AnimatedHeight show={show} shouldBlurIn={true}>
+      <UIResourceRenderer
+        resource={resource}
+        htmlProps={{
+          autoResizeIframe: {
+            height: true,
+            width: false, // set to false to allow for responsive design
+          },
+          iframeProps: {
+            onLoad: () => {
+              setShow(true)
+            },
+            className: "rounded-xl border overflow-hidden"
+          }
+        }}
+      />
+    </AnimatedHeight>
+  )
 }
 
 type ChatOptions = Parameters<typeof useChat>[0];
@@ -174,6 +199,15 @@ const mergeUseChatOptions = (
   return base as ChatOptions;
 };
 
+function McpServerAvatar({ url, serverName }: { url: string; serverName: string }) {
+  return (
+    <Avatar className="size-6 bg-white shadow-sm rounded-sm">
+      <AvatarImage src={getFavicon(url)} />
+      <AvatarFallback>{serverName}</AvatarFallback>
+    </Avatar>
+  )
+}
+
 const DEFAULT_AUTH_MESSAGE = 'Please connect your account to start chatting.';
 const formatter = new Intl.NumberFormat('en-US');
 const costFormatter = new Intl.NumberFormat('en-US', {
@@ -214,13 +248,11 @@ function IntegrationAvatarGroup({
 
   enabledServers?.forEach((server, index) => {
     avatars.push(
-      <Avatar key={index} className="size-6 bg-white shadow-sm rounded-sm">
-        <AvatarImage src={getFavicon(server.remotes?.[0].url || '')} />
-        <AvatarFallback>{server.name}</AvatarFallback>
-        <AvatarGroupTooltip>
-          <p>{server.name}</p>
-        </AvatarGroupTooltip>
-      </Avatar>,
+      <McpServerAvatar
+        key={index}
+        url={server.remotes?.[0].url || ''}
+        serverName={server.name}
+      />,
     );
   });
 
@@ -243,7 +275,7 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
     threadId,
     initialMessages = [],
     placeholder = 'Ask OpenChat...',
-    className = 'max-w-md mx-auto w-full p-6 relative max-h-dvh',
+    className = 'max-w-md mx-auto w-full p-4 relative max-h-dvh',
     height = '100%',
     onNewMessage,
     onError,
@@ -269,7 +301,9 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
   const [mcpDialogOpen, setMcpDialogOpen] = useState(false);
   const [model, setModel] = useAtom(modelAtom);
   const [modelMenuOpen, setModelMenuOpen] = useState(false);
+  const mcpServers = useAtomValue(mcpServersAtom);
   const enabledServers = useAtomValue(enabledMcpServersAtom);
+  const mcpServerDetails = useAtomValue(mcpServerDetailsAtom);
   const authReady = authState?.ready ?? true;
   const authMessage = authMessageProp ?? authState?.message ?? DEFAULT_AUTH_MESSAGE;
   const canUseWebSearch = capabilities?.webSearch === true;
@@ -594,89 +628,6 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
     modelsLoading || modelsError || modelOptions.length > 1,
   );
 
-  const renderMessageContent = useCallback(
-    (message: any, part: any, index: number) => {
-      if (renderMessage) {
-        const customRender = renderMessage(message, part, index);
-        if (customRender) return customRender;
-      }
-
-      switch (part.type) {
-        case 'text':
-          return (
-            <Fragment key={`${message.id}-${index}`}>
-              <Message from={message.role}>
-                <MessageContent variant="flat">
-                  <Response>{part.text}</Response>
-                </MessageContent>
-              </Message>
-            </Fragment>
-          );
-
-        case 'reasoning':
-          return (
-            <Reasoning
-              defaultOpen={false}
-              key={`${message.id}-${index}`}
-              className="w-full"
-              isStreaming={
-                status === 'streaming' &&
-                index === message.parts.length - 1 &&
-                message.id === rawMessages.at(-1)?.id
-              }
-            >
-              <ReasoningTrigger />
-              <ReasoningContent>{part.text}</ReasoningContent>
-            </Reasoning>
-          );
-
-        case 'dynamic-tool': {
-          const toolPart = part as DynamicToolUIPart;
-          const resource = getUIResourceFromResult(part);
-
-          if (resource) {
-            return (
-              <div className="mb-4">
-                <Tool key={`${message.id}-${index}`}>
-                  <ToolHeader title={toolPart.toolName} state={toolPart.state} />
-                  <ToolContent>
-                    <ToolInput input={toolPart.input} />
-                    <ToolOutput errorText={toolPart.errorText} output={toolPart.output} />
-                  </ToolContent>
-                </Tool>
-
-                <UIResourceRenderer
-                  resource={resource}
-                  onUIAction={undefined}
-                  htmlProps={{
-                    autoResizeIframe: {
-                      height: true,
-                      width: false, // set to false to allow for responsive design
-                    },
-                  }}
-                />
-              </div>
-            )
-          }
-
-          return (
-            <Tool key={`${message.id}-${index}`}>
-              <ToolHeader title={toolPart.toolName} state={toolPart.state} />
-              <ToolContent>
-                <ToolInput input={toolPart.input} />
-                <ToolOutput errorText={toolPart.errorText} output={toolPart.output} />
-              </ToolContent>
-            </Tool>
-          );
-        }
-
-        default:
-          return null;
-      }
-    },
-    [renderMessage, rawMessages, status],
-  );
-
   const content = (
     <TooltipProvider>
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -778,7 +729,7 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
       <div className={className} style={{ height }}>
         <div className="flex flex-col h-full">
           <Conversation className="h-full">
-            <ConversationContent className="h-full">
+            <ConversationContent className="h-full flex flex-col gap-12">
               {rawMessages.length === 0 && (
                 <section className="grid grid-rows-1 h-full grid-cols-1 justify-center items-center gap-4">
                   <Empty>
@@ -814,7 +765,7 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
               )}
 
               {rawMessages.map((message) => (
-                <div key={message.id}>
+                <div key={message.id} className="flex flex-col gap-6">
                   {message.role === 'assistant' &&
                     message.parts.filter((part: any) => part.type === 'source-url')
                       .length > 0 && (
@@ -835,16 +786,100 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
                       </Sources>
                     )}
 
-                  {message.parts.map((part: any, i: number) =>
-                    renderMessageContent(message, part, i),
-                  )}
+                  {message.parts.map((part, index) => {
+                    if (renderMessage) {
+                      const customRender = renderMessage(message, part, index);
+                      if (customRender) return customRender;
+                    }
+
+                    switch (part.type) {
+                      case 'text':
+                        return (
+                          <Fragment key={`${message.id}-${index}`}>
+                            <Message className="p-0" from={message.role}>
+                              <MessageContent variant="flat">
+                                <Response>{part.text}</Response>
+                              </MessageContent>
+                            </Message>
+                          </Fragment>
+                        );
+
+                      case 'reasoning':
+                        return (
+                          <Reasoning
+                            defaultOpen={false}
+                            key={`${message.id}-${index}`}
+                            className="w-full"
+                            isStreaming={
+                              status === 'streaming' &&
+                              index === message.parts.length - 1 &&
+                              message.id === rawMessages.at(-1)?.id
+                            }
+                          >
+                            <ReasoningTrigger />
+                            <ReasoningContent>{part.text}</ReasoningContent>
+                          </Reasoning>
+                        );
+
+                      case 'dynamic-tool': {
+                        const toolPart = part as DynamicToolUIPart;
+                        const resource = getUIResourceFromResult(part);
+                        const mcpServer = mcpServers.find((server: SavedMCPServer) => mcpServerDetails[server.id]?.tools?.find((tool: any) => tool.name === toolPart.toolName) !== undefined)
+
+                        if (resource) {
+                          return (
+                            <div className="flex flex-col gap-6">
+                              <div className="flex items-center gap-2">
+                                <McpServerAvatar
+                                  key={`${message.id}-${index}`}
+                                  url={mcpServer?.remotes?.[0].url || ''}
+                                  serverName={mcpServer?.name || ''}
+                                />
+                                <p className="text-muted-foreground">{mcpServer?.name}</p>
+                              </div>
+
+                              <McpUi resource={resource} />
+                            </div>
+                          )
+                        }
+
+                        return (
+                          <div className="flex items-center gap-2">
+                            <McpServerAvatar
+                              key={`${message.id}-${index}`}
+                              url={mcpServer?.remotes?.[0].url || ''}
+                              serverName={mcpServer?.name || ''}
+                            />
+                            <p className="text-muted-foreground">{mcpServer?.name}</p>
+                          </div>
+                        )
+
+                        // return (
+                        //   // <Tool key={`${message.id}-${index}`}>
+                        //   //   <ToolHeader title={toolPart.toolName} state={toolPart.state} />
+                        //   //   <ToolContent>
+                        //   //     <ToolInput input={toolPart.input} />
+                        //   //     <ToolOutput errorText={toolPart.errorText} output={toolPart.output} />
+                        //   //   </ToolContent>
+                        //   // </Tool>
+                        // );
+                      }
+
+                      default:
+                        return null;
+                    }
+                  })}
                 </div>
               ))}
 
-              {status === 'submitted' && <Loader />}
+              {status === 'submitted' ? (
+                <div className="w-full">
+                  <Loader />
+                </div>
+              ) : null}
 
               {/* Spacer */}
-              <div className="h-6" />
+              <div className="!h-[1px] w-full shrink-0" />
             </ConversationContent>
             <ConversationScrollButton />
           </Conversation>

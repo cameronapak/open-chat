@@ -1,8 +1,8 @@
-import { useRef, useState, useCallback, useEffect } from 'react';
+import { useRef, useState, useCallback, useEffect, useMemo } from 'react';
 import { motion } from "motion/react"
 import { cn } from "@/lib/utils";
 
-export const AnimatedHeight = ({ children, className, ...props }: { children: React.ReactNode, className?: string }) => {
+export const AnimatedHeight = ({ children, className, shouldBlurIn, show = true, ...props }: { children: React.ReactNode, className?: string, shouldBlurIn?: boolean, show?: boolean }) => {
   const [height, setHeight] = useState<number | 'auto'>('auto');
   const [contentHeight, setContentHeight] = useState<number | null>(null);
   const [parentHeight, setParentHeight] = useState<number | null>(null);
@@ -10,6 +10,24 @@ export const AnimatedHeight = ({ children, className, ...props }: { children: Re
   const motionNodeRef = useRef<HTMLDivElement | null>(null);
   const contentObserverRef = useRef<ResizeObserver | null>(null);
   const parentObserverRef = useRef<ResizeObserver | null>(null);
+
+  const variants = useMemo(() => {
+    return {
+      collapsed: {
+        opacity: 0,
+        height: '0px',
+        transform: 'scale(0.975)',
+        filter: 'blur(12px)',
+      },
+
+      expanded: {
+        opacity: 1,
+        height,
+        transform: 'scale(1)',
+        filter: 'blur(0px)',
+      },
+    }
+  }, [height])
 
   const setMotionRef = useCallback((node: HTMLDivElement | null) => {
     motionNodeRef.current = node;
@@ -96,7 +114,9 @@ export const AnimatedHeight = ({ children, className, ...props }: { children: Re
     <motion.div
       ref={setMotionRef}
       style={{ height }}
-      animate={{ height }}
+      variants={variants}
+      initial="collapsed"
+      animate={show ? 'expanded' : 'collapsed'}
       transition={{
         type: "spring",
         duration: 0.3,

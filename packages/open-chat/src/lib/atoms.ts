@@ -69,7 +69,7 @@ export const modelAtom = atomWithStorage<string>(MODEL_STORAGE_KEY, "x-ai/grok-c
 
 // --- New: persistent store for per-server metadata (tools/prompts/resources/serverInfo) ---
 export interface MCPServerDetails {
-  tools?: unknown[]; // raw tools data from server/tools/list
+  tools?: { name: string; description: string }[]; // raw tools data from server/tools/list
   resources?: unknown[]; // raw resources data from server/resources/list
   resourceTemplates?: unknown[]; // optional resource templates
   prompts?: unknown[]; // raw prompts data from server/prompts/list
