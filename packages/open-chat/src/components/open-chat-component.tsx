@@ -802,7 +802,7 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
 
                         if (resource) {
                           return (
-                            <div className="mb-4 flex flex-col gap-2">
+                            <div className="flex flex-col gap-4">
                               <div className="flex items-center gap-2">
                                 <McpServerAvatar
                                   key={`${message.id}-${index}`}
@@ -820,6 +820,9 @@ export const OpenChatComponent: React.FC<OpenChatComponentProps> = (props) => {
                                     height: true,
                                     width: false, // set to false to allow for responsive design
                                   },
+                                  iframeProps: {
+                                    className: "rounded-xl border"
+                                  }
                                 }}
                               />
                             </div>
