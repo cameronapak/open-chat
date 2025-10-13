@@ -1,5 +1,7 @@
 # OpenChat
 
+<img style="height: 96px" src="./best-concept-gloo-hackathon.svg" alt="Gloo Hackathon Winner">
+
 ![OpenChat](./open-chat-banner.png)
 
 Roll your own chat with just a few lines of code. Use any model / provider. Built upon AI Elements from Vercel, AI SDK. Supports MCP, MCP-UI, and the MCP Registry out of the box.
@@ -119,24 +121,24 @@ function AdvancedChat() {
         "anthropic/claude-3-opus",
         "google/gemini-pro"
       ]}
-      
+
       // API configuration
       api="http://localhost:3000/api/chat"
       requireAuth={true}
-      
+
       // MCP Tools
       tools={{
         enabled: true,
         mcpServers: []
       }}
       mcpRegistryUrl="https://registry.modelcontextprotocol.io"
-      
+
       // Chat configuration
       threadId="unique-thread-123"
       systemPrompt="You are a helpful AI assistant specialized in coding."
       initialMessages={initialMessages}
       placeholder="Ask about coding..."
-      
+
       // User profile
       userProfile={{
         name: "Developer",
@@ -146,12 +148,12 @@ function AdvancedChat() {
         }),
         avatarUrl: "https://example.com/avatar.png",
       }}
-      
+
       // UI customization
       className="w-full h-screen max-w-4xl mx-auto"
       height="100vh"
       theme="dark"
-      
+
       // Callbacks
       onNewMessage={(msg) => {
         console.log("New message:", msg);
@@ -164,7 +166,7 @@ function AdvancedChat() {
         console.error("Error:", error);
         // Handle errors appropriately
       }}
-      
+
       // Custom message rendering (optional)
       renderMessage={(message, part, index) => {
         // Return null to use default rendering
@@ -326,7 +328,7 @@ Key props include:
 - [x] One-click MCP install
 - [x] Add your own MCP server
 - [x] MCP UI support
-- [ ] [Local LLM AI support](https://ai-sdk.dev/providers/community-providers/built-in-ai) (Transformers JS + AI SDK + [built-in-ai](https://github.com/jakobhoeg/built-in-ai)) 
+- [ ] [Local LLM AI support](https://ai-sdk.dev/providers/community-providers/built-in-ai) (Transformers JS + AI SDK + [built-in-ai](https://github.com/jakobhoeg/built-in-ai))
   - Examples
     - https://huggingface.co/spaces/ibm-granite/Granite-4.0-WebGPU/blob/main/src/worker.js
     - https://huggingface.co/spaces/LiquidAI/LFM2-WebGPU/blob/main/src/App.tsx
